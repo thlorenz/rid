@@ -1,0 +1,17 @@
+language = "C"
+include_version = true
+
+no_includes=true
+includes=["stdint.h"]
+
+
+[defines]
+"target_os = ios" = "TARGET_OS_IOS"
+"target_os = linux" = "TARGET_OS_LINUX"
+"target_os = macos" = "TARGET_OS_MACOS"
+
+[parse]
+parse_deps = false
+# Why does this not expand??
+# cbindgen -c cbindgen.toml --crate rid-derive-ws main.rs
+expand = ["rid-derive-ws"]

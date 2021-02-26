@@ -1,0 +1,22 @@
+[package]
+name = "rid_derive"
+version = "0.1.0"
+authors = ["Thorsten Lorenz <thlorenz@gmx.de>"]
+edition = "2018"
+
+[lib]
+proc-macro = true
+
+[[test]]
+name = "tests"
+path = "tests/expand.rs"
+
+[dependencies]
+# syn = { version = "1.0.60" }
+# extra traits only needed to print ast in development
+syn = { version = "1.0.60", features = ["extra-traits"] }
+quote = "1.0.9"
+proc-macro2 = "1.0.24"
+
+[dev-dependencies]
+macrotest = "1"
