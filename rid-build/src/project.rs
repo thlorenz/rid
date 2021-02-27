@@ -1,7 +1,4 @@
-use std::{
-    env,
-    path::{Path, PathBuf},
-};
+use std::path::{Path, PathBuf};
 
 #[derive(Debug, PartialEq)]
 pub enum Project {
@@ -17,6 +14,7 @@ impl Project {
             }
         }
     }
+
     fn path_to_ios_lib_dir(&self, project_root: &Path) -> PathBuf {
         debug_assert_eq!(
             *self,
@@ -41,13 +39,12 @@ impl Project {
             .to_path_buf()
     }
 
-    pub(crate) fn path_to_generated_bindings(
-        &self,
-        project_root: &Path,
-        crate_name: &str,
-    ) -> PathBuf {
+    pub(crate) fn path_to_generated_c_bindings(&self, project_root: &Path) -> PathBuf {
         match self {
-            Project::Dart => tmp_bindings_path(crate_name),
+            Project::Dart => self
+                .path_to_generated_dir(project_root)
+                .join("bindings.h")
+                .to_path_buf(),
             Project::Flutter => self.path_to_ios_lib_dir(project_root),
         }
     }
@@ -57,10 +54,4 @@ impl Project {
             .join("target")
             .to_path_buf()
     }
-}
-
-fn tmp_bindings_path(crate_name: &str) -> PathBuf {
-    let mut root = env::temp_dir();
-    root.push(format!("rid_test_{}_binding.h", crate_name));
-    root
 }

@@ -21,9 +21,8 @@ pub struct BuildConfig<'a> {
 
 /// Result of generating C header file via cbindgen as well as the Dart derived from it.
 /// The header file is written as a side effect. For Flutter it is placed inside the `ios/Classes`
-/// folder where it is needed, for Dart it is placed in a temp folder to be forgotten.
-/// The generated Dart and the path to where it should be placed is the only information actually
-/// included in this result.
+/// folder where it is needed, for Dart it is placed alongside the generated dart for now.
+/// The generated Dart and the path to where it should be placed is included as well.
 #[derive(Debug)]
 struct GenerateResult {
     /// Content of Dart generated and to be included by the Dart or Flutter app.
@@ -31,10 +30,11 @@ struct GenerateResult {
 
     /// Path at which the Dart/Flutter app expects the generated Dart code to be and from which the
     /// generated code imports the darg ffigen generated bindings.
+    /// This file still needs to be written.
     generated_dart_path: String,
 
-    /// Path at which the C headers file was written. This may be ignored for Dart apps, but should
-    /// be located in the correct location for Flutter apps.
+    /// Path at which the C headers file was ALREADY written. This may be ignored for Dart apps,
+    /// but should be located in the correct location for Flutter apps.
     generated_bindings_h_path: String,
 }
 
@@ -54,7 +54,7 @@ fn generate(
     };
     let project_root = Path::new(project_root);
     let bindings_h = bindings_generator.generate()?;
-    let bindings_h_path = project.path_to_generated_bindings(project_root, crate_name);
+    let bindings_h_path = project.path_to_generated_c_bindings(project_root);
 
     // TODO: cbindgen unwraps all over the place here, so we should ensure that we can
     // access the file we're writing to
@@ -99,7 +99,7 @@ pub fn build(build_config: &BuildConfig) -> Result<()> {
         ..
     } = generate(build_config)?;
 
-    // TODO: ensure that the directory to which we write exists and is accessible
+    // NOTE: the directory to hold the file is recursively created if it doesn't exist yet
     fs::write(generated_dart_path, generated_dart)?;
 
     Ok(())
@@ -111,9 +111,6 @@ mod tests {
 
     #[test]
     fn generate_test() {
-        // NOTE: the lib folder doesn't actually exist for this fixture, however since for Dart
-        // apps the binding.h file is written to a tmp folder that doesn't matter.
-
         let build_config = BuildConfig {
             project_root: "fixtures/foo-bar-baz",
             project: Project::Dart,
