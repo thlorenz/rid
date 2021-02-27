@@ -1,5 +1,6 @@
 #![allow(dead_code)]
-mod dart_from_binding;
+#![feature(str_split_once)]
+mod dart_generator;
 
 #[cfg(test)]
 mod tests {

@@ -1,5 +1,7 @@
 use std::convert::TryFrom;
 
+use rid_common::{DART_FFI, RID_FFI};
+
 pub(crate) enum DartType {
     Int32,
     Int64,
@@ -10,26 +12,32 @@ pub(crate) enum DartType {
 impl DartType {
     pub(crate) fn getter_body(&self, ffi_method: &syn::Ident) -> String {
         match self {
-            DartType::Int32 | DartType::Int64 => format!("rid_ffi.{}(this);", ffi_method),
-            DartType::Bool => format!("rid_ffi.{}(this) != 0;", ffi_method),
+            DartType::Int32 | DartType::Int64 => format!("{0}.{1}(this);", RID_FFI, ffi_method),
+            DartType::Bool => format!("{0}.{1}(this) != 0;", RID_FFI, ffi_method),
             DartType::String => format!(
                 r###"{{
-    ///   int len = rid_ffi.{}_len(this);
-    ///   return rid_ffi.{}(this).toDartString(len); 
+    ///   int len = {0}.{1}_len(this);
+    ///   return {0}.{1}(this).toDartString(len); 
     /// }}"###,
-                ffi_method, ffi_method
+                RID_FFI, ffi_method
             ),
         }
     }
     pub(crate) fn return_type(&self) -> String {
-        // import 'dart:ffi' as ffi;
         match self {
-            DartType::Int32 => "@ffi.Int32() int",
-            DartType::Int64 => "@ffi.Int64() int",
-            DartType::Bool => "int",
+            DartType::Int32 | DartType::Int64 => "int",
+            DartType::Bool => "bool",
             DartType::String => "String",
         }
         .to_string()
+    }
+
+    pub(crate) fn type_attribute(&self) -> Option<String> {
+        match self {
+            DartType::Int32 => Some(format!("@{dart_ffi}.Int32()", dart_ffi = DART_FFI)),
+            DartType::Int64 => Some(format!("@{dart_ffi}.Int64()", dart_ffi = DART_FFI)),
+            _ => None,
+        }
     }
 }
 

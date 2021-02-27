@@ -1,4 +1,4 @@
-extension PointerRidBindSimple on Pointer<ridBind.Simple> {
+extension Rid_ExtOnPointerSimple on Pointer<ffigen_bind.Simple> {
   @ffi.Int32() int get prim_u8 => rid_ffi.rid_simple_prim_u8(this);
   @ffi.Int32() int get prim_u16 => rid_ffi.rid_simple_prim_u16(this);
   @ffi.Int64() int get prim_u64 => rid_ffi.rid_simple_prim_u64(this);

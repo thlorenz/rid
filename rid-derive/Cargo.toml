@@ -12,6 +12,8 @@ name = "tests"
 path = "tests/expand.rs"
 
 [dependencies]
+rid_common = { path = "../rid-common" }
+
 # syn = { version = "1.0.60" }
 # extra traits only needed to print ast in development
 syn = { version = "1.0.60", features = ["extra-traits"] }

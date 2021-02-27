@@ -3,6 +3,7 @@ use crate::{
     parsed_field::ParsedField,
     rust::{RustType, ValueType},
 };
+use rid_common::{DART_FFI, FFI_GEN_BIND};
 
 use quote::{format_ident, quote};
 use syn::{punctuated::Punctuated, spanned::Spanned, token::Comma, Field};
@@ -133,11 +134,11 @@ impl ParsedStruct {
     fn dart_extension(&self) -> proc_macro2::TokenStream {
         let indent = "  ";
         let fields = self.parsed_fields.iter();
-        let mut dart_methods: Vec<String> = vec![];
+        let mut dart_getters: Vec<String> = vec![];
         let mut errors: proc_macro2::TokenStream = proc_macro2::TokenStream::new();
         for field in fields {
             match &field.dart_ty {
-                Ok(dart_ty) => dart_methods.push(self.dart_method(&field, dart_ty)),
+                Ok(dart_ty) => dart_getters.push(self.dart_getter(&field, dart_ty)),
                 Err(err) => {
                     let error = type_error(&field.ty, err);
                     errors = quote!(
@@ -148,18 +149,21 @@ impl ParsedStruct {
             }
         }
 
-        let dart_methods = dart_methods.into_iter().fold("".to_string(), |s, m| {
+        let dart_getters = dart_getters.into_iter().fold("".to_string(), |s, m| {
             format!("{}{}\n{}{}", indent, s, indent, m)
         });
 
         let s = format!(
             r###"
 /// ```dart
-/// extension PointerRidBind{} on Pointer<ridBind.{}> {{  {}
+/// extension Rid_ExtOnPointer{struct_ident} on {dart_ffi}.Pointer<{ffigen_bind}.{struct_ident}> {{  {getters}
 /// }}
 /// ```
         "###,
-            self.ident, self.ident, dart_methods
+            struct_ident = self.ident,
+            dart_ffi = DART_FFI,
+            ffigen_bind = FFI_GEN_BIND,
+            getters = dart_getters
         );
         let comment: proc_macro2::TokenStream = s.parse().unwrap();
         quote!(
@@ -168,11 +172,23 @@ impl ParsedStruct {
         )
     }
 
-    fn dart_method(&self, field: &ParsedField, dart_ty: &DartType) -> String {
+    fn dart_getter(&self, field: &ParsedField, dart_ty: &DartType) -> String {
         let return_ty = dart_ty.return_type();
+        let attrib = dart_ty.type_attribute();
         let body = dart_ty.getter_body(&field.method_ident);
 
-        format!("/// {} get {} => {}", return_ty, &field.ident, body)
+        let attrib = match attrib {
+            Some(s) => format!("/// {}\n", s),
+            None => "".to_string(),
+        };
+
+        format!(
+            "{attrib}/// {return_ty} get {field_ident} => {body}",
+            attrib = attrib,
+            return_ty = return_ty,
+            field_ident = &field.ident,
+            body = body
+        )
     }
 }
 
