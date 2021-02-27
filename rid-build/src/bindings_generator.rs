@@ -1,13 +1,13 @@
 use anyhow::{bail, Result};
 use std::{env, fs, path, process::Command};
 
-pub(crate) struct BindingsGenerator {
-    cargo: String,
-    crate_dir: String,
-    crate_name: String,
+pub(crate) struct BindingsGenerator<'a> {
+    pub(crate) cargo: &'a str,
+    pub(crate) crate_dir: &'a str,
+    pub(crate) crate_name: &'a str,
 }
 
-impl BindingsGenerator {
+impl<'a> BindingsGenerator<'a> {
     pub(crate) fn generate(&self) -> Result<cbindgen::Bindings> {
         let expanded_rust_path = self.expand_crate()?;
         let bindings = self.cbindgen(&expanded_rust_path)?;
@@ -66,11 +66,11 @@ mod tests {
 
     #[test]
     fn binding_generator() {
-        let crate_dir = "./fixtures/foo-bar-baz".to_string();
-        let crate_name = "foo-bar-baz".to_string();
+        let crate_dir = "./fixtures/foo-bar-baz";
+        let crate_name = "foo-bar-baz";
         let binding_h = bindings_path(&crate_name);
         let generator = BindingsGenerator {
-            cargo: "cargo".to_string(),
+            cargo: "cargo",
             crate_dir,
             crate_name,
         };

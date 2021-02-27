@@ -5,7 +5,7 @@ const TYPEDEF_STRUCT: &str = "typedef struct ";
 const TYPEDEF_STRUCT_LEN: usize = TYPEDEF_STRUCT.len();
 
 #[derive(Clone, Copy)]
-pub(crate) enum BuildTarget {
+pub enum BuildTarget {
     Release,
     Debug,
 }
@@ -52,7 +52,7 @@ pub(crate) struct DartGenerator<'a> {
     pub(crate) binding: &'a str,
 
     /// Rust library to load, Release or Debug.
-    pub(crate) target: BuildTarget,
+    pub(crate) target: &'a BuildTarget,
 }
 
 impl<'a> DartGenerator<'a> {
@@ -202,22 +202,8 @@ import '{ffigen_binding}' as {ffigen_bind};
 mod tests {
     use super::*;
 
-    fn setup<'a>(binding: &'a str, target: BuildTarget) -> DartGenerator<'a> {
+    fn setup<'a>(binding: &'a str, target: &'a BuildTarget) -> DartGenerator<'a> {
         let ffigen_binding = "./ffigen_binding.dart";
-        let path_to_target = "target";
-        let lib_name = "libapp_todo";
-
-        DartGenerator {
-            lib_name,
-            target,
-            path_to_target,
-            ffigen_binding,
-            binding,
-        }
-    }
-
-    fn _setup2<'a>(binding: &'a str, target: BuildTarget) -> DartGenerator<'a> {
-        let ffigen_binding = "../generated/binding.dart";
         let path_to_target = "target";
         let lib_name = "libapp_todo";
 
@@ -234,7 +220,7 @@ mod tests {
     fn test_dart_extensions_single_struct_prims_and_strings() {
         let binding_h = include_str!("../fixtures/prims+strings_binding.h");
         let binding_dart = include_str!("../fixtures/prims+strings_binding.dart");
-        let (extensions, _) = setup(&binding_h, BuildTarget::Debug).parse_binding();
+        let (extensions, _) = setup(&binding_h, &BuildTarget::Debug).parse_binding();
         assert_eq!(extensions, binding_dart.trim_end())
     }
 
@@ -242,7 +228,7 @@ mod tests {
     fn test_dart_extensions_three_structs() {
         let binding_h = include_str!("../fixtures/three_structs_binding.h");
         let binding_dart = include_str!("../fixtures/three_structs_binding.dart");
-        let (extensions, _) = setup(&binding_h, BuildTarget::Debug).parse_binding();
+        let (extensions, _) = setup(&binding_h, &BuildTarget::Debug).parse_binding();
         assert_eq!(extensions, binding_dart.trim_end())
     }
 
@@ -250,7 +236,7 @@ mod tests {
     fn test_dart_generation() {
         let binding_h = include_str!("../fixtures/two_structs_binding.h");
         let binding_dart = include_str!("../fixtures/two_structs_binding.dart");
-        let dart = setup(&binding_h, BuildTarget::Debug).generate();
+        let dart = setup(&binding_h, &BuildTarget::Debug).generate();
         assert_eq!(dart, binding_dart.trim())
     }
 }
