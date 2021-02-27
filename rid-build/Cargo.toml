@@ -6,3 +6,5 @@ edition = "2018"
 
 [dependencies]
 rid_common = { path = "../rid-common" }
+cbindgen = "0.18.0"
+anyhow = "1.0.38"
