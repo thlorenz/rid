@@ -9,10 +9,17 @@ use rid_common::{DART_FFI, FFI_GEN_BIND};
 use quote::{format_ident, quote};
 use syn::{punctuated::Punctuated, spanned::Spanned, token::Comma, Field};
 
+type Tokens = proc_macro2::TokenStream;
+
 pub(crate) struct ParsedStruct {
     ident: syn::Ident,
     parsed_fields: Vec<ParsedField>,
     method_prefix: String,
+}
+
+struct ImplementedVec {
+    item_type: syn::Ident,
+    rust_function_name: String,
 }
 
 impl ParsedStruct {
@@ -27,22 +34,24 @@ impl ParsedStruct {
         }
     }
 
-    pub(crate) fn derive_code(&self) -> proc_macro2::TokenStream {
+    pub(crate) fn derive_code(&self) -> Tokens {
         if self.parsed_fields.is_empty() {
-            return proc_macro2::TokenStream::new();
+            return Tokens::new();
         }
         let intro = format!(
             "/// FFI access methods generated for struct '{}'.\n///\n",
             self.ident
         );
         let dart_header = format!("/// Below is the dart extension to call those methods.\n///");
-        let comment_header: proc_macro2::TokenStream =
-            format!("{}{}", intro, dart_header).parse().unwrap();
+        let comment_header: Tokens = format!("{}{}", intro, dart_header).parse().unwrap();
         let dart_extension = self.dart_extension();
         let comment = quote!(
             #comment_header
             #dart_extension
         );
+        // TODO: generate comments for dart extension, but may be better to provide an indicator
+        // instead which the builder generates code for in order to provide iterators as well?
+        // Either way, a template might work a lot better here
         self.rust_module(comment)
     }
 
@@ -50,19 +59,27 @@ impl ParsedStruct {
     // Rust Module
     //
 
-    fn rust_module(&self, doc_comment: proc_macro2::TokenStream) -> proc_macro2::TokenStream {
-        let methods = self.parsed_fields.iter().map(|f| self.rust_method(f));
+    fn rust_module(&self, doc_comment: Tokens) -> Tokens {
+        let mut implemented_vecs: Vec<ImplementedVec> = vec![];
+        let method_tokens = self.parsed_fields.iter().map(|f| {
+            let (tokens, mut vecs) = self.rust_method(f);
+            implemented_vecs.append(&mut vecs);
+            tokens
+        });
+
         let mod_name = format_ident!("__{}_ffi", self.method_prefix);
-        quote! {
+        let tokens = quote! {
             mod #mod_name {
                 use super::*;
                 #doc_comment
-                #(#methods)*
+                #(#method_tokens)*
             }
-        }
+        };
+
+        tokens
     }
 
-    fn rust_method(&self, field: &ParsedField) -> proc_macro2::TokenStream {
+    fn rust_method(&self, field: &ParsedField) -> (Tokens, Vec<ImplementedVec>) {
         let field_ident = &field.ident;
         let fn_ident = &field.method_ident;
         let ty = &field.ty;
@@ -72,6 +89,7 @@ impl ParsedStruct {
             struct_ident.to_string().to_lowercase(),
             field_ident
         );
+        let mut implemented_vecs: Vec<ImplementedVec> = vec![];
 
         let resolve_struct_ptr = resolve_ptr(struct_ident);
 
@@ -134,6 +152,10 @@ impl ParsedStruct {
                 let resolve_vec = resolve_vec_ptr(&item_ty);
 
                 let len_impl = if get_state().needs_implementation(&fn_len_ident.to_string()) {
+                    implemented_vecs.push(ImplementedVec {
+                        item_type: item_ty.clone(),
+                        rust_function_name: fn_len_ident.to_string(),
+                    });
                     quote! {
                         #[no_mangle]
                         pub extern "C" fn #fn_len_ident(ptr: *mut Vec<#item_ty>) -> usize {
@@ -141,11 +163,15 @@ impl ParsedStruct {
                         }
                     }
                 } else {
-                    proc_macro2::TokenStream::new()
+                    Tokens::new()
                 };
 
                 // TODO: get(idx) works only for primitive types ATM which are returned directly
                 let get_impl = if get_state().needs_implementation(&fn_get_ident.to_string()) {
+                    implemented_vecs.push(ImplementedVec {
+                        item_type: item_ty.clone(),
+                        rust_function_name: fn_get_ident.to_string(),
+                    });
                     quote! {
                         #[no_mangle]
                         pub extern "C" fn #fn_get_ident(ptr: *mut Vec<#item_ty>, idx: usize) -> #item_ty {
@@ -159,7 +185,7 @@ impl ParsedStruct {
                         }
                     }
                 } else {
-                    proc_macro2::TokenStream::new()
+                    Tokens::new()
                 };
 
                 quote! {
@@ -175,19 +201,20 @@ impl ParsedStruct {
             Ok(RustType::Unknown) => type_error(&field.ty, &"Unhandled Rust Type".to_string()),
             Err(err) => type_error(&field.ty, err),
         };
-        let token_stream: proc_macro2::TokenStream = method.into();
-        token_stream
+
+        let tokens: Tokens = method.into();
+        (tokens, implemented_vecs)
     }
 
     //
     // Dart Extension
     //
 
-    fn dart_extension(&self) -> proc_macro2::TokenStream {
+    fn dart_extension(&self) -> Tokens {
         let indent = "  ";
         let fields = self.parsed_fields.iter();
         let mut dart_getters: Vec<String> = vec![];
-        let mut errors: proc_macro2::TokenStream = proc_macro2::TokenStream::new();
+        let mut errors: Tokens = Tokens::new();
         for field in fields {
             match &field.dart_ty {
                 Ok(dart_ty) => dart_getters.push(self.dart_getter(&field, dart_ty)),
@@ -217,7 +244,7 @@ impl ParsedStruct {
             ffigen_bind = FFI_GEN_BIND,
             getters = dart_getters
         );
-        let comment: proc_macro2::TokenStream = s.parse().unwrap();
+        let comment: Tokens = s.parse().unwrap();
         quote!(
             #errors
             #comment
@@ -247,7 +274,7 @@ impl ParsedStruct {
     }
 }
 
-fn resolve_ptr(ty: &syn::Ident) -> proc_macro2::TokenStream {
+fn resolve_ptr(ty: &syn::Ident) -> Tokens {
     quote! {
         unsafe {
             assert!(!ptr.is_null());
@@ -257,7 +284,7 @@ fn resolve_ptr(ty: &syn::Ident) -> proc_macro2::TokenStream {
     }
 }
 
-fn resolve_vec_ptr(ty: &syn::Ident) -> proc_macro2::TokenStream {
+fn resolve_vec_ptr(ty: &syn::Ident) -> Tokens {
     quote! {
         unsafe {
             assert!(!ptr.is_null());
@@ -274,6 +301,6 @@ fn parse_fields(fields: Punctuated<Field, Comma>, method_prefix: &str) -> Vec<Pa
         .collect()
 }
 
-fn type_error(ty: &syn::Type, err: &String) -> proc_macro2::TokenStream {
+fn type_error(ty: &syn::Type, err: &String) -> Tokens {
     syn::Error::new(ty.span(), err).to_compile_error()
 }
