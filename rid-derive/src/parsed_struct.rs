@@ -1,7 +1,7 @@
 use crate::{
     dart::{DartType, GetterBody},
     parsed_field::ParsedField,
-    rust::{PrimitiveType, RustType, ValueType},
+    rust::{RustType, ValueType},
 };
 use rid_common::{DART_FFI, FFI_GEN_BIND};
 
@@ -114,22 +114,23 @@ impl ParsedStruct {
                     }
                 }
             }
-            Ok(RustType::Primitive(PrimitiveType::Int)) => {
-                quote! {
-                    #[no_mangle]
-                    pub extern "C" fn #fn_ident(ptr: *mut #struct_ident) -> #ty {
-                        let #struct_instance_ident = #resolve_ptr;
-                        #struct_instance_ident.#field_ident
-                    }
-                }
-            }
-            Ok(RustType::Primitive(PrimitiveType::Bool)) => {
-                quote! {
-                    #[no_mangle]
-                    pub extern "C" fn #fn_ident(ptr: *mut #struct_ident) -> u8 {
-                        let #struct_instance_ident = #resolve_ptr;
-                        if #struct_instance_ident.#field_ident { 1 } else { 0 }
-                    }
+            Ok(RustType::Primitive(p)) => {
+                use crate::rust::PrimitiveType::*;
+                match p {
+                    U8 | I8 | U16 | I16 | U32 | I32 | U64 | I64 | USize => quote! {
+                        #[no_mangle]
+                        pub extern "C" fn #fn_ident(ptr: *mut #struct_ident) -> #ty {
+                            let #struct_instance_ident = #resolve_ptr;
+                            #struct_instance_ident.#field_ident
+                        }
+                    },
+                    Bool => quote! {
+                        #[no_mangle]
+                        pub extern "C" fn #fn_ident(ptr: *mut #struct_ident) -> u8 {
+                            let #struct_instance_ident = #resolve_ptr;
+                            if #struct_instance_ident.#field_ident { 1 } else { 0 }
+                        }
+                    },
                 }
             }
             Ok(RustType::Value(ValueType::RVec((_, ident)))) => {

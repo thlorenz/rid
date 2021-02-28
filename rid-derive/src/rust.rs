@@ -1,5 +1,4 @@
 #![allow(dead_code)]
-use std::convert::TryFrom;
 
 pub(crate) enum ValueType {
     CString,
@@ -8,7 +7,15 @@ pub(crate) enum ValueType {
 }
 
 pub(crate) enum PrimitiveType {
-    Int,
+    U8,
+    I8,
+    U16,
+    I16,
+    U32,
+    I32,
+    U64,
+    I64,
+    USize,
     Bool,
 }
 
@@ -22,15 +29,20 @@ use PrimitiveType::*;
 use RustType::*;
 use ValueType::*;
 
-fn extract_path_segment(path: &syn::Path) -> RustType {
+fn extract_path_segment(path: &syn::Path) -> (&syn::Ident, RustType) {
     let syn::PathSegment {
         ident, arguments, ..
     } = path.segments.last().unwrap();
-    match ident.to_string().as_str() {
+    let rust_ty = match ident.to_string().as_str() {
         "CString" => Value(CString),
         "String" => Value(RString),
-        "u8" | "i8" | "u16" | "i16" | "u32" | "i32" => Primitive(Int),
-        "usize" => Primitive(Int),
+        "u8" => Primitive(U8),
+        "i8" => Primitive(I8),
+        "u16" => Primitive(U16),
+        "i16" => Primitive(I16),
+        "u32" => Primitive(U32),
+        "i32" => Primitive(I32),
+        "usize" => Primitive(USize),
         "bool" => Primitive(Bool),
         "Vec" => match arguments {
             syn::PathArguments::AngleBracketed(syn::AngleBracketedGenericArguments {
@@ -38,8 +50,7 @@ fn extract_path_segment(path: &syn::Path) -> RustType {
                 ..
             }) => match &args[0] {
                 syn::GenericArgument::Type(syn::Type::Path(syn::TypePath { path, .. })) => {
-                    let vec_type = extract_path_segment(path);
-                    let syn::PathSegment { ident, .. } = path.segments.last().unwrap();
+                    let (ident, vec_type) = extract_path_segment(path);
                     Value(RVec((Box::new(vec_type), ident.clone())))
                 }
                 _ => Unknown,
@@ -47,73 +58,30 @@ fn extract_path_segment(path: &syn::Path) -> RustType {
             _ => Unknown,
         },
         _ => Unknown,
-    }
+    };
+
+    (ident, rust_ty)
 }
 
-impl TryFrom<&syn::Type> for RustType {
-    type Error = String;
-    fn try_from(ty: &syn::Type) -> Result<Self, Self::Error> {
-        // TODO: cannot really detect if a type is primitive (just guess)
-        // do we need to have an attribute for this?
-        Ok(match ty {
-            syn::Type::Array(ty) => {
-                println!("Array: {:#?}", &ty);
-                Unknown
-            }
-            syn::Type::BareFn(ty) => {
-                println!("BareFn: {:#?}", &ty);
-                Unknown
-            }
-            syn::Type::Group(ty) => {
-                println!("Group: {:#?}", &ty);
-                Unknown
-            }
-            syn::Type::ImplTrait(ty) => {
-                println!("ImplTrait: {:#?}", &ty);
-                Unknown
-            }
-            syn::Type::Infer(ty) => {
-                println!("Infer: {:#?}", &ty);
-                Unknown
-            }
-            syn::Type::Macro(ty) => {
-                println!("Macro: {:#?}", &ty);
-                Unknown
-            }
-            syn::Type::Never(ty) => {
-                println!("Never: {:#?}", &ty);
-                Unknown
-            }
-            syn::Type::Paren(ty) => {
-                println!("Paren: {:#?}", &ty);
-                Unknown
-            }
-            syn::Type::Path(syn::TypePath { path, .. }) => extract_path_segment(path),
-            syn::Type::Ptr(ty) => {
-                println!("Ptr: {:#?}", &ty);
-                Unknown
-            }
-            syn::Type::Reference(ty) => {
-                println!("Reference: {:#?}", &ty);
-                Unknown
-            }
-            syn::Type::Slice(ty) => {
-                println!("Slice: {:#?}", &ty);
-                Unknown
-            }
-            syn::Type::TraitObject(ty) => {
-                println!("TraitObject: {:#?}", &ty);
-                Unknown
-            }
-            syn::Type::Tuple(ty) => {
-                println!("Tuple: {:#?}", &ty);
-                Unknown
-            }
-            syn::Type::Verbatim(ty) => {
-                println!("Verbatim: {:#?}", &ty);
-                Unknown
-            }
-            _ => Unknown,
-        })
+impl RustType {
+    pub(crate) fn try_from(ty: &syn::Type) -> Result<(&syn::Ident, RustType), String> {
+        match ty {
+            syn::Type::Path(syn::TypePath { path, .. }) => Ok(extract_path_segment(path)),
+            syn::Type::Array(ty) => Err(format!("Array: {:#?}", &ty)),
+            syn::Type::BareFn(ty) => Err(format!("BareFn: {:#?}", &ty)),
+            syn::Type::Group(ty) => Err(format!("Group: {:#?}", &ty)),
+            syn::Type::ImplTrait(ty) => Err(format!("ImplTrait: {:#?}", &ty)),
+            syn::Type::Infer(ty) => Err(format!("Infer: {:#?}", &ty)),
+            syn::Type::Macro(ty) => Err(format!("Macro: {:#?}", &ty)),
+            syn::Type::Never(ty) => Err(format!("Never: {:#?}", &ty)),
+            syn::Type::Paren(ty) => Err(format!("Paren: {:#?}", &ty)),
+            syn::Type::Ptr(ty) => Err(format!("Ptr: {:#?}", &ty)),
+            syn::Type::Reference(ty) => Err(format!("Reference: {:#?}", &ty)),
+            syn::Type::Slice(ty) => Err(format!("Slice: {:#?}", &ty)),
+            syn::Type::TraitObject(ty) => Err(format!("TraitObject: {:#?}", &ty)),
+            syn::Type::Tuple(ty) => Err(format!("Tuple: {:#?}", &ty)),
+            syn::Type::Verbatim(ty) => Err(format!("Verbatim: {:#?}", &ty)),
+            _ => Err(format!("Unexpected: {:#?}", &ty)),
+        }
     }
 }

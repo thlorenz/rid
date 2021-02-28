@@ -1,7 +1,6 @@
 use syn::Field;
 
 use crate::{dart::DartType, rust::RustType};
-use std::convert::TryFrom;
 
 pub(crate) struct ParsedField {
     pub(crate) ident: syn::Ident,
@@ -16,8 +15,13 @@ impl ParsedField {
         let ident = f.ident.unwrap();
         let method_ident = method_ident_from_field(method_prefix, &ident);
         let ty = f.ty;
-        let rust_ty = RustType::try_from(&ty);
-        let dart_ty = DartType::try_from(&ty);
+
+        let rust_res = RustType::try_from(&ty);
+        let dart_ty = match &rust_res {
+            Ok((ident, ref rust_ty)) => DartType::try_from(rust_ty, ident),
+            Err(_) => Err("Dart type not determined due to invalid Rust type".to_string()),
+        };
+        let rust_ty = rust_res.map(|(_, rust_ty)| rust_ty);
 
         Self {
             ident,
