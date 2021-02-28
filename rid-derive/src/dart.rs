@@ -1,12 +1,13 @@
 use std::convert::TryFrom;
 
-use rid_common::{DART_FFI, RID_FFI};
+use rid_common::{DART_FFI, FFI_GEN_BIND, RID_FFI};
 
 pub(crate) enum DartType {
     Int32,
     Int64,
     Bool,
     String,
+    Vec(String),
 }
 
 pub(crate) enum GetterBody {
@@ -29,15 +30,22 @@ impl DartType {
     /// }}"###,
                 RID_FFI, ffi_method
             )),
+            DartType::Vec(_) => Expression(format!("{0}.{1}(this);", RID_FFI, ffi_method)),
         }
     }
     pub(crate) fn return_type(&self) -> String {
         match self {
-            DartType::Int32 | DartType::Int64 => "int",
-            DartType::Bool => "bool",
-            DartType::String => "String",
+            DartType::Int32 | DartType::Int64 => "int".to_string(),
+            DartType::Bool => "bool".to_string(),
+            DartType::String => "String".to_string(),
+            // dart_ffi.Pointer<ffigen_bind.Vec_u8>
+            DartType::Vec(inner) => format!(
+                "{dart_ffi}.Pointer<{ffigen_bind}.Vec_{ty}>",
+                dart_ffi = DART_FFI,
+                ffigen_bind = FFI_GEN_BIND,
+                ty = inner
+            ),
         }
-        .to_string()
     }
 
     pub(crate) fn type_attribute(&self) -> Option<String> {
@@ -65,6 +73,8 @@ impl TryFrom<&syn::Type> for DartType {
                         &ident
                     )),
                     "bool" => Ok(DartType::Bool),
+                    // TODO: determine inner type correctly (needs to be passed somehow
+                    "Vec" => Ok(DartType::Vec("u8".to_string())),
                     _ => Err(format!(
                         "Rust type '{}' cannot be converted to a Dart type",
                         &ident

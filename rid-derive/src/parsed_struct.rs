@@ -132,9 +132,16 @@ impl ParsedStruct {
                     }
                 }
             }
-            Ok(RustType::Primitive(PrimitiveType::Unknown)) => {
-                type_error(&field.ty, &"Unhandled Rust Type".to_string())
+            Ok(RustType::Value(ValueType::RVec((_, ident)))) => {
+                quote! {
+                    #[no_mangle]
+                    pub extern "C" fn #fn_ident(ptr: *mut #struct_ident) -> *const Vec<#ident> {
+                        let #struct_instance_ident = #resolve_ptr;
+                        &#struct_instance_ident.#field_ident as *const _ as *const Vec<#ident>
+                    }
+                }
             }
+            Ok(RustType::Unknown) => type_error(&field.ty, &"Unhandled Rust Type".to_string()),
             Err(err) => type_error(&field.ty, err),
         };
         let token_stream: proc_macro2::TokenStream = method.into();
