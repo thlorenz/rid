@@ -2,5 +2,6 @@
 members=[
   "rid-common",
   "rid-derive",
-  "rid-build"
+  "rid-build",
+  "examples/dart/todo"
 ]

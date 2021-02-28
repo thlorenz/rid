@@ -1,0 +1,20 @@
+[package]
+name = "todo"
+version = "0.1.0"
+authors = ["Thorsten Lorenz <thlorenz@gmx.de>"]
+edition = "2018"
+
+[lib]
+name = "todo"
+crate-type = ["cdylib"]
+
+[[bin]]
+name = "rid_build"
+path = "rid_build.rs"
+
+[dependencies]
+rid_derive = { path = "../../../rid-derive" }
+rid_build = { path = "../../../rid-build" }
+
+[build-dependencies]
+rid_build = { path = "../../../rid-build" }
