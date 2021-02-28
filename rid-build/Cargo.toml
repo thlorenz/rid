@@ -8,3 +8,5 @@ edition = "2018"
 rid_common = { path = "../rid-common" }
 cbindgen = "0.18.0"
 anyhow = "1.0.38"
+simple_logger = "1.11.0"
+log = "0.4.14"

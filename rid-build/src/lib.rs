@@ -9,6 +9,7 @@ use dart_generator::DartGenerator;
 
 mod bindings_generator;
 mod dart_generator;
+mod log;
 mod project;
 
 pub use dart_generator::BuildTarget;
@@ -59,6 +60,8 @@ fn generate(
     };
     let target_crate_root = Path::new(workspace_root.unwrap_or(project_root));
     let project_root = Path::new(project_root);
+    log::info!("Generating bindings");
+
     let bindings_h = bindings_generator.generate()?;
     let bindings_h_path = project.path_to_generated_c_bindings(project_root);
 
@@ -89,6 +92,7 @@ fn generate(
         binding: &bindings_h_content,
     };
 
+    log::info!("Generating dart");
     let generated_dart = dart_generator.generate();
 
     Ok(GenerateResult {
@@ -99,6 +103,8 @@ fn generate(
 }
 
 pub fn build(build_config: &BuildConfig) -> Result<()> {
+    log::init();
+
     let GenerateResult {
         generated_dart,
         generated_dart_path,
