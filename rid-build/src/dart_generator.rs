@@ -73,7 +73,7 @@ impl<'a> DartGenerator<'a> {
 //
 {open_dl}
 //
-// Extensions to provide an API into FFI calls to Rust
+// Extensions to provide an API for FFI calls into Rust
 //
 {extensions}
 {string_from_pointer_extension}
