@@ -1,8 +1,8 @@
-#![allow(dead_code, unused)]
 use crate::{
     dart::{DartType, GetterBody},
     parsed_field::ParsedField,
     rust::{RustType, ValueType},
+    state::get_state,
 };
 use rid_common::{DART_FFI, FFI_GEN_BIND};
 
@@ -128,32 +128,48 @@ impl ParsedStruct {
                 }
             }
             Ok(RustType::Value(ValueType::RVec((_, item_ty)))) => {
-                let fn_len_ident = format_ident!("{}_len", fn_ident);
-                let fn_get_ident = format_ident!("{}_get", fn_ident);
+                let fn_len_ident = format_ident!("rid_vec_{}_len", item_ty);
+                let fn_get_ident = format_ident!("rid_vec_{}_get", item_ty);
 
                 let resolve_vec = resolve_vec_ptr(&item_ty);
 
+                let len_impl = if get_state().needs_implementation(&fn_len_ident.to_string()) {
+                    quote! {
+                        #[no_mangle]
+                        pub extern "C" fn #fn_len_ident(ptr: *mut Vec<#item_ty>) -> usize {
+                            #resolve_vec.len()
+                        }
+                    }
+                } else {
+                    proc_macro2::TokenStream::new()
+                };
+
                 // TODO: get(idx) works only for primitive types ATM which are returned directly
+                let get_impl = if get_state().needs_implementation(&fn_get_ident.to_string()) {
+                    quote! {
+                        #[no_mangle]
+                        pub extern "C" fn #fn_get_ident(ptr: *mut Vec<#item_ty>, idx: usize) -> #item_ty {
+                            let item = #resolve_vec.get(idx)
+                            .expect(&format!("Failed to access {struc}.{ident}[{idx}]",
+                                struc = "Model",
+                                ident = "Field",
+                                idx = idx
+                            ));
+                            *item
+                        }
+                    }
+                } else {
+                    proc_macro2::TokenStream::new()
+                };
+
                 quote! {
                     #[no_mangle]
                     pub extern "C" fn #fn_ident(ptr: *mut #struct_ident) -> *const Vec<#item_ty> {
                         let #struct_instance_ident = #resolve_struct_ptr;
                         &#struct_instance_ident.#field_ident as *const _ as *const Vec<#item_ty>
                     }
-                    #[no_mangle]
-                    pub extern "C" fn #fn_len_ident(ptr: *mut Vec<#item_ty>) -> usize {
-                        #resolve_vec.len()
-                    }
-                    #[no_mangle]
-                    pub extern "C" fn #fn_get_ident(ptr: *mut Vec<#item_ty>, idx: usize) -> #item_ty {
-                        let item = #resolve_vec.get(idx)
-                          .expect(&format!("Failed to access {struc}.{ident}[{idx}]",
-                            struc = "Model",
-                            ident = "Field",
-                            idx = idx
-                          ));
-                        *item
-                    }
+                    #len_impl
+                    #get_impl
                 }
             }
             Ok(RustType::Unknown) => type_error(&field.ty, &"Unhandled Rust Type".to_string()),

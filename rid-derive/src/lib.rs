@@ -9,6 +9,7 @@ mod dart;
 mod parsed_field;
 mod parsed_struct;
 mod rust;
+mod state;
 
 const RID_PRINT_AST: &str = "RID_PRINT_AST";
 

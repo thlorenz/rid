@@ -34,6 +34,7 @@ impl DartType {
             DartType::Vec(_) => Expression(format!("{0}.{1}(this);", RID_FFI, ffi_method)),
         }
     }
+
     pub(crate) fn return_type(&self) -> String {
         match self {
             DartType::Int32 | DartType::Int64 => "int".to_string(),
