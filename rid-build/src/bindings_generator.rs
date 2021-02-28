@@ -16,7 +16,7 @@ impl<'a> BindingsGenerator<'a> {
 
     fn expand_crate(&self) -> Result<String> {
         let output = Command::new(&self.cargo)
-            .arg("expand")
+            .args(&["expand", "--lib"])
             .args(&["--color", "never"])
             .current_dir(&self.crate_dir)
             .output()?;
