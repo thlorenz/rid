@@ -3,13 +3,23 @@ use std::convert::TryFrom;
 
 pub(crate) enum ValueType {
     CString,
-    String,
+    RString,
+}
+
+pub(crate) enum PrimitiveType {
+    Int,
+    Bool,
+    Unknown,
 }
 
 pub(crate) enum RustType {
     Value(ValueType),
-    Primitive,
+    Primitive(PrimitiveType),
 }
+
+use PrimitiveType::*;
+use RustType::*;
+use ValueType::*;
 
 impl TryFrom<&syn::Type> for RustType {
     type Error = String;
@@ -19,69 +29,71 @@ impl TryFrom<&syn::Type> for RustType {
         Ok(match ty {
             syn::Type::Array(ty) => {
                 println!("Array: {:#?}", &ty);
-                RustType::Primitive
+                Primitive(Unknown)
             }
             syn::Type::BareFn(ty) => {
                 println!("BareFn: {:#?}", &ty);
-                RustType::Primitive
+                Primitive(Unknown)
             }
             syn::Type::Group(ty) => {
                 println!("Group: {:#?}", &ty);
-                RustType::Primitive
+                Primitive(Unknown)
             }
             syn::Type::ImplTrait(ty) => {
                 println!("ImplTrait: {:#?}", &ty);
-                RustType::Primitive
+                Primitive(Unknown)
             }
             syn::Type::Infer(ty) => {
                 println!("Infer: {:#?}", &ty);
-                RustType::Primitive
+                Primitive(Unknown)
             }
             syn::Type::Macro(ty) => {
                 println!("Macro: {:#?}", &ty);
-                RustType::Primitive
+                Primitive(Unknown)
             }
             syn::Type::Never(ty) => {
                 println!("Never: {:#?}", &ty);
-                RustType::Primitive
+                Primitive(Unknown)
             }
             syn::Type::Paren(ty) => {
                 println!("Paren: {:#?}", &ty);
-                RustType::Primitive
+                Primitive(Unknown)
             }
             syn::Type::Path(syn::TypePath { path, .. }) => {
                 let syn::PathSegment { ident, .. } = path.segments.last().unwrap();
                 match ident.to_string().as_str() {
-                    "CString" => RustType::Value(ValueType::CString),
-                    "String" => RustType::Value(ValueType::String),
-                    _ => RustType::Primitive,
+                    "CString" => Value(CString),
+                    "String" => Value(RString),
+                    "u8" | "i8" | "u16" | "i16" | "u32" | "i32" => Primitive(Int),
+                    "bool" => Primitive(Bool),
+                    _ => Primitive(Unknown),
                 }
             }
             syn::Type::Ptr(ty) => {
                 println!("Ptr: {:#?}", &ty);
-                RustType::Primitive
+                Primitive(Unknown)
             }
             syn::Type::Reference(ty) => {
                 println!("Reference: {:#?}", &ty);
-                RustType::Primitive
+                Primitive(Unknown)
             }
             syn::Type::Slice(ty) => {
                 println!("Slice: {:#?}", &ty);
-                RustType::Primitive
+                Primitive(Unknown)
             }
             syn::Type::TraitObject(ty) => {
                 println!("TraitObject: {:#?}", &ty);
-                RustType::Primitive
+                Primitive(Unknown)
             }
             syn::Type::Tuple(ty) => {
                 println!("Tuple: {:#?}", &ty);
-                RustType::Primitive
+                Primitive(Unknown)
             }
             syn::Type::Verbatim(ty) => {
                 println!("Verbatim: {:#?}", &ty);
-                RustType::Primitive
+                Primitive(Unknown)
             }
-            _ => RustType::Primitive,
+            _ => Primitive(Unknown),
         })
     }
 }

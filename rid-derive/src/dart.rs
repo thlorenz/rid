@@ -9,18 +9,26 @@ pub(crate) enum DartType {
     String,
 }
 
+pub(crate) enum GetterBody {
+    Expression(String),
+    Statement(String),
+}
+use GetterBody::*;
+
 impl DartType {
-    pub(crate) fn getter_body(&self, ffi_method: &syn::Ident) -> String {
+    pub(crate) fn getter_body(&self, ffi_method: &syn::Ident) -> GetterBody {
         match self {
-            DartType::Int32 | DartType::Int64 => format!("{0}.{1}(this);", RID_FFI, ffi_method),
-            DartType::Bool => format!("{0}.{1}(this) != 0;", RID_FFI, ffi_method),
-            DartType::String => format!(
+            DartType::Int32 | DartType::Int64 => {
+                Expression(format!("{0}.{1}(this);", RID_FFI, ffi_method))
+            }
+            DartType::Bool => Expression(format!("{0}.{1}(this) != 0;", RID_FFI, ffi_method)),
+            DartType::String => Statement(format!(
                 r###"{{
     ///   int len = {0}.{1}_len(this);
     ///   return {0}.{1}(this).toDartString(len); 
     /// }}"###,
                 RID_FFI, ffi_method
-            ),
+            )),
         }
     }
     pub(crate) fn return_type(&self) -> String {

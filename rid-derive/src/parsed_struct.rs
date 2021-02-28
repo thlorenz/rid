@@ -1,7 +1,7 @@
 use crate::{
-    dart::DartType,
+    dart::{DartType, GetterBody},
     parsed_field::ParsedField,
-    rust::{RustType, ValueType},
+    rust::{PrimitiveType, RustType, ValueType},
 };
 use rid_common::{DART_FFI, FFI_GEN_BIND};
 
@@ -63,7 +63,6 @@ impl ParsedStruct {
         let fn_ident = &field.method_ident;
         let ty = &field.ty;
         let struct_ident = &self.ident;
-        //let struct_instance_ident = format_ident!("{}_instance", field_ident);
         let struct_instance_ident = format_ident!(
             "{}_get_{}",
             struct_ident.to_string().to_lowercase(),
@@ -95,7 +94,7 @@ impl ParsedStruct {
                     }
                 }
             }
-            Ok(RustType::Value(ValueType::String)) => {
+            Ok(RustType::Value(ValueType::RString)) => {
                 let fn_len_ident = format_ident!("{}_len", fn_ident);
                 quote! {
                     #[no_mangle]
@@ -112,7 +111,7 @@ impl ParsedStruct {
                     }
                 }
             }
-            Ok(RustType::Primitive) => {
+            Ok(RustType::Primitive(PrimitiveType::Int)) => {
                 quote! {
                     #[no_mangle]
                     pub extern "C" fn #fn_ident(ptr: *mut #struct_ident) -> #ty {
@@ -120,6 +119,18 @@ impl ParsedStruct {
                         #struct_instance_ident.#field_ident
                     }
                 }
+            }
+            Ok(RustType::Primitive(PrimitiveType::Bool)) => {
+                quote! {
+                    #[no_mangle]
+                    pub extern "C" fn #fn_ident(ptr: *mut #struct_ident) -> u8 {
+                        let #struct_instance_ident = #resolve_ptr;
+                        if #struct_instance_ident.#field_ident { 1 } else { 0 }
+                    }
+                }
+            }
+            Ok(RustType::Primitive(PrimitiveType::Unknown)) => {
+                type_error(&field.ty, &"Unhandled Rust Type".to_string())
             }
             Err(err) => type_error(&field.ty, err),
         };
@@ -174,16 +185,19 @@ impl ParsedStruct {
 
     fn dart_getter(&self, field: &ParsedField, dart_ty: &DartType) -> String {
         let return_ty = dart_ty.return_type();
-        let attrib = dart_ty.type_attribute();
-        let body = dart_ty.getter_body(&field.method_ident);
 
-        let attrib = match attrib {
+        let attrib = match dart_ty.type_attribute() {
             Some(s) => format!("/// {}\n", s),
             None => "".to_string(),
         };
 
+        let (body, delim) = match dart_ty.getter_body(&field.method_ident) {
+            GetterBody::Expression(body) => (body, " => "),
+            GetterBody::Statement(body) => (body, " "),
+        };
         format!(
-            "{attrib}/// {return_ty} get {field_ident} => {body}",
+            "{attrib}/// {return_ty} get {field_ident}{delim}{body}",
+            delim = delim,
             attrib = attrib,
             return_ty = return_ty,
             field_ident = &field.ident,
