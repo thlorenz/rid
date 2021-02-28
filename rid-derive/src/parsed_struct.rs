@@ -1,3 +1,4 @@
+#![allow(dead_code, unused)]
 use crate::{
     dart::{DartType, GetterBody},
     parsed_field::ParsedField,
@@ -72,27 +73,20 @@ impl ParsedStruct {
             field_ident
         );
 
-        let resolve_ptr = quote! {
-            unsafe {
-                assert!(!ptr.is_null());
-                let ptr: *mut #struct_ident = &mut *ptr;
-                ptr.as_mut().unwrap()
-            }
-        };
+        let resolve_struct_ptr = resolve_ptr(struct_ident);
 
         let method = match &field.rust_ty {
-            // TODO: emit length methods
             Ok(RustType::Value(ValueType::CString)) => {
                 let fn_len_ident = format_ident!("{}_len", fn_ident);
                 quote! {
                     #[no_mangle]
                     pub extern "C" fn #fn_ident(ptr: *mut #struct_ident) -> *const ::std::os::raw::c_char {
-                        let #struct_instance_ident = #resolve_ptr;
+                        let #struct_instance_ident = #resolve_struct_ptr;
                         unsafe { &*#struct_instance_ident.#field_ident.as_ptr() }
                     }
                     #[no_mangle]
                     pub extern "C" fn #fn_len_ident(ptr: *mut #struct_ident) -> usize {
-                        let #struct_instance_ident = #resolve_ptr;
+                        let #struct_instance_ident = #resolve_struct_ptr;
                         #struct_instance_ident.#field_ident.as_bytes().len()
                     }
                 }
@@ -102,14 +96,14 @@ impl ParsedStruct {
                 quote! {
                     #[no_mangle]
                     pub extern "C" fn #fn_ident(ptr: *mut #struct_ident) -> *const ::std::os::raw::c_char {
-                        let #struct_instance_ident = #resolve_ptr;
+                        let #struct_instance_ident = #resolve_struct_ptr;
                         let cstring = std::ffi::CString::new(#struct_instance_ident.#field_ident.clone())
                             .expect(&format!("Invalid string encountered"));
                         unsafe { &*cstring.as_ptr() }
                     }
                     #[no_mangle]
                     pub extern "C" fn #fn_len_ident(ptr: *mut #struct_ident) -> usize {
-                        let #struct_instance_ident = #resolve_ptr;
+                        let #struct_instance_ident = #resolve_struct_ptr;
                         #struct_instance_ident.#field_ident.len()
                     }
                 }
@@ -120,25 +114,45 @@ impl ParsedStruct {
                     U8 | I8 | U16 | I16 | U32 | I32 | U64 | I64 | USize => quote! {
                         #[no_mangle]
                         pub extern "C" fn #fn_ident(ptr: *mut #struct_ident) -> #ty {
-                            let #struct_instance_ident = #resolve_ptr;
+                            let #struct_instance_ident = #resolve_struct_ptr;
                             #struct_instance_ident.#field_ident
                         }
                     },
                     Bool => quote! {
                         #[no_mangle]
                         pub extern "C" fn #fn_ident(ptr: *mut #struct_ident) -> u8 {
-                            let #struct_instance_ident = #resolve_ptr;
+                            let #struct_instance_ident = #resolve_struct_ptr;
                             if #struct_instance_ident.#field_ident { 1 } else { 0 }
                         }
                     },
                 }
             }
-            Ok(RustType::Value(ValueType::RVec((_, ident)))) => {
+            Ok(RustType::Value(ValueType::RVec((_, item_ty)))) => {
+                let fn_len_ident = format_ident!("{}_len", fn_ident);
+                let fn_get_ident = format_ident!("{}_get", fn_ident);
+
+                let resolve_vec = resolve_vec_ptr(&item_ty);
+
+                // TODO: get(idx) works only for primitive types ATM which are returned directly
                 quote! {
                     #[no_mangle]
-                    pub extern "C" fn #fn_ident(ptr: *mut #struct_ident) -> *const Vec<#ident> {
-                        let #struct_instance_ident = #resolve_ptr;
-                        &#struct_instance_ident.#field_ident as *const _ as *const Vec<#ident>
+                    pub extern "C" fn #fn_ident(ptr: *mut #struct_ident) -> *const Vec<#item_ty> {
+                        let #struct_instance_ident = #resolve_struct_ptr;
+                        &#struct_instance_ident.#field_ident as *const _ as *const Vec<#item_ty>
+                    }
+                    #[no_mangle]
+                    pub extern "C" fn #fn_len_ident(ptr: *mut Vec<#item_ty>) -> usize {
+                        #resolve_vec.len()
+                    }
+                    #[no_mangle]
+                    pub extern "C" fn #fn_get_ident(ptr: *mut Vec<#item_ty>, idx: usize) -> #item_ty {
+                        let item = #resolve_vec.get(idx)
+                          .expect(&format!("Failed to access {struc}.{ident}[{idx}]",
+                            struc = "Model",
+                            ident = "Field",
+                            idx = idx
+                          ));
+                        *item
                     }
                 }
             }
@@ -214,6 +228,26 @@ impl ParsedStruct {
             field_ident = &field.ident,
             body = body
         )
+    }
+}
+
+fn resolve_ptr(ty: &syn::Ident) -> proc_macro2::TokenStream {
+    quote! {
+        unsafe {
+            assert!(!ptr.is_null());
+            let ptr: *mut #ty = &mut *ptr;
+            ptr.as_mut().unwrap()
+        }
+    }
+}
+
+fn resolve_vec_ptr(ty: &syn::Ident) -> proc_macro2::TokenStream {
+    quote! {
+        unsafe {
+            assert!(!ptr.is_null());
+            let ptr: *mut Vec<#ty> = &mut *ptr;
+            ptr.as_mut().unwrap()
+        }
     }
 }
 
