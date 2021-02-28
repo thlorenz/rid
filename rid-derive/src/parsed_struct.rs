@@ -27,6 +27,9 @@ impl ParsedStruct {
     }
 
     pub(crate) fn derive_code(&self) -> proc_macro2::TokenStream {
+        if self.parsed_fields.is_empty() {
+            return proc_macro2::TokenStream::new();
+        }
         let intro = format!(
             "/// FFI access methods generated for struct '{}'.\n///\n",
             self.ident
