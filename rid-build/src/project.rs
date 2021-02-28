@@ -49,9 +49,7 @@ impl Project {
         }
     }
 
-    pub(crate) fn path_to_target(&self, project_root: &Path) -> PathBuf {
-        self.path_to_generated_dir(project_root)
-            .join("target")
-            .to_path_buf()
+    pub(crate) fn path_to_target(&self, workspace_root: &Path) -> PathBuf {
+        workspace_root.join("target").to_path_buf()
     }
 }

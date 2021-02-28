@@ -5,14 +5,18 @@ use std::{fs, path::Path};
 use anyhow::Result;
 
 use bindings_generator::BindingsGenerator;
-use dart_generator::{BuildTarget, DartGenerator};
-use project::Project;
+use dart_generator::DartGenerator;
+
 mod bindings_generator;
 mod dart_generator;
 mod project;
 
+pub use dart_generator::BuildTarget;
+pub use project::Project;
+
 pub struct BuildConfig<'a> {
     pub project_root: &'a str,
+    pub workspace_root: Option<&'a str>,
     pub lib_name: &'a str,
     pub crate_name: &'a str,
     pub project: Project,
@@ -41,6 +45,7 @@ struct GenerateResult {
 fn generate(
     BuildConfig {
         project_root,
+        workspace_root,
         lib_name,
         crate_name,
         project,
@@ -52,6 +57,7 @@ fn generate(
         crate_dir: project_root,
         cargo: "cargo",
     };
+    let target_crate_root = Path::new(workspace_root.unwrap_or(project_root));
     let project_root = Path::new(project_root);
     let bindings_h = bindings_generator.generate()?;
     let bindings_h_path = project.path_to_generated_c_bindings(project_root);
@@ -73,7 +79,7 @@ fn generate(
         "./{}",
         ffigen_generated_path.file_name().unwrap().to_string_lossy()
     );
-    let path_to_target = &format!("{}", project.path_to_target(project_root).display());
+    let path_to_target = &format!("{}", project.path_to_target(target_crate_root).display());
 
     let dart_generator = DartGenerator {
         lib_name,
@@ -113,6 +119,7 @@ mod tests {
     fn generate_test() {
         let build_config = BuildConfig {
             project_root: "fixtures/foo-bar-baz",
+            workspace_root: None,
             project: Project::Dart,
             lib_name: "libfoo_bar_baz",
             crate_name: "foo_bar_baz",
