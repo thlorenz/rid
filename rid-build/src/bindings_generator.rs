@@ -14,6 +14,8 @@ impl<'a> BindingsGenerator<'a> {
         Ok(bindings)
     }
 
+    // Option that doesn't depend on cargo-expand to be installed
+    // cargo rustc --lib -- -Zunstable-options --pretty=expanded
     fn expand_crate(&self) -> Result<String> {
         let output = Command::new(&self.cargo)
             .args(&["expand", "--lib"])
@@ -22,6 +24,7 @@ impl<'a> BindingsGenerator<'a> {
             .output()?;
 
         let stderr = std::str::from_utf8(&output.stderr).unwrap();
+        // TODO: this needs to be less brittle, i.e. if any message contains 'error:' we'd bail
         if stderr.contains("error:") {
             bail!("\n'cargo expand' encountered error(s): \n\n{}\n\n", stderr);
         }
