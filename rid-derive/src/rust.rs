@@ -65,6 +65,7 @@ impl TryFrom<&syn::Type> for RustType {
                     "CString" => Value(CString),
                     "String" => Value(RString),
                     "u8" | "i8" | "u16" | "i16" | "u32" | "i32" => Primitive(Int),
+                    "usize" => Primitive(Int),
                     "bool" => Primitive(Bool),
                     _ => Primitive(Unknown),
                 }

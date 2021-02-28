@@ -59,6 +59,7 @@ impl TryFrom<&syn::Type> for DartType {
                     "CString" | "String" => Ok(DartType::String),
                     "u8" | "i8" | "u16" | "i16" | "u32" | "i32" => Ok(DartType::Int32),
                     "u64" | "i64" => Ok(DartType::Int64),
+                    "usize" => Ok(DartType::Int64), // assuming 64-bit target
                     "u128" | "i128" => Err(format!(
                         "Rust type {} cannot be represented in Dart.",
                         &ident
