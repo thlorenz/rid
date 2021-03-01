@@ -10,6 +10,7 @@ mod parsed_field;
 mod parsed_struct;
 mod rust;
 mod state;
+mod templates;
 
 const RID_PRINT_AST: &str = "RID_PRINT_AST";
 

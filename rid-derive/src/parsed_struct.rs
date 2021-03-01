@@ -3,6 +3,7 @@ use crate::{
     parsed_field::ParsedField,
     rust::{RustType, ValueType},
     state::get_state,
+    templates::vec,
 };
 use rid_common::{DART_FFI, FFI_GEN_BIND};
 
@@ -15,11 +16,6 @@ pub(crate) struct ParsedStruct {
     ident: syn::Ident,
     parsed_fields: Vec<ParsedField>,
     method_prefix: String,
-}
-
-struct ImplementedVec {
-    item_type: syn::Ident,
-    rust_function_name: String,
 }
 
 impl ParsedStruct {
@@ -59,27 +55,52 @@ impl ParsedStruct {
     // Rust Module
     //
 
+    fn extract(&self) -> (Tokens, Vec<vec::ImplementVec>) {
+        let mut implemented_vecs: Vec<vec::ImplementVec> = vec![];
+        let method_tokens: Tokens = self
+            .parsed_fields
+            .iter()
+            .map(|f| {
+                let (tokens, mut vecs) = self.rust_method(f);
+                implemented_vecs.append(&mut vecs);
+                tokens
+            })
+            .collect();
+        (method_tokens, implemented_vecs)
+    }
+
     fn rust_module(&self, doc_comment: Tokens) -> Tokens {
-        let mut implemented_vecs: Vec<ImplementedVec> = vec![];
-        let method_tokens = self.parsed_fields.iter().map(|f| {
-            let (tokens, mut vecs) = self.rust_method(f);
-            implemented_vecs.append(&mut vecs);
-            tokens
+        let (method_tokens, implemented_vecs) = self.extract();
+
+        let builtins_comment_str = implemented_vecs.iter().fold("".to_string(), |acc, v| {
+            format!("{}\n{}", acc, vec::render(v))
         });
+        let builtins_comment: Tokens = format!(
+            r###"
+///
+/// Access methods for Rust Builtin Types required by the below methods.
+/// ```dart
+{}
+/// ```"###,
+            builtins_comment_str
+        )
+        .parse()
+        .unwrap();
 
         let mod_name = format_ident!("__{}_ffi", self.method_prefix);
         let tokens = quote! {
             mod #mod_name {
                 use super::*;
                 #doc_comment
-                #(#method_tokens)*
+                #builtins_comment
+                #method_tokens
             }
         };
 
         tokens
     }
 
-    fn rust_method(&self, field: &ParsedField) -> (Tokens, Vec<ImplementedVec>) {
+    fn rust_method(&self, field: &ParsedField) -> (Tokens, Vec<vec::ImplementVec>) {
         let field_ident = &field.ident;
         let fn_ident = &field.method_ident;
         let ty = &field.ty;
@@ -89,7 +110,7 @@ impl ParsedStruct {
             struct_ident.to_string().to_lowercase(),
             field_ident
         );
-        let mut implemented_vecs: Vec<ImplementedVec> = vec![];
+        let mut implemented_vecs: Vec<vec::ImplementVec> = vec![];
 
         let resolve_struct_ptr = resolve_ptr(struct_ident);
 
@@ -151,28 +172,19 @@ impl ParsedStruct {
 
                 let resolve_vec = resolve_vec_ptr(&item_ty);
 
-                let len_impl = if get_state().needs_implementation(&fn_len_ident.to_string()) {
-                    implemented_vecs.push(ImplementedVec {
-                        item_type: item_ty.clone(),
-                        rust_function_name: fn_len_ident.to_string(),
+                let vec_type = format!("Vec_{}", item_ty);
+                let vec_impl = if get_state().needs_implementation(&vec_type) {
+                    implemented_vecs.push(vec::ImplementVec {
+                        vec_type,
+                        fn_len_ident: fn_len_ident.to_string(),
+                        fn_get_ident: fn_get_ident.to_string(),
                     });
+                    // TODO: get(idx) works only for primitive types ATM which are returned directly
                     quote! {
                         #[no_mangle]
                         pub extern "C" fn #fn_len_ident(ptr: *mut Vec<#item_ty>) -> usize {
                             #resolve_vec.len()
                         }
-                    }
-                } else {
-                    Tokens::new()
-                };
-
-                // TODO: get(idx) works only for primitive types ATM which are returned directly
-                let get_impl = if get_state().needs_implementation(&fn_get_ident.to_string()) {
-                    implemented_vecs.push(ImplementedVec {
-                        item_type: item_ty.clone(),
-                        rust_function_name: fn_get_ident.to_string(),
-                    });
-                    quote! {
                         #[no_mangle]
                         pub extern "C" fn #fn_get_ident(ptr: *mut Vec<#item_ty>, idx: usize) -> #item_ty {
                             let item = #resolve_vec.get(idx)
@@ -194,8 +206,7 @@ impl ParsedStruct {
                         let #struct_instance_ident = #resolve_struct_ptr;
                         &#struct_instance_ident.#field_ident as *const _ as *const Vec<#item_ty>
                     }
-                    #len_impl
-                    #get_impl
+                    #vec_impl
                 }
             }
             Ok(RustType::Unknown) => type_error(&field.ty, &"Unhandled Rust Type".to_string()),
