@@ -8,6 +8,7 @@ pub(crate) enum DartType {
     Bool,
     String,
     Vec(String),
+    Custom(String),
 }
 
 pub(crate) enum GetterBody {
@@ -34,6 +35,7 @@ impl DartType {
                 RID_FFI, ffi_method
             )),
             DartType::Vec(_) => Expression(format!("{0}.{1}(this);", RID_FFI, ffi_method)),
+            DartType::Custom(_) => Expression(format!("{0}.{1}(this);", RID_FFI, ffi_method)),
         }
     }
 
@@ -42,12 +44,17 @@ impl DartType {
             DartType::Int32 | DartType::Int64 => "int".to_string(),
             DartType::Bool => "bool".to_string(),
             DartType::String => "String".to_string(),
-            // dart_ffi.Pointer<ffigen_bind.Vec_u8>
             DartType::Vec(inner) => format!(
                 "{dart_ffi}.Pointer<{ffigen_bind}.Vec_{ty}>",
                 dart_ffi = DART_FFI,
                 ffigen_bind = FFI_GEN_BIND,
                 ty = inner
+            ),
+            DartType::Custom(ty) => format!(
+                "{dart_ffi}.Pointer<{ffigen_bind}.{ty}>",
+                dart_ffi = DART_FFI,
+                ffigen_bind = FFI_GEN_BIND,
+                ty = ty
             ),
         }
     }
@@ -74,11 +81,21 @@ impl DartType {
                 // For now only supporting unnested Vecs
                 RVec((_, vec_indent)) => Ok(DartType::Vec(vec_indent.to_string())),
                 CString | RString => Ok(DartType::String),
+                RCustom(ty) => Ok(DartType::Custom(ty.to_string())),
             },
             _ => Err(format!(
-                "Rust type '{}' cannot be converted to a Dart type",
-                &ident
+                "Rust type '{}'/'{}' cannot be converted to a Dart type",
+                &rust_ty, &ident
             )),
+        }
+    }
+
+    pub(crate) fn is_primitive(&self) -> bool {
+        match self {
+            DartType::Int32 | DartType::Int64 | DartType::Bool => true,
+            DartType::String => false,
+            DartType::Vec(_) => false,
+            DartType::Custom(_) => false,
         }
     }
 }
@@ -90,6 +107,7 @@ impl Display for DartType {
             DartType::Bool => "bool".to_string(),
             DartType::String => "String".to_string(),
             DartType::Vec(inner) => format!("List<{}>", inner),
+            DartType::Custom(ty) => ty.to_string(),
         };
         write!(f, "{}", s)
     }

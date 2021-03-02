@@ -1,9 +1,22 @@
 #![allow(dead_code)]
+use std::fmt::Display;
 
 pub(crate) enum ValueType {
     CString,
     RString,
     RVec((Box<RustType>, syn::Ident)),
+    RCustom(String),
+}
+impl Display for ValueType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let ty = match self {
+            CString => "CString".to_string(),
+            RString => "String".to_string(),
+            RVec((rust_ty, ident)) => format!("Vec<{}|{}>", rust_ty, ident),
+            RCustom(s) => s.to_string(),
+        };
+        write!(f, "{}", ty)
+    }
 }
 
 pub(crate) enum PrimitiveType {
@@ -19,10 +32,39 @@ pub(crate) enum PrimitiveType {
     Bool,
 }
 
+impl Display for PrimitiveType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let ty = match self {
+            U8 => "u8",
+            I8 => "i8",
+            U16 => "u16",
+            I16 => "i16",
+            U32 => "u32",
+            I32 => "i32",
+            U64 => "u64",
+            I64 => "i64",
+            USize => "usize",
+            Bool => "bool",
+        };
+        write!(f, "{}", ty)
+    }
+}
+
 pub(crate) enum RustType {
     Value(ValueType),
     Primitive(PrimitiveType),
     Unknown,
+}
+
+impl Display for RustType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let ty = match self {
+            Value(x) => format!("Value({})", x),
+            Primitive(x) => format!("Primitive(({})", x),
+            Unknown => "Unknown".to_string(),
+        };
+        write!(f, "{}", ty)
+    }
 }
 
 use PrimitiveType::*;
@@ -57,7 +99,12 @@ fn extract_path_segment(path: &syn::Path) -> (&syn::Ident, RustType) {
             },
             _ => Unknown,
         },
-        _ => Unknown,
+        // TODO: is there a way to check this or do we require an attribute?
+        // Or is it fine to just blindly assume we're dealing with a Value type
+        // for which the same generic code we generate works?
+        // However since for built in rust types we won't have an opaque structs,
+        // the access methods will be missing, so at least that we need to consider somwehow.
+        _ => Value(RCustom(ident.to_string())),
     };
 
     (ident, rust_ty)
@@ -82,6 +129,13 @@ impl RustType {
             syn::Type::Tuple(ty) => Err(format!("Tuple: {:#?}", &ty)),
             syn::Type::Verbatim(ty) => Err(format!("Verbatim: {:#?}", &ty)),
             _ => Err(format!("Unexpected: {:#?}", &ty)),
+        }
+    }
+
+    pub(crate) fn is_primitive(&self) -> bool {
+        match self {
+            Primitive(_) => true,
+            _ => false,
         }
     }
 }

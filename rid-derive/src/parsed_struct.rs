@@ -151,6 +151,15 @@ impl ParsedStruct {
                     }
                 }
             }
+            Ok(RustType::Value(ValueType::RCustom(_))) => {
+                quote! {
+                    #[no_mangle]
+                    pub extern "C" fn #fn_ident(ptr: *mut #struct_ident) -> *const #ty {
+                        let #struct_instance_ident = #resolve_struct_ptr;
+                        &#struct_instance_ident.#field_ident as *const _ as *const #ty
+                    }
+                }
+            }
             Ok(RustType::Primitive(p)) => {
                 use crate::rust::PrimitiveType::*;
                 match p {
@@ -186,22 +195,42 @@ impl ParsedStruct {
                         fn_len_ident: fn_len_ident.to_string(),
                         fn_get_ident: fn_get_ident.to_string(),
                     });
-                    // TODO: get(idx) works only for primitive types ATM which are returned directly
-                    quote! {
+                    let len_impl = quote! {
                         #[no_mangle]
                         pub extern "C" fn #fn_len_ident(ptr: *mut Vec<#item_ty>) -> usize {
                             #resolve_vec.len()
                         }
-                        #[no_mangle]
-                        pub extern "C" fn #fn_get_ident(ptr: *mut Vec<#item_ty>, idx: usize) -> #item_ty {
-                            let item = #resolve_vec.get(idx)
-                            .expect(&format!("Failed to access {struc}.{ident}[{idx}]",
-                                struc = "Model",
-                                ident = "Field",
-                                idx = idx
-                            ));
-                            *item
+                    };
+                    let get_impl = if rust_type.is_primitive() {
+                        quote! {
+                            #[no_mangle]
+                            pub extern "C" fn #fn_get_ident(ptr: *mut Vec<#item_ty>, idx: usize) -> #item_ty {
+                                let item = #resolve_vec.get(idx)
+                                .expect(&format!("Failed to access {struc}.{ident}[{idx}]",
+                                    struc = "Model",
+                                    ident = "Field",
+                                    idx = idx
+                                ));
+                                *item
+                            }
                         }
+                    } else {
+                        quote! {
+                            #[no_mangle]
+                            pub extern "C" fn #fn_get_ident(ptr: *mut Vec<#item_ty>, idx: usize) -> *const #item_ty {
+                                let item = #resolve_vec.get(idx)
+                                .expect(&format!("Failed to access {struc}.{ident}[{idx}]",
+                                    struc = "Model",
+                                    ident = "Field",
+                                    idx = idx
+                                ));
+                                item as *const #item_ty
+                            }
+                        }
+                    };
+                    quote! {
+                        #len_impl
+                        #get_impl
                     }
                 } else {
                     Tokens::new()
