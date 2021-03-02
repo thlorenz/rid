@@ -5,7 +5,7 @@ use crate::{
 };
 use rid_common::{DART_FFI, FFI_GEN_BIND};
 
-use quote::{format_ident, quote};
+use quote::{format_ident, quote, quote_spanned};
 use syn::{punctuated::Punctuated, spanned::Spanned, token::Comma, Field};
 
 type Tokens = proc_macro2::TokenStream;
@@ -120,7 +120,7 @@ impl ParsedStruct {
         let method = match &field.rust_ty {
             Ok(RustType::Value(ValueType::CString)) => {
                 let fn_len_ident = format_ident!("{}_len", fn_ident);
-                quote! {
+                quote_spanned! { field_ident.span() =>
                     #[no_mangle]
                     #[allow(non_snake_case)]
                     pub extern "C" fn #fn_ident(ptr: *mut #struct_ident) -> *const ::std::os::raw::c_char {
@@ -137,7 +137,7 @@ impl ParsedStruct {
             }
             Ok(RustType::Value(ValueType::RString)) => {
                 let fn_len_ident = format_ident!("{}_len", fn_ident);
-                quote! {
+                quote_spanned! { fn_ident.span() =>
                     #[no_mangle]
                     #[allow(non_snake_case)]
                     pub extern "C" fn #fn_ident(ptr: *mut #struct_ident) -> *const ::std::os::raw::c_char {
@@ -155,7 +155,7 @@ impl ParsedStruct {
                 }
             }
             Ok(RustType::Value(ValueType::RCustom(_))) => {
-                quote! {
+                quote_spanned! { fn_ident.span() =>
                     #[no_mangle]
                     #[allow(non_snake_case)]
                     pub extern "C" fn #fn_ident(ptr: *mut #struct_ident) -> *const #ty {
@@ -167,15 +167,17 @@ impl ParsedStruct {
             Ok(RustType::Primitive(p)) => {
                 use crate::common::rust::PrimitiveType::*;
                 match p {
-                    U8 | I8 | U16 | I16 | U32 | I32 | U64 | I64 | USize => quote! {
-                        #[no_mangle]
-                        #[allow(non_snake_case)]
-                        pub extern "C" fn #fn_ident(ptr: *mut #struct_ident) -> #ty {
-                            let #struct_instance_ident = #resolve_struct_ptr;
-                            #struct_instance_ident.#field_ident
+                    U8 | I8 | U16 | I16 | U32 | I32 | U64 | I64 | USize => {
+                        quote_spanned! { fn_ident.span() =>
+                            #[no_mangle]
+                            #[allow(non_snake_case)]
+                            pub extern "C" fn #fn_ident(ptr: *mut #struct_ident) -> #ty {
+                                let #struct_instance_ident = #resolve_struct_ptr;
+                                #struct_instance_ident.#field_ident
+                            }
                         }
-                    },
-                    Bool => quote! {
+                    }
+                    Bool => quote_spanned! { fn_ident.span() =>
                         #[no_mangle]
                         #[allow(non_snake_case)]
                         pub extern "C" fn #fn_ident(ptr: *mut #struct_ident) -> u8 {
@@ -201,7 +203,7 @@ impl ParsedStruct {
                         fn_len_ident: fn_len_ident.to_string(),
                         fn_get_ident: fn_get_ident.to_string(),
                     });
-                    let len_impl = quote! {
+                    let len_impl = quote_spanned! { fn_len_ident.span() =>
                         #[no_mangle]
                         #[allow(non_snake_case)]
                         pub extern "C" fn #fn_len_ident(ptr: *mut Vec<#item_ty>) -> usize {
@@ -209,7 +211,7 @@ impl ParsedStruct {
                         }
                     };
                     let get_impl = if rust_type.is_primitive() {
-                        quote! {
+                        quote_spanned! { fn_ident.span() =>
                             #[no_mangle]
                             #[allow(non_snake_case)]
                             pub extern "C" fn #fn_get_ident(ptr: *mut Vec<#item_ty>, idx: usize) -> #item_ty {
@@ -223,7 +225,7 @@ impl ParsedStruct {
                             }
                         }
                     } else {
-                        quote! {
+                        quote_spanned! { fn_ident.span() =>
                             #[no_mangle]
                             #[allow(non_snake_case)]
                             pub extern "C" fn #fn_get_ident(ptr: *mut Vec<#item_ty>, idx: usize) -> *const #item_ty {
@@ -237,7 +239,7 @@ impl ParsedStruct {
                             }
                         }
                     };
-                    quote! {
+                    quote_spanned! { field_ident.span() =>
                         #len_impl
                         #get_impl
                     }
@@ -245,7 +247,7 @@ impl ParsedStruct {
                     Tokens::new()
                 };
 
-                quote! {
+                quote_spanned! { field_ident.span() =>
                     #[no_mangle]
                     pub extern "C" fn #fn_ident(ptr: *mut #struct_ident) -> *const Vec<#item_ty> {
                         let #struct_instance_ident = #resolve_struct_ptr;
