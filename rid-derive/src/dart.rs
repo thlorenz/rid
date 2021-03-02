@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use rid_common::{DART_FFI, FFI_GEN_BIND, RID_FFI};
 
 pub(crate) enum DartType {
@@ -78,5 +80,17 @@ impl DartType {
                 &ident
             )),
         }
+    }
+}
+
+impl Display for DartType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let s = match self {
+            DartType::Int32 | DartType::Int64 => "int".to_string(),
+            DartType::Bool => "bool".to_string(),
+            DartType::String => "String".to_string(),
+            DartType::Vec(inner) => format!("List<{}>", inner),
+        };
+        write!(f, "{}", s)
     }
 }

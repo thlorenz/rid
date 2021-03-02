@@ -1,4 +1,4 @@
-use rid_common::{DART_FFI, FFI_GEN_BIND, RID_FFI};
+use rid_common::{DART_COLLECTION, DART_FFI, FFI_GEN_BIND, RID_FFI};
 const PACKAGE_FFI: &str = "package_ffi";
 
 const TYPEDEF_STRUCT: &str = "typedef struct ";
@@ -96,10 +96,12 @@ impl<'a> DartGenerator<'a> {
         format!(
             r###"import 'dart:ffi' as {dart_ffi};
 import 'dart:io' as dart_io;
+import 'dart:collection' as {dart_collection};
 import 'package:ffi/ffi.dart' as {pack_ffi};
 import '{ffigen_binding}' as {ffigen_bind};
 "###,
             dart_ffi = DART_FFI,
+            dart_collection = DART_COLLECTION,
             ffigen_binding = self.ffigen_binding,
             pack_ffi = PACKAGE_FFI,
             ffigen_bind = FFI_GEN_BIND
@@ -157,13 +159,16 @@ import '{ffigen_binding}' as {ffigen_bind};
                 }
                 continue;
             }
-            if line.trim_start().starts_with("* ```") {
+            let trimmed_line = line.trim();
+            if trimmed_line.len() < 2 {
+                continue;
+            }
+            if trimmed_line.starts_with("* ```") {
                 extension_sections.push(current_extension);
                 current_extension = vec![];
                 inside_extension = false;
                 continue;
             }
-            let trimmed_line = line.trim();
             let without_comment = &trimmed_line[2..];
             current_extension.push(without_comment.to_string());
         }

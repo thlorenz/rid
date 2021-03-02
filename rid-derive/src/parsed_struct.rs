@@ -79,6 +79,7 @@ impl ParsedStruct {
             r###"
 ///
 /// Access methods for Rust Builtin Types required by the below methods.
+///
 /// ```dart
 {}
 /// ```"###,
@@ -166,16 +167,19 @@ impl ParsedStruct {
                     },
                 }
             }
-            Ok(RustType::Value(ValueType::RVec((_, item_ty)))) => {
+            Ok(RustType::Value(ValueType::RVec((rust_type, item_ty)))) => {
                 let fn_len_ident = format_ident!("rid_vec_{}_len", item_ty);
                 let fn_get_ident = format_ident!("rid_vec_{}_get", item_ty);
 
                 let resolve_vec = resolve_vec_ptr(&item_ty);
 
                 let vec_type = format!("Vec_{}", item_ty);
+                let dart_item_type = DartType::try_from(&rust_type, &item_ty)
+                    .expect("vec item type should be a valid dart type");
                 let vec_impl = if get_state().needs_implementation(&vec_type) {
                     implemented_vecs.push(vec::ImplementVec {
                         vec_type,
+                        dart_item_type,
                         fn_len_ident: fn_len_ident.to_string(),
                         fn_get_ident: fn_get_ident.to_string(),
                     });

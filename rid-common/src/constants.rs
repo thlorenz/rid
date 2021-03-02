@@ -6,6 +6,9 @@ pub const FFI_GEN_BIND: &str = "ffigen_bind";
 
 /// The built in 'dart:ffi' library is imported into the build wrapper as this id.
 pub const DART_FFI: &str = "dart_ffi";
+///
+/// The built in 'dart:collection' library is imported into the build wrapper as this id.
+pub const DART_COLLECTION: &str = "dart_collection";
 
 /// The low level wrappers for the Rust FFI functions are imported into the dart
 /// wrapper as this id.
