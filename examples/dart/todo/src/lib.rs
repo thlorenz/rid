@@ -1,15 +1,21 @@
 use rid_derive::Rid;
-/*
-use std::ffi::CString;
 
 #[derive(Debug, Rid)]
+pub struct Model {
+    id: u8,
+    ids: Vec<u8>,
+}
+#[derive(Debug, Rid)]
 pub struct Todo {
-    id: usize,
-    title: CString,
+    id: u8,
     completed: bool,
 }
-*/
-#[derive(Debug, Rid)]
-pub struct Model {
-    ids: Vec<u8>,
+
+#[no_mangle]
+pub extern "C" fn init_model_ptr(id: u8) -> *const Model {
+    let model = Model {
+        id,
+        ids: vec![id, id + 1, id + 2],
+    };
+    Box::into_raw(Box::new(model))
 }
