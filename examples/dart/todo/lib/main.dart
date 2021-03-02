@@ -1,16 +1,21 @@
 import 'generated/rid_generated.dart' as ffi;
 
-main() {
-  final model = ffi.rid_ffi.init_model_ptr(111);
+todo_vecs() {
+  final model = ffi.rid_ffi.init_model_ptr();
   print("""
-model id: ${model.id}
-ids len:  ${model.ids.length}
-ids:      [ ${model.ids[0]}, ${model.ids[1]},  ${model.ids[2]} ]
+todos len:  ${model.todos.length}
+todos:      [ ${model.todos[0].id}, ${model.todos[1].id},  ${model.todos[2].id} ]
 """);
 
-  for (int id in model.ids.iter()) {
+  for (final todo in model.todos.iter()) {
+    print("todo.id: ${todo.id}");
+  }
+  for (final id in model.ids.iter()) {
     print("id: $id");
   }
+  print("crash: ${model.todos[4]}");
+}
 
-  print("out of range: [ ${model.ids[3]} ]");
+main() {
+  todo_vecs();
 }
