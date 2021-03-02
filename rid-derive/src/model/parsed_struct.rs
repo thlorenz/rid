@@ -95,6 +95,7 @@ impl ParsedStruct {
         let tokens = quote! {
             mod #mod_name {
                 use super::*;
+
                 #doc_comment
                 #builtins_comment
                 #method_tokens
@@ -123,11 +124,13 @@ impl ParsedStruct {
                 let fn_len_ident = format_ident!("{}_len", fn_ident);
                 quote! {
                     #[no_mangle]
+                    #[allow(non_snake_case)]
                     pub extern "C" fn #fn_ident(ptr: *mut #struct_ident) -> *const ::std::os::raw::c_char {
                         let #struct_instance_ident = #resolve_struct_ptr;
                         unsafe { &*#struct_instance_ident.#field_ident.as_ptr() }
                     }
                     #[no_mangle]
+                    #[allow(non_snake_case)]
                     pub extern "C" fn #fn_len_ident(ptr: *mut #struct_ident) -> usize {
                         let #struct_instance_ident = #resolve_struct_ptr;
                         #struct_instance_ident.#field_ident.as_bytes().len()
@@ -138,6 +141,7 @@ impl ParsedStruct {
                 let fn_len_ident = format_ident!("{}_len", fn_ident);
                 quote! {
                     #[no_mangle]
+                    #[allow(non_snake_case)]
                     pub extern "C" fn #fn_ident(ptr: *mut #struct_ident) -> *const ::std::os::raw::c_char {
                         let #struct_instance_ident = #resolve_struct_ptr;
                         let cstring = std::ffi::CString::new(#struct_instance_ident.#field_ident.clone())
@@ -145,6 +149,7 @@ impl ParsedStruct {
                         unsafe { &*cstring.as_ptr() }
                     }
                     #[no_mangle]
+                    #[allow(non_snake_case)]
                     pub extern "C" fn #fn_len_ident(ptr: *mut #struct_ident) -> usize {
                         let #struct_instance_ident = #resolve_struct_ptr;
                         #struct_instance_ident.#field_ident.len()
@@ -154,6 +159,7 @@ impl ParsedStruct {
             Ok(RustType::Value(ValueType::RCustom(_))) => {
                 quote! {
                     #[no_mangle]
+                    #[allow(non_snake_case)]
                     pub extern "C" fn #fn_ident(ptr: *mut #struct_ident) -> *const #ty {
                         let #struct_instance_ident = #resolve_struct_ptr;
                         &#struct_instance_ident.#field_ident as *const _ as *const #ty
@@ -165,6 +171,7 @@ impl ParsedStruct {
                 match p {
                     U8 | I8 | U16 | I16 | U32 | I32 | U64 | I64 | USize => quote! {
                         #[no_mangle]
+                        #[allow(non_snake_case)]
                         pub extern "C" fn #fn_ident(ptr: *mut #struct_ident) -> #ty {
                             let #struct_instance_ident = #resolve_struct_ptr;
                             #struct_instance_ident.#field_ident
@@ -172,6 +179,7 @@ impl ParsedStruct {
                     },
                     Bool => quote! {
                         #[no_mangle]
+                        #[allow(non_snake_case)]
                         pub extern "C" fn #fn_ident(ptr: *mut #struct_ident) -> u8 {
                             let #struct_instance_ident = #resolve_struct_ptr;
                             if #struct_instance_ident.#field_ident { 1 } else { 0 }
@@ -197,6 +205,7 @@ impl ParsedStruct {
                     });
                     let len_impl = quote! {
                         #[no_mangle]
+                        #[allow(non_snake_case)]
                         pub extern "C" fn #fn_len_ident(ptr: *mut Vec<#item_ty>) -> usize {
                             #resolve_vec.len()
                         }
@@ -204,6 +213,7 @@ impl ParsedStruct {
                     let get_impl = if rust_type.is_primitive() {
                         quote! {
                             #[no_mangle]
+                            #[allow(non_snake_case)]
                             pub extern "C" fn #fn_get_ident(ptr: *mut Vec<#item_ty>, idx: usize) -> #item_ty {
                                 let item = #resolve_vec.get(idx)
                                 .expect(&format!("Failed to access {struc}.{ident}[{idx}]",
@@ -217,6 +227,7 @@ impl ParsedStruct {
                     } else {
                         quote! {
                             #[no_mangle]
+                            #[allow(non_snake_case)]
                             pub extern "C" fn #fn_get_ident(ptr: *mut Vec<#item_ty>, idx: usize) -> *const #item_ty {
                                 let item = #resolve_vec.get(idx)
                                 .expect(&format!("Failed to access {struc}.{ident}[{idx}]",
