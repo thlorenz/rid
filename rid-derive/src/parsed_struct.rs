@@ -71,22 +71,25 @@ impl ParsedStruct {
 
     fn rust_module(&self, doc_comment: Tokens) -> Tokens {
         let (method_tokens, implemented_vecs) = self.extract();
-
-        let builtins_comment_str = implemented_vecs.iter().fold("".to_string(), |acc, v| {
-            format!("{}\n{}", acc, vec::render(v))
-        });
-        let builtins_comment: Tokens = format!(
-            r###"
+        let builtins_comment: Tokens = if implemented_vecs.len() > 0 {
+            let builtins_comment_str = implemented_vecs.iter().fold("".to_string(), |acc, v| {
+                format!("{}\n{}", acc, vec::render(v))
+            });
+            format!(
+                r###"
 ///
 /// Access methods for Rust Builtin Types required by the below methods.
 ///
 /// ```dart
 {}
 /// ```"###,
-            builtins_comment_str
-        )
-        .parse()
-        .unwrap();
+                builtins_comment_str
+            )
+            .parse()
+            .unwrap()
+        } else {
+            Tokens::new()
+        };
 
         let mod_name = format_ident!("__{}_ffi", self.method_prefix);
         let tokens = quote! {
