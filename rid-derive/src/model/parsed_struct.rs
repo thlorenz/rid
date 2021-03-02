@@ -1,6 +1,6 @@
 use crate::{
+    common::parsed_field::ParsedField,
     dart::{DartType, GetterBody},
-    parsed_field::ParsedField,
     rust::{RustType, ValueType},
     state::get_state,
     templates::vec,
@@ -12,7 +12,7 @@ use syn::{punctuated::Punctuated, spanned::Spanned, token::Comma, Field};
 
 type Tokens = proc_macro2::TokenStream;
 
-pub(crate) struct ParsedStruct {
+pub struct ParsedStruct {
     ident: syn::Ident,
     parsed_fields: Vec<ParsedField>,
     method_prefix: String,
