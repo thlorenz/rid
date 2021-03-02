@@ -1,7 +1,7 @@
 #![allow(dead_code)]
 use std::fmt::Display;
 
-pub(crate) enum ValueType {
+pub enum ValueType {
     CString,
     RString,
     RVec((Box<RustType>, syn::Ident)),
@@ -19,7 +19,7 @@ impl Display for ValueType {
     }
 }
 
-pub(crate) enum PrimitiveType {
+pub enum PrimitiveType {
     U8,
     I8,
     U16,
@@ -50,7 +50,7 @@ impl Display for PrimitiveType {
     }
 }
 
-pub(crate) enum RustType {
+pub enum RustType {
     Value(ValueType),
     Primitive(PrimitiveType),
     Unknown,
@@ -111,7 +111,7 @@ fn extract_path_segment(path: &syn::Path) -> (&syn::Ident, RustType) {
 }
 
 impl RustType {
-    pub(crate) fn try_from(ty: &syn::Type) -> Result<(&syn::Ident, RustType), String> {
+    pub fn try_from(ty: &syn::Type) -> Result<(&syn::Ident, RustType), String> {
         match ty {
             syn::Type::Path(syn::TypePath { path, .. }) => Ok(extract_path_segment(path)),
             syn::Type::Array(ty) => Err(format!("Array: {:#?}", &ty)),
@@ -132,7 +132,7 @@ impl RustType {
         }
     }
 
-    pub(crate) fn is_primitive(&self) -> bool {
+    pub fn is_primitive(&self) -> bool {
         match self {
             Primitive(_) => true,
             _ => false,

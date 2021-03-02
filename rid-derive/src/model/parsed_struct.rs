@@ -1,8 +1,6 @@
+use super::dart::GetterBody;
 use crate::{
-    common::parsed_field::ParsedField,
-    dart::{DartType, GetterBody},
-    rust::{RustType, ValueType},
-    state::get_state,
+    common::{parsed_field::ParsedField, rust::ValueType, state::get_state, DartType, RustType},
     templates::vec,
 };
 use rid_common::{DART_FFI, FFI_GEN_BIND};
@@ -167,7 +165,7 @@ impl ParsedStruct {
                 }
             }
             Ok(RustType::Primitive(p)) => {
-                use crate::rust::PrimitiveType::*;
+                use crate::common::rust::PrimitiveType::*;
                 match p {
                     U8 | I8 | U16 | I16 | U32 | I32 | U64 | I64 | USize => quote! {
                         #[no_mangle]

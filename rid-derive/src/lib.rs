@@ -1,8 +1,5 @@
 mod common;
-mod dart;
 mod model;
-mod rust;
-mod state;
 mod templates;
 
 use std::{env, process};

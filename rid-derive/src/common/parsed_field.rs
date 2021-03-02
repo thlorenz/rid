@@ -1,17 +1,17 @@
 use syn::Field;
 
-use crate::{dart::DartType, rust::RustType};
+use super::{DartType, RustType};
 
-pub(crate) struct ParsedField {
-    pub(crate) ident: syn::Ident,
-    pub(crate) method_ident: syn::Ident,
-    pub(crate) ty: syn::Type,
-    pub(crate) rust_ty: Result<RustType, String>,
-    pub(crate) dart_ty: Result<DartType, String>,
+pub struct ParsedField {
+    pub ident: syn::Ident,
+    pub method_ident: syn::Ident,
+    pub ty: syn::Type,
+    pub rust_ty: Result<RustType, String>,
+    pub dart_ty: Result<DartType, String>,
 }
 
 impl ParsedField {
-    pub(crate) fn new(f: Field, method_prefix: &str) -> Self {
+    pub fn new(f: Field, method_prefix: &str) -> Self {
         let ident = f.ident.unwrap();
         let method_ident = method_ident_from_field(method_prefix, &ident);
         let ty = f.ty;

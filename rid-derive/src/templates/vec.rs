@@ -1,6 +1,6 @@
 use rid_common::{DART_COLLECTION, DART_FFI, FFI_GEN_BIND, RID_FFI};
 
-use crate::dart::DartType;
+use crate::common::DartType;
 
 const TEMPLATE: &str = std::include_str!("./vec.dart");
 
