@@ -5,25 +5,29 @@ use crate::common::{DartType, RustType};
 #[derive(Debug)]
 pub struct VariantField {
     pub ty: syn::Type,
-    pub rust_ty: Result<RustType, String>,
-    pub dart_ty: Result<DartType, String>,
+    pub rust_ty: RustType,
+    pub dart_ty: DartType,
+    pub slot: usize,
 }
 
 impl VariantField {
-    pub fn new(f: Field) -> Self {
+    pub fn new(f: Field, slot: usize) -> Result<Self, String> {
         let ty = f.ty;
 
-        let rust_res = RustType::try_from(&ty);
-        let dart_ty = match &rust_res {
-            Ok((ident, ref rust_ty)) => DartType::try_from(rust_ty, ident),
-            Err(_) => Err("Dart type not determined due to invalid Rust type".to_string()),
-        };
-        let rust_ty = rust_res.map(|(_, rust_ty)| rust_ty);
+        let rust_ty = RustType::try_from(&ty)
+            .map_err(|err| format!("Encountered invalid rust type {:#?}\n{}", ty, err))?;
 
-        Self {
-            ty,
-            rust_ty,
+        let dart_ty = match &rust_ty {
+            (ident, ref rust_ty) => DartType::try_from(rust_ty, ident).map_err(|err| {
+                format!("RustType {:#?} cannot be used in dart\n{}", rust_ty, err)
+            })?,
+        };
+
+        Ok(Self {
+            ty: ty.clone(),
+            rust_ty: rust_ty.1,
             dart_ty,
-        }
+            slot,
+        })
     }
 }

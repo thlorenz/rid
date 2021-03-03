@@ -296,7 +296,7 @@ impl ParsedStruct {
         let s = format!(
             r###"
 /// ```dart
-/// extension Rid_ExtOnPointer{struct_ident} on {dart_ffi}.Pointer<{ffigen_bind}.{struct_ident}> {{  {getters}
+/// extension Rid_Model_ExtOnPointer{struct_ident} on {dart_ffi}.Pointer<{ffigen_bind}.{struct_ident}> {{  {getters}
 /// }}
 /// ```
         "###,

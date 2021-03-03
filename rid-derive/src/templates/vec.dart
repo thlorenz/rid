@@ -1,4 +1,4 @@
-/// extension Rid_ExtOnPointer{vec_type} on {dart_ffi}.Pointer<{ffigen_bind}.{vec_type}> {
+/// extension Rid_Model_ExtOnPointer{vec_type} on {dart_ffi}.Pointer<{ffigen_bind}.{vec_type}> {
 ///   int get length => {rid_ffi}.{fn_len_ident}(this);
 ///   {iterated_item_type} operator [](int idx) {
 ///     final len = this.length;

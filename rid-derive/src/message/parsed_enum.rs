@@ -1,5 +1,6 @@
 use super::parsed_variant::ParsedVariant;
 use crate::common::{
+    errors::derive_error,
     resolvers::{instance_ident, resolve_ptr},
     rust::RustType,
 };
@@ -29,22 +30,30 @@ impl ParsedEnum {
         if self.parsed_variants.is_empty() {
             return Tokens::new();
         }
-        let method_tokens: Tokens = self
-            .parsed_variants
-            .iter()
-            .map(|v| self.rust_method(v))
-            .collect();
+        let method_tokens = self.parsed_variants.iter().map(|v| self.rust_method(v));
+
         quote_spanned! { self.ident.span() =>
-            #method_tokens
+            mod __todo_name {
+              #(#method_tokens)*
+            }
         }
     }
 
     //
-    // Rust Module
+    // Rust Methods
     //
 
     fn rust_method(&self, variant: &ParsedVariant) -> Tokens {
         let variant_ident = &variant.ident;
+
+        if variant.has_errors() {
+            return variant
+                .errors
+                .iter()
+                .map(|err| derive_error(variant_ident, err))
+                .collect();
+        }
+
         let fn_ident = &variant.method_ident;
 
         // TODO: how do we know what the model is?
@@ -61,20 +70,14 @@ impl ParsedEnum {
         let arg_idents: Vec<(syn::Ident, syn::Ident)> = variant
             .fields
             .iter()
-            .enumerate()
-            .map(|(idx, f)| {
-                let rust_ty = f
-                    .rust_ty
-                    .as_ref()
-                    .expect(&format!("encountered invalid rust type {:#?}", f.rust_ty));
-
-                let ty = match rust_ty {
+            .map(|f| {
+                let ty = match &f.rust_ty {
                     RustType::Value(_) => todo!(),
                     RustType::Primitive(p) => p.to_string(),
                     RustType::Unknown => unimplemented!(),
                 };
 
-                (format_ident!("arg{}", idx), format_ident!("{}", ty))
+                (format_ident!("arg{}", f.slot), format_ident!("{}", ty))
             })
             .collect();
 
