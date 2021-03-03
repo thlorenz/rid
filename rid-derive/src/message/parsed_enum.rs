@@ -12,18 +12,26 @@ type Tokens = proc_macro2::TokenStream;
 
 pub struct ParsedEnum {
     pub ident: syn::Ident,
-    pub method_prefix: String,
     pub parsed_variants: Vec<ParsedVariant>,
+    pub method_prefix: String,
+    module_ident: syn::Ident,
+    ident_lower_camel: String,
 }
 
 impl ParsedEnum {
     pub fn new(ident: syn::Ident, variants: Punctuated<Variant, Comma>) -> Self {
-        let method_prefix = format!("rid_{}", ident.to_string().to_lowercase()).to_string();
+        let ident_str = ident.to_string();
+        let ident_lower_camel = lower_camel_case(&ident_str);
+        let ident_lower = ident_str.to_lowercase();
+        let method_prefix = format!("rid_{}", ident_lower);
+        let module_ident = format_ident!("__rid_{}_ffi", ident_lower);
         let parsed_variants = parse_variants(variants, &method_prefix);
         Self {
-            method_prefix,
             ident,
             parsed_variants,
+            method_prefix,
+            ident_lower_camel,
+            module_ident,
         }
     }
 
@@ -33,9 +41,11 @@ impl ParsedEnum {
         }
         let method_tokens = self.parsed_variants.iter().map(|v| self.rust_method(v));
         let dart_comment = self.dart_extension();
+        let module_ident = &self.module_ident;
 
         quote_spanned! { self.ident.span() =>
-            mod __todo_name {
+            mod #module_ident {
+              use super::*;
               #dart_comment
               #(#method_tokens)*
             }
@@ -118,7 +128,7 @@ impl ParsedEnum {
 /// The below extension provides convenience methods to send messages to rust.
 ///
 /// ```dart
-/// extension Rid_Message{enum_ident} on {dart_ffi}.Pointer<{ffigen_bind}.{struct_ident}> {{
+/// extension Rid_Message_ExtOnPointer{struct_ident}For{enum_ident} on {dart_ffi}.Pointer<{ffigen_bind}.{struct_ident}> {{
 {methods}
 /// }}
 /// ```
@@ -169,12 +179,19 @@ impl ParsedEnum {
 
         format!(
             "///   void {dart_method_name}({args_decl}) => {rid_ffi}.{method_name}(this, {args_call});",
-            dart_method_name = dart_method_name(&fn_ident.to_string()),
+            dart_method_name = self.dart_method_name(&fn_ident.to_string()),
             method_name = fn_ident.to_string(),
             args_decl = args_decl,
             args_call = args_call,
             rid_ffi = RID_FFI,
         )
+    }
+
+    fn dart_method_name(&self, rust_method_name: &str) -> String {
+        // Cut off "rid_msg_
+        let shortened = rust_method_name[8..].to_string();
+        // lowercase first char
+        format!("{}{}", self.ident_lower_camel, shortened)
     }
 }
 
@@ -185,13 +202,6 @@ fn parse_variants(variants: Punctuated<Variant, Comma>, method_prefix: &str) -> 
         .collect()
 }
 
-fn dart_method_name(rust_method_name: &str) -> String {
-    // Cut off "rid_msg_"
-    let shortened = rust_method_name[8..].to_string();
-    // lowercase first char
-    format!(
-        "{}{}",
-        shortened[0..1].to_lowercase(),
-        shortened[1..].to_string()
-    )
+fn lower_camel_case(s: &str) -> String {
+    format!("{}{}", s[0..1].to_lowercase(), s[1..].to_string())
 }
