@@ -1,5 +1,8 @@
 use super::parsed_variant::ParsedVariant;
-use crate::common::resolvers::{instance_ident, resolve_ptr};
+use crate::common::{
+    resolvers::{instance_ident, resolve_ptr},
+    rust::RustType,
+};
 use quote::{format_ident, quote_spanned};
 use syn::{punctuated::Punctuated, token::Comma, Variant};
 
@@ -54,27 +57,41 @@ impl ParsedEnum {
         let resolve_struct_ptr = resolve_ptr(&struct_ident);
 
         let enum_ident = &self.ident;
-        eprintln!("fields {:?}", variant.fields);
 
-        let args: Vec<syn::Ident> = variant
+        let arg_idents: Vec<(syn::Ident, syn::Ident)> = variant
             .fields
             .iter()
             .enumerate()
             .map(|(idx, f)| {
-                format_ident!(
-                    "arg{} {}",
-                    idx,
-                    f.rust_ty.as_ref().map(|x| x.to_string()).unwrap()
-                )
+                let rust_ty = f
+                    .rust_ty
+                    .as_ref()
+                    .expect(&format!("encountered invalid rust type {:#?}", f.rust_ty));
+
+                let ty = match rust_ty {
+                    RustType::Value(_) => todo!(),
+                    RustType::Primitive(p) => p.to_string(),
+                    RustType::Unknown => unimplemented!(),
+                };
+
+                (format_ident!("arg{}", idx), format_ident!("{}", ty))
             })
             .collect();
+
+        let args = arg_idents
+            .iter()
+            .map(|(arg_name, ty)| quote_spanned! { fn_ident.span() => #arg_name: #ty });
+
+        let msg_args = arg_idents
+            .iter()
+            .map(|(arg_name, _)| quote_spanned! { fn_ident.span() => #arg_name });
 
         quote_spanned! { variant_ident.span() =>
             #[no_mangle]
             #[allow(non_snake_case)]
-            pub extern "C" fn #fn_ident(ptr: *mut #struct_ident, #(#args)*) {
+            pub extern "C" fn #fn_ident(ptr: *mut #struct_ident, #(#args,)* ) {
                 let mut #struct_instance_ident = #resolve_struct_ptr;
-                let msg = #enum_ident::#variant_ident(#(#args)*);
+                let msg = #enum_ident::#variant_ident(#(#msg_args,)*);
                 #struct_instance_ident.update(msg);
             }
         }

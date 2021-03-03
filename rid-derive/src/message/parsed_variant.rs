@@ -1,18 +1,18 @@
 use syn::Variant;
 
-use crate::common::ParsedField;
+use super::variant_field::VariantField;
 
 pub struct ParsedVariant {
     pub ident: syn::Ident,
     pub method_ident: syn::Ident,
-    pub fields: Vec<ParsedField>,
+    pub fields: Vec<VariantField>,
 }
 
 impl ParsedVariant {
     pub fn new(v: Variant, method_prefix: &str) -> Self {
         let ident = v.ident.clone();
         let method_ident = method_ident_from_variant(method_prefix, &ident);
-        let fields: Vec<ParsedField> = extract_fields(v);
+        let fields: Vec<VariantField> = extract_fields(v);
         Self {
             ident,
             method_ident,
@@ -21,15 +21,9 @@ impl ParsedVariant {
     }
 }
 
-fn extract_fields(v: Variant) -> Vec<ParsedField> {
+fn extract_fields(v: Variant) -> Vec<VariantField> {
     // TODO: maybe method_prefix doesn't belong on ParsedField?
-    v.fields
-        .into_iter()
-        .filter_map(|f| match f.ident {
-            Some(_) => Some(ParsedField::new(f, "")),
-            None => None,
-        })
-        .collect()
+    v.fields.into_iter().map(|f| VariantField::new(f)).collect()
 }
 
 fn method_ident_from_variant(method_prefix: &str, variant_ident: &syn::Ident) -> syn::Ident {
