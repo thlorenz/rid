@@ -5,6 +5,7 @@ use crate::common::{
     rust::RustType,
 };
 use quote::{format_ident, quote_spanned};
+use rid_common::{DART_FFI, FFI_GEN_BIND, RID_FFI};
 use syn::{punctuated::Punctuated, token::Comma, Variant};
 
 type Tokens = proc_macro2::TokenStream;
@@ -31,9 +32,11 @@ impl ParsedEnum {
             return Tokens::new();
         }
         let method_tokens = self.parsed_variants.iter().map(|v| self.rust_method(v));
+        let dart_comment = self.dart_extension();
 
         quote_spanned! { self.ident.span() =>
             mod __todo_name {
+              #dart_comment
               #(#method_tokens)*
             }
         }
@@ -99,6 +102,80 @@ impl ParsedEnum {
             }
         }
     }
+
+    //
+    // Dart Methods
+    //
+    fn dart_extension(&self) -> Tokens {
+        let methods: Vec<String> = self
+            .parsed_variants
+            .iter()
+            .map(|x| self.dart_method(x))
+            .collect();
+
+        let s = format!(
+            r###"
+/// The below extension provides convenience methods to send messages to rust.
+///
+/// ```dart
+/// extension Rid_Message{enum_ident} on {dart_ffi}.Pointer<{ffigen_bind}.{struct_ident}> {{
+{methods}
+/// }}
+/// ```
+        "###,
+            enum_ident = self.ident,
+            struct_ident = "Model", // TODO derive
+            dart_ffi = DART_FFI,
+            ffigen_bind = FFI_GEN_BIND,
+            methods = methods.join("\n")
+        );
+        s.parse().unwrap()
+    }
+
+    fn dart_method(&self, variant: &ParsedVariant) -> String {
+        let fn_ident = &variant.method_ident;
+
+        let args_info: Vec<(usize, (String, String))> = variant
+            .fields
+            .iter()
+            .map(|f| {
+                (
+                    format!("arg{}", f.slot),
+                    format!("{}", f.dart_ty.to_string()),
+                )
+            })
+            .enumerate()
+            .collect();
+
+        let args_decl = args_info
+            .iter()
+            .fold("".to_string(), |acc, (idx, (arg, ty))| {
+                let comma = if *idx == 0 { "" } else { ", " };
+                format!(
+                    "{acc}{comma}{ty} {arg}",
+                    acc = acc,
+                    comma = comma,
+                    ty = ty,
+                    arg = arg
+                )
+            });
+
+        let args_call = args_info
+            .iter()
+            .fold("".to_string(), |acc, (idx, (arg, _))| {
+                let comma = if *idx == 0 { "" } else { ", " };
+                format!("{acc}{comma}{arg}", acc = acc, comma = comma, arg = arg)
+            });
+
+        format!(
+            "///   void {dart_method_name}({args_decl}) => {rid_ffi}.{method_name}(this, {args_call});",
+            dart_method_name = dart_method_name(&fn_ident.to_string()),
+            method_name = fn_ident.to_string(),
+            args_decl = args_decl,
+            args_call = args_call,
+            rid_ffi = RID_FFI,
+        )
+    }
 }
 
 fn parse_variants(variants: Punctuated<Variant, Comma>, method_prefix: &str) -> Vec<ParsedVariant> {
@@ -106,4 +183,15 @@ fn parse_variants(variants: Punctuated<Variant, Comma>, method_prefix: &str) -> 
         .into_iter()
         .map(|v| ParsedVariant::new(v, &method_prefix))
         .collect()
+}
+
+fn dart_method_name(rust_method_name: &str) -> String {
+    // Cut off "rid_msg_"
+    let shortened = rust_method_name[8..].to_string();
+    // lowercase first char
+    format!(
+        "{}{}",
+        shortened[0..1].to_lowercase(),
+        shortened[1..].to_string()
+    )
 }
