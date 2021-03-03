@@ -2,6 +2,7 @@ use syn::Field;
 
 use super::{DartType, RustType};
 
+#[derive(Debug)]
 pub struct ParsedField {
     pub ident: syn::Ident,
     pub method_ident: syn::Ident,

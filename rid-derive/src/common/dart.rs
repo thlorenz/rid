@@ -1,4 +1,4 @@
-use std::fmt::Display;
+use std::fmt::{Debug, Display};
 
 pub enum DartType {
     Int32,
@@ -42,6 +42,12 @@ impl DartType {
             DartType::Vec(_) => false,
             DartType::Custom(_) => false,
         }
+    }
+}
+
+impl Debug for DartType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self)
     }
 }
 

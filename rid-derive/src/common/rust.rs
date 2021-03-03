@@ -1,5 +1,5 @@
 #![allow(dead_code)]
-use std::fmt::Display;
+use std::fmt::{Debug, Display};
 
 pub enum ValueType {
     CString,
@@ -7,6 +7,7 @@ pub enum ValueType {
     RVec((Box<RustType>, syn::Ident)),
     RCustom(String),
 }
+
 impl Display for ValueType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let ty = match self {
@@ -54,6 +55,12 @@ pub enum RustType {
     Value(ValueType),
     Primitive(PrimitiveType),
     Unknown,
+}
+
+impl Debug for RustType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self)
+    }
 }
 
 impl Display for RustType {

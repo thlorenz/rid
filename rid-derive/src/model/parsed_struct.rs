@@ -1,12 +1,19 @@
 use super::dart::GetterBody;
 use crate::{
-    common::{parsed_field::ParsedField, rust::ValueType, state::get_state, DartType, RustType},
+    common::{
+        errors::type_error,
+        parsed_field::ParsedField,
+        resolvers::{instance_ident, resolve_ptr, resolve_vec_ptr},
+        rust::ValueType,
+        state::get_state,
+        DartType, RustType,
+    },
     templates::vec,
 };
 use rid_common::{DART_FFI, FFI_GEN_BIND};
 
 use quote::{format_ident, quote, quote_spanned};
-use syn::{punctuated::Punctuated, spanned::Spanned, token::Comma, Field};
+use syn::{punctuated::Punctuated, token::Comma, Field};
 
 type Tokens = proc_macro2::TokenStream;
 
@@ -17,18 +24,18 @@ pub struct ParsedStruct {
 }
 
 impl ParsedStruct {
-    pub(crate) fn new(ident: syn::Ident, fields: Punctuated<Field, Comma>) -> Self {
+    pub fn new(ident: syn::Ident, fields: Punctuated<Field, Comma>) -> Self {
         let method_prefix = format!("rid_{}", ident.to_string().to_lowercase()).to_string();
         let parsed_fields = parse_fields(fields, &method_prefix);
 
-        ParsedStruct {
+        Self {
             ident,
             parsed_fields,
             method_prefix,
         }
     }
 
-    pub(crate) fn derive_code(&self) -> Tokens {
+    pub fn derive_code(&self) -> Tokens {
         if self.parsed_fields.is_empty() {
             return Tokens::new();
         }
@@ -108,11 +115,7 @@ impl ParsedStruct {
         let fn_ident = &field.method_ident;
         let ty = &field.ty;
         let struct_ident = &self.ident;
-        let struct_instance_ident = format_ident!(
-            "{}_get_{}",
-            struct_ident.to_string().to_lowercase(),
-            field_ident
-        );
+        let struct_instance_ident = instance_ident(&struct_ident);
         let mut implemented_vecs: Vec<vec::ImplementVec> = vec![];
 
         let resolve_struct_ptr = resolve_ptr(struct_ident);
@@ -332,33 +335,9 @@ impl ParsedStruct {
     }
 }
 
-fn resolve_ptr(ty: &syn::Ident) -> Tokens {
-    quote! {
-        unsafe {
-            assert!(!ptr.is_null());
-            let ptr: *mut #ty = &mut *ptr;
-            ptr.as_mut().unwrap()
-        }
-    }
-}
-
-fn resolve_vec_ptr(ty: &syn::Ident) -> Tokens {
-    quote! {
-        unsafe {
-            assert!(!ptr.is_null());
-            let ptr: *mut Vec<#ty> = &mut *ptr;
-            ptr.as_mut().unwrap()
-        }
-    }
-}
-
 fn parse_fields(fields: Punctuated<Field, Comma>, method_prefix: &str) -> Vec<ParsedField> {
     fields
         .into_iter()
         .map(|f| ParsedField::new(f, &method_prefix))
         .collect()
-}
-
-fn type_error(ty: &syn::Type, err: &String) -> Tokens {
-    syn::Error::new(ty.span(), err).to_compile_error()
 }
