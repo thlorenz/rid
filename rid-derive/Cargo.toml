@@ -15,7 +15,7 @@ path = "tests/expand.rs"
 rid_common = { path = "../rid-common" }
 
 # syn = { version = "1.0.60" }
-# extra traits only needed to print ast in development
+# extra traits only needed to print debug info in development
 syn = { version = "1.0.60", features = ["extra-traits"] }
 quote = "1.0.9"
 proc-macro2 = "1.0.24"

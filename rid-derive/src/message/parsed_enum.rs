@@ -35,7 +35,7 @@ impl ParsedEnum {
         }
     }
 
-    pub fn derive_code(&self) -> Tokens {
+    pub fn tokens(&self) -> Tokens {
         if self.parsed_variants.is_empty() {
             return Tokens::new();
         }
