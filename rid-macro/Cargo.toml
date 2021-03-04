@@ -1,5 +1,5 @@
 [package]
-name = "rid_derive"
+name = "rid_macro"
 version = "0.1.0"
 authors = ["Thorsten Lorenz <thlorenz@gmx.de>"]
 edition = "2018"

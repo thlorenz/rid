@@ -1,5 +1,5 @@
 [package]
-name = "rid_derive_test"
+name = "rid_macro_test"
 version = "0.0.0"
 edition = "2018"
 publish = false
@@ -7,8 +7,8 @@ publish = false
 [workspace]
 
 [[bin]]
-name = "rid_derive_test"
+name = "rid_macro_test"
 path = "main.rs"
 
 [dependencies]
-rid_derive = { path = "../rid-derive" }
+rid_macro = { path = "../rid-macro" }

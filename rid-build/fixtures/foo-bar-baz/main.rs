@@ -1,6 +1,6 @@
 use std::ffi::CString;
 
-use rid_derive::Rid;
+use rid_macro::Rid;
 
 #[derive(Rid)]
 pub struct Foo {

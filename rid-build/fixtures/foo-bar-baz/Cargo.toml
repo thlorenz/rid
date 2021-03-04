@@ -11,4 +11,4 @@ name = "foo_bar_baz"
 path = "main.rs"
 
 [dependencies]
-rid_derive = { path = "../../../rid-derive" }
+rid_macro = { path = "../../../rid-macro" }

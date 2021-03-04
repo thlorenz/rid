@@ -1,5 +1,3 @@
-#![feature(str_split_once)]
-
 use std::{fs, path::Path};
 
 use anyhow::Result;

@@ -13,5 +13,5 @@ includes=["stdint.h"]
 [parse]
 parse_deps = false
 # Why does this not expand??
-# cbindgen -c cbindgen.toml --crate rid-derive-ws main.rs
-expand = ["rid-derive-ws"]
+# cbindgen -c cbindgen.toml --crate rid-macro-ws main.rs
+expand = ["rid-macro-ws"]

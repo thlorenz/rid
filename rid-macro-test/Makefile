@@ -1,5 +1,5 @@
 MAIN=./main.rs
-RID_DERIVES=../rid-derive/src/*.rs
+RID_MACROS=../rid-macro/src/*.rs
 
 MAIN_EXPANDED=./main-expanded.rs
 
@@ -17,7 +17,7 @@ bindgen: $(BINDING_C)
 $(BINDING_C): $(MAIN_EXPANDED)
 	cbindgen -c cbindgen.toml $< -o $(BINDING_C)
 
-$(MAIN_EXPANDED): $(MAIN) $(RID_DERIVES)
+$(MAIN_EXPANDED): $(MAIN) $(RID_MACROS)
 	cargo expand > $@
 
 clean:
