@@ -1,11 +1,11 @@
 use super::{message_args::MessageArgs, parsed_variant::ParsedVariant};
 use crate::common::{
     errors::derive_error,
-    resolvers::{instance_ident, resolve_ptr},
+    resolvers::{instance_ident, resolve_ptr, resolve_string_ptr},
     rust::RustType,
 };
 use quote::{format_ident, quote_spanned};
-use rid_common::{DART_FFI, FFI_GEN_BIND, RID_FFI};
+use rid_common::{DART_FFI, FFI_GEN_BIND, RID_FFI, STRING_TO_NATIVE_INT8};
 use syn::{punctuated::Punctuated, token::Comma, Variant};
 
 type Tokens = proc_macro2::TokenStream;
@@ -60,6 +60,8 @@ impl ParsedEnum {
     //
 
     fn rust_method(&self, variant: &ParsedVariant) -> Tokens {
+        use crate::common::rust::ValueType::*;
+
         let variant_ident = &variant.ident;
 
         if variant.has_errors() {
@@ -77,39 +79,62 @@ impl ParsedEnum {
 
         let enum_ident = &self.ident;
 
-        let arg_idents: Vec<(syn::Ident, syn::Ident)> = variant
+        struct Arg {
+            arg: syn::Ident,
+            ty: Tokens,
+            resolver: Tokens,
+        }
+
+        let arg_idents: Vec<Arg> = variant
             .fields
             .iter()
-            .map(|f| {
-                let ty = match &f.rust_ty {
-                    RustType::Value(_) => todo!(),
-                    RustType::Primitive(p) => p.to_string(),
-                    RustType::Unknown => unimplemented!(),
-                };
-
-                (format_ident!("arg{}", f.slot), format_ident!("{}", ty))
+            .map(|f| match &f.rust_ty {
+                RustType::Value(RString) => {
+                    let arg = format_ident!("arg{}", f.slot);
+                    let ty = quote_spanned! { arg.span() =>  *mut ::std::os::raw::c_char };
+                    let resolver = resolve_string_ptr(&arg, true);
+                    Arg { arg, ty, resolver }
+                }
+                RustType::Value(CString) => todo!(),
+                RustType::Value(RVec(_)) => todo!(),
+                RustType::Value(RCustom(_)) => todo!(),
+                RustType::Primitive(p) => {
+                    let arg = format_ident!("arg{}", f.slot);
+                    let ty = format_ident!("{}", p.to_string());
+                    let ty = quote_spanned! { arg.span() => #ty };
+                    Arg {
+                        arg,
+                        ty,
+                        resolver: Tokens::new(),
+                    }
+                }
+                RustType::Unknown => unimplemented!(),
             })
             .collect();
 
         let args = arg_idents
             .iter()
-            .map(|(arg_name, ty)| quote_spanned! { fn_ident.span() => #arg_name: #ty });
+            .map(|Arg { arg, ty, .. }| quote_spanned! { fn_ident.span() => #arg: #ty });
+
+        let args_resolvers = arg_idents.iter().map(|Arg { resolver, .. }| resolver);
 
         let msg_args = arg_idents
             .iter()
-            .map(|(arg_name, _)| quote_spanned! { fn_ident.span() => #arg_name });
+            .map(|Arg { arg, .. }| quote_spanned! { fn_ident.span() => #arg });
 
-        // TODO: getting error in the right place now if the model struct doesn't implement udpate
-        // at all, however when it is implemented incorrectly then the error doesn't even mention
-        // the method name
+        // TODO: getting error in the right place if the model struct doesn't implement udpate at
+        // all, however when it is implemented incorrectly then the error doesn't even mention the
+        // method name
         let update_method = quote_spanned! { self.struct_ident.span() =>
             #struct_instance_ident.update(msg);
         };
+
         quote_spanned! { variant_ident.span() =>
             #[no_mangle]
             #[allow(non_snake_case)]
             pub extern "C" fn #fn_ident(ptr: *mut #struct_ident, #(#args,)* ) {
                 let mut #struct_instance_ident = #resolve_struct_ptr;
+                #(#args_resolvers)*
                 let msg = #enum_ident::#variant_ident(#(#msg_args,)*);
                 #update_method
             }
@@ -146,23 +171,42 @@ impl ParsedEnum {
     }
 
     fn dart_method(&self, variant: &ParsedVariant) -> String {
+        use crate::common::rust::ValueType::*;
         let fn_ident = &variant.method_ident;
+        struct Arg {
+            arg: String,
+            ty: String,
+            ffi_arg: String,
+        }
 
-        let args_info: Vec<(usize, (String, String))> = variant
+        let args_info: Vec<(usize, Arg)> = variant
             .fields
             .iter()
             .map(|f| {
-                (
-                    format!("arg{}", f.slot),
-                    format!("{}", f.dart_ty.to_string()),
-                )
+                let ffi_arg = match f.rust_ty {
+                    RustType::Value(RString) => format!(
+                        "arg{slot}.{toNativeInt8}()",
+                        slot = f.slot,
+                        toNativeInt8 = STRING_TO_NATIVE_INT8
+                    ),
+                    RustType::Value(CString) => todo!(),
+                    RustType::Value(RVec(_)) => todo!(),
+                    RustType::Value(RCustom(_)) => todo!(),
+                    RustType::Primitive(_) => format!("arg{}", f.slot),
+                    RustType::Unknown => unimplemented!("dart method for unknown rust type"),
+                };
+                Arg {
+                    arg: format!("arg{}", f.slot),
+                    ty: format!("{}", f.dart_ty.to_string()),
+                    ffi_arg,
+                }
             })
             .enumerate()
             .collect();
 
         let args_decl = args_info
             .iter()
-            .fold("".to_string(), |acc, (idx, (arg, ty))| {
+            .fold("".to_string(), |acc, (idx, Arg { arg, ty, .. })| {
                 let comma = if *idx == 0 { "" } else { ", " };
                 format!(
                     "{acc}{comma}{ty} {arg}",
@@ -175,9 +219,9 @@ impl ParsedEnum {
 
         let args_call = args_info
             .iter()
-            .fold("".to_string(), |acc, (idx, (arg, _))| {
+            .fold("".to_string(), |acc, (idx, Arg { ffi_arg, .. })| {
                 let comma = if *idx == 0 { "" } else { ", " };
-                format!("{acc}{comma}{arg}", acc = acc, comma = comma, arg = arg)
+                format!("{acc}{comma}{arg}", acc = acc, comma = comma, arg = ffi_arg)
             });
 
         format!(
