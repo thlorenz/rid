@@ -1,4 +1,4 @@
-use super::parsed_variant::ParsedVariant;
+use super::{message_args::MessageArgs, parsed_variant::ParsedVariant};
 use crate::common::{
     errors::derive_error,
     resolvers::{instance_ident, resolve_ptr},
@@ -14,24 +14,27 @@ pub struct ParsedEnum {
     pub ident: syn::Ident,
     pub parsed_variants: Vec<ParsedVariant>,
     pub method_prefix: String,
+    struct_ident: syn::Ident,
     module_ident: syn::Ident,
     ident_lower_camel: String,
 }
 
 impl ParsedEnum {
-    pub fn new(ident: syn::Ident, variants: Punctuated<Variant, Comma>) -> Self {
+    pub fn new(ident: syn::Ident, variants: Punctuated<Variant, Comma>, args: MessageArgs) -> Self {
         let ident_str = ident.to_string();
         let ident_lower_camel = lower_camel_case(&ident_str);
         let ident_lower = ident_str.to_lowercase();
         let method_prefix = format!("rid_{}", ident_lower);
         let module_ident = format_ident!("__rid_{}_ffi", ident_lower);
         let parsed_variants = parse_variants(variants, &method_prefix);
+        let struct_ident = format_ident!("{}", args.to);
         Self {
             ident,
             parsed_variants,
             method_prefix,
-            ident_lower_camel,
+            struct_ident,
             module_ident,
+            ident_lower_camel,
         }
     }
 
@@ -68,13 +71,7 @@ impl ParsedEnum {
         }
 
         let fn_ident = &variant.method_ident;
-
-        // TODO: how do we know what the model is?
-        // If Msg is parsed first then we haven't even seen it yet.
-        // Letting the user provide it as an attribute is easiest, but also makes him think that
-        // there are options.
-        // Possibly we could check the Model for update methods??? Complicated.
-        let struct_ident = format_ident!("Model");
+        let struct_ident = &self.struct_ident;
         let struct_instance_ident = instance_ident(&struct_ident);
         let resolve_struct_ptr = resolve_ptr(&struct_ident);
 
@@ -134,7 +131,7 @@ impl ParsedEnum {
 /// ```
         "###,
             enum_ident = self.ident,
-            struct_ident = "Model", // TODO derive
+            struct_ident = self.struct_ident,
             dart_ffi = DART_FFI,
             ffigen_bind = FFI_GEN_BIND,
             methods = methods.join("\n")
