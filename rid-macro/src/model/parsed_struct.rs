@@ -6,7 +6,7 @@ use crate::{
         resolvers::{instance_ident, resolve_ptr, resolve_vec_ptr},
         rust::ValueType,
         state::get_state,
-        DartType, RustType,
+        DartType, ParsedDerive, RustType,
     },
     templates::vec,
 };
@@ -17,14 +17,16 @@ use syn::{punctuated::Punctuated, token::Comma, Field};
 
 type Tokens = proc_macro2::TokenStream;
 
+#[derive(Debug)]
 pub struct ParsedStruct {
     ident: syn::Ident,
     parsed_fields: Vec<ParsedField>,
     method_prefix: String,
+    derive: ParsedDerive,
 }
 
 impl ParsedStruct {
-    pub fn new(ident: syn::Ident, fields: Punctuated<Field, Comma>) -> Self {
+    pub fn new(ident: syn::Ident, fields: Punctuated<Field, Comma>, derive: ParsedDerive) -> Self {
         let method_prefix = format!("rid_{}", ident.to_string().to_lowercase()).to_string();
         let parsed_fields = parse_fields(fields, &method_prefix);
 
@@ -32,6 +34,7 @@ impl ParsedStruct {
             ident,
             parsed_fields,
             method_prefix,
+            derive,
         }
     }
 
