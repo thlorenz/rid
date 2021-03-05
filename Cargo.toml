@@ -1,7 +1,16 @@
+[package]
+name = "rid"
+version = "0.1.0"
+authors = ["Thorsten Lorenz <thlorenz@gmx.de>"]
+edition = "2018"
+
 [workspace]
 members=[
   "rid-common",
-  "rid-derive",
+  "rid-macro",
   "rid-build",
   "examples/dart/todo"
 ]
+
+[dependencies]
+rid_macro = { path = "rid-macro" }
