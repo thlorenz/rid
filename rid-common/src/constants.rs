@@ -13,3 +13,6 @@ pub const DART_COLLECTION: &str = "dart_collection";
 /// The low level wrappers for the Rust FFI functions are imported into the dart
 /// wrapper as this id.
 pub const RID_FFI: &str = "rid_ffi";
+
+/// Name of extension method defined on a dart string to convert it to `Pointer<Int8>`.
+pub const STRING_TO_NATIVE_INT8: &str = "toNativeInt8";

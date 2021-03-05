@@ -1,4 +1,4 @@
-use rid_common::{DART_COLLECTION, DART_FFI, FFI_GEN_BIND, RID_FFI};
+use rid_common::{DART_COLLECTION, DART_FFI, FFI_GEN_BIND, RID_FFI, STRING_TO_NATIVE_INT8};
 const PACKAGE_FFI: &str = "package_ffi";
 
 const TYPEDEF_STRUCT: &str = "typedef struct ";
@@ -22,6 +22,22 @@ extension Rid_ExtOnPointerInt8 on {dart_ffi}.Pointer<{dart_ffi}.Int8> {{
 "###,
         dart_ffi = DART_FFI,
         pack_ffi = PACKAGE_FFI
+    )
+}
+
+fn dart_string_pointer_from_string() -> String {
+    format!(
+        r###"
+extension Rid_ExtOnString on String {{
+  {dart_ffi}.Pointer<{dart_ffi}.Int8> {toNativeInt8}() {{
+    final {dart_ffi}.Pointer<{dart_ffi}.Int8> stringPtr =
+        this.toNativeUtf8().cast();
+    return stringPtr;
+  }}
+}}
+        "###,
+        dart_ffi = DART_FFI,
+        toNativeInt8 = STRING_TO_NATIVE_INT8,
     )
 }
 
@@ -77,6 +93,7 @@ impl<'a> DartGenerator<'a> {
 //
 {extensions}
 {string_from_pointer_extension}
+{string_pointer_from_string_extension}
 //
 // Exporting Native Library to call Rust functions directly
 //
@@ -87,6 +104,7 @@ impl<'a> DartGenerator<'a> {
             open_dl = self.dart_open_dl(),
             extensions = extensions,
             string_from_pointer_extension = dart_string_from_pointer(),
+            string_pointer_from_string_extension = dart_string_pointer_from_string(),
             native_export = dart_rid_native()
         )
         .to_string()
