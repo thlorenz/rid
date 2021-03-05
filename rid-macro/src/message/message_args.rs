@@ -1,13 +1,13 @@
 #[derive(Debug)]
 pub struct MessageArgs {
-    pub to: String,
+    pub to: syn::Ident,
 }
 
 impl std::convert::TryFrom<Vec<syn::NestedMeta>> for MessageArgs {
     type Error = Vec<String>;
 
     fn try_from(args: Vec<syn::NestedMeta>) -> Result<Self, Self::Error> {
-        let mut to: Option<String> = None;
+        let mut to: Option<syn::Ident> = None;
         let mut errors: Vec<String> = vec![];
         for meta in &args {
             match meta {
@@ -26,8 +26,8 @@ impl std::convert::TryFrom<Vec<syn::NestedMeta>> for MessageArgs {
                                 None
                             }
                         };
-                        if path.is_some() {
-                            to = path.map(|x| x.to_string());
+                        if to.is_none() {
+                            to = path.map(|x| x.clone());
                         }
                     } else {
                         errors.push(format!(

@@ -27,7 +27,7 @@ impl ParsedEnum {
         let method_prefix = format!("rid_{}", ident_lower);
         let module_ident = format_ident!("__rid_{}_ffi", ident_lower);
         let parsed_variants = parse_variants(variants, &method_prefix);
-        let struct_ident = format_ident!("{}", args.to);
+        let struct_ident = args.to;
         Self {
             ident,
             parsed_variants,
@@ -99,13 +99,19 @@ impl ParsedEnum {
             .iter()
             .map(|(arg_name, _)| quote_spanned! { fn_ident.span() => #arg_name });
 
+        // TODO: getting error in the right place now if the model struct doesn't implement udpate
+        // at all, however when it is implemented incorrectly then the error doesn't even mention
+        // the method name
+        let update_method = quote_spanned! { self.struct_ident.span() =>
+            #struct_instance_ident.update(msg);
+        };
         quote_spanned! { variant_ident.span() =>
             #[no_mangle]
             #[allow(non_snake_case)]
             pub extern "C" fn #fn_ident(ptr: *mut #struct_ident, #(#args,)* ) {
                 let mut #struct_instance_ident = #resolve_struct_ptr;
                 let msg = #enum_ident::#variant_ident(#(#msg_args,)*);
-                #struct_instance_ident.update(msg);
+                #update_method
             }
         }
     }
