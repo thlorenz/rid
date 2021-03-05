@@ -10,7 +10,7 @@ use crate::{
     },
     templates::vec,
 };
-use rid_common::{DART_FFI, FFI_GEN_BIND};
+use rid_common::{CSTRING_FREE, DART_FFI, FFI_GEN_BIND};
 
 use quote::{format_ident, quote, quote_spanned};
 use syn::{punctuated::Punctuated, token::Comma, Field};
@@ -139,22 +139,39 @@ impl ParsedStruct {
                 }
             }
             Ok(RustType::Value(ValueType::RString)) => {
-                let fn_len_ident = format_ident!("{}_len", fn_ident);
+                let fn_ident_len = format_ident!("{}_len", fn_ident);
+                let cstring_free_ident = format_ident!("{}", CSTRING_FREE);
+                let cstring_free_tokens = if get_state().needs_implementation(CSTRING_FREE) {
+                    quote_spanned! {
+                        proc_macro2::Span::call_site() =>
+                        #[no_mangle]
+                        #[allow(non_snake_case)]
+                        pub extern "C" fn #cstring_free_ident(ptr: *mut ::std::os::raw::c_char) {
+                            if !ptr.is_null() {
+                                ::core::mem::drop(unsafe { ::std::ffi::CString::from_raw(ptr) });
+                            }
+                        }
+                    }
+                } else {
+                    Tokens::new()
+                };
+
                 quote_spanned! { fn_ident.span() =>
                     #[no_mangle]
                     #[allow(non_snake_case)]
                     pub extern "C" fn #fn_ident(ptr: *mut #struct_ident) -> *const ::std::os::raw::c_char {
                         let #struct_instance_ident = #resolve_struct_ptr;
-                        let cstring = std::ffi::CString::new(#struct_instance_ident.#field_ident.clone())
+                        let cstring = ::std::ffi::CString::new(#struct_instance_ident.#field_ident.as_str())
                             .expect(&format!("Invalid string encountered"));
-                        unsafe { &*cstring.as_ptr() }
+                        cstring.into_raw()
                     }
                     #[no_mangle]
                     #[allow(non_snake_case)]
-                    pub extern "C" fn #fn_len_ident(ptr: *mut #struct_ident) -> usize {
+                    pub extern "C" fn #fn_ident_len(ptr: *mut #struct_ident) -> usize {
                         let #struct_instance_ident = #resolve_struct_ptr;
                         #struct_instance_ident.#field_ident.len()
                     }
+                    #cstring_free_tokens
                 }
             }
             Ok(RustType::Value(ValueType::RCustom(_))) => {
@@ -214,6 +231,7 @@ impl ParsedStruct {
                         }
                     };
                     let get_impl = if rust_type.is_primitive() {
+                        // TODO: don't hardcode struc and ident in the two below cases
                         quote_spanned! { fn_ident.span() =>
                             #[no_mangle]
                             #[allow(non_snake_case)]

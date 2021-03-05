@@ -1,4 +1,6 @@
-use rid_common::{DART_COLLECTION, DART_FFI, FFI_GEN_BIND, RID_FFI, STRING_TO_NATIVE_INT8};
+use rid_common::{
+    CSTRING_FREE, DART_COLLECTION, DART_FFI, FFI_GEN_BIND, RID_FFI, STRING_TO_NATIVE_INT8,
+};
 const PACKAGE_FFI: &str = "package_ffi";
 
 const TYPEDEF_STRUCT: &str = "typedef struct ";
@@ -18,10 +20,15 @@ extension Rid_ExtOnPointerInt8 on {dart_ffi}.Pointer<{dart_ffi}.Int8> {{
     final {dart_ffi}.Pointer<{pack_ffi}.Utf8> stringPtr = this.cast();
     return stringPtr.toDartString(length: len);
   }}
+  void free() {{
+    {rid_ffi}.{string_free}(this);
+  }}
 }}
 "###,
         dart_ffi = DART_FFI,
-        pack_ffi = PACKAGE_FFI
+        pack_ffi = PACKAGE_FFI,
+        rid_ffi = RID_FFI,
+        string_free = CSTRING_FREE
     )
 }
 

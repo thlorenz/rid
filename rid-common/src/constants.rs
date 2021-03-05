@@ -16,3 +16,6 @@ pub const RID_FFI: &str = "rid_ffi";
 
 /// Name of extension method defined on a dart string to convert it to `Pointer<Int8>`.
 pub const STRING_TO_NATIVE_INT8: &str = "toNativeInt8";
+
+/// Method invoked to free a CString by resolving and dropping it.
+pub const CSTRING_FREE: &str = "rid_cstring_free";

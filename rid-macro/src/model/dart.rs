@@ -12,19 +12,38 @@ impl DartType {
         use GetterBody::*;
 
         match self {
-            DartType::Int32 | DartType::Int64 => {
-                Expression(format!("{0}.{1}(this);", RID_FFI, ffi_method))
-            }
-            DartType::Bool => Expression(format!("{0}.{1}(this) != 0;", RID_FFI, ffi_method)),
             DartType::String => Statement(format!(
                 r###"{{
-    ///   int len = {0}.{1}_len(this);
-    ///   return {0}.{1}(this).toDartString(len); 
-    /// }}"###,
-                RID_FFI, ffi_method
+                ///   int len = {rid_ffi}.{ffi_method}_len(this);
+                ///   {dart_ffi}.Pointer<{dart_ffi}.Int8> ptr = {rid_ffi}.{ffi_method}(this);
+                ///   String s = ptr.toDartString(len); 
+                ///   ptr.free();
+                ///   return s;
+                /// }}"###,
+                rid_ffi = RID_FFI,
+                ffi_method = ffi_method,
+                dart_ffi = DART_FFI
             )),
-            DartType::Vec(_) => Expression(format!("{0}.{1}(this);", RID_FFI, ffi_method)),
-            DartType::Custom(_) => Expression(format!("{0}.{1}(this);", RID_FFI, ffi_method)),
+            DartType::Int32 | DartType::Int64 => Expression(format!(
+                "{rid_ffi}.{ffi_method}(this);",
+                rid_ffi = RID_FFI,
+                ffi_method = ffi_method
+            )),
+            DartType::Bool => Expression(format!(
+                "{rid_ffi}.{ffi_method}(this) != 0;",
+                rid_ffi = RID_FFI,
+                ffi_method = ffi_method
+            )),
+            DartType::Vec(_) => Expression(format!(
+                "{rid_ffi}.{ffi_method}(this);",
+                rid_ffi = RID_FFI,
+                ffi_method = ffi_method
+            )),
+            DartType::Custom(_) => Expression(format!(
+                "{rid_ffi}.{ffi_method}(this);",
+                rid_ffi = RID_FFI,
+                ffi_method = ffi_method
+            )),
         }
     }
 
