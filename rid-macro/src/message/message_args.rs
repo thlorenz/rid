@@ -17,9 +17,18 @@ impl std::convert::TryFrom<Vec<syn::NestedMeta>> for MessageArgs {
                     ..
                 })) => {
                     if path.is_ident("to") {
-                        // TODO: error handling
-                        let lit: syn::Path = lit_str.parse().unwrap();
-                        to = Some(lit.get_ident().unwrap().to_string());
+                        let lit: syn::Result<syn::Path> = lit_str.parse();
+
+                        let path = match &lit {
+                            Ok(lit) => lit.get_ident(),
+                            Err(err) => {
+                                errors.push(err.to_string());
+                                None
+                            }
+                        };
+                        if path.is_some() {
+                            to = path.map(|x| x.to_string());
+                        }
                     } else {
                         errors.push(format!(
                             "Arg '{}' is not supported on 'rid::message' attribute.",
@@ -31,7 +40,7 @@ impl std::convert::TryFrom<Vec<syn::NestedMeta>> for MessageArgs {
             };
         }
         if to.is_none() {
-            errors.push("Arg 'to' is required, i.e. #[rid::message(to = Model)]".to_string());
+            errors.push("Arg 'to' is required, i.e. #[rid::message(to = \"Model\")].".to_string());
         }
 
         if errors.is_empty() {
