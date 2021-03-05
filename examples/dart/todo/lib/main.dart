@@ -1,21 +1,17 @@
-import 'generated/rid_generated.dart' as ffi;
+import 'generated/rid_generated.dart';
 
-todo_vecs() {
-  final model = ffi.rid_ffi.init_model_ptr();
+messages() {
+  final model = rid_ffi.init_model_ptr();
+  model.msgAddTodo(1);
+  model.msgAddTodo(4);
+
+  final allTodos = model.todos.iter().map((x) => x.id);
   print("""
 todos len:  ${model.todos.length}
-todos:      [ ${model.todos[0].id}, ${model.todos[1].id},  ${model.todos[2].id} ]
+todos:      [ ${allTodos.join(', ')} ]
 """);
-
-  for (final todo in model.todos.iter()) {
-    print("todo.id: ${todo.id}");
-  }
-  for (final id in model.ids.iter()) {
-    print("id: $id");
-  }
-  print("crash: ${model.todos[4]}");
 }
 
 main() {
-  todo_vecs();
+  messages();
 }

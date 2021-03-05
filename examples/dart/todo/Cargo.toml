@@ -13,7 +13,7 @@ name = "rid_build"
 path = "rid_build.rs"
 
 [dependencies]
-rid_derive = { path = "../../../rid-derive" }
+rid = { path = "../../../" }
 rid_build = { path = "../../../rid-build" }
 
 [build-dependencies]
