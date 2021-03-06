@@ -17,8 +17,13 @@ pub struct Todo {
 pub enum Msg {
     AddTodo(String),
     RemoveTodo(u32),
+    RemoveCompleted,
+
     CompleteTodo(u32),
     RestartTodo(u32),
+    ToggleTodo(u32),
+    CompleteAll,
+    RestartAll,
 }
 
 impl Model {
@@ -40,11 +45,17 @@ impl Model {
                     Some((idx, _)) => idx,
                     None => return eprintln!("Could not find Todo with id '{}'", id),
                 };
-                self.todos.remove(idx);
+                self.todos.swap_remove(idx);
             }
+
+            RemoveCompleted => self.todos.retain(|todo| !todo.completed),
 
             CompleteTodo(id) => self.update_todo(id, |todo| todo.completed = true),
             RestartTodo(id) => self.update_todo(id, |todo| todo.completed = false),
+            ToggleTodo(id) => self.update_todo(id, |todo| todo.completed = !todo.completed),
+
+            CompleteAll => self.todos.iter_mut().for_each(|x| x.completed = true),
+            RestartAll => self.todos.iter_mut().for_each(|x| x.completed = false),
         };
     }
 
