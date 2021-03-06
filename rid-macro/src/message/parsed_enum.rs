@@ -129,13 +129,23 @@ impl ParsedEnum {
             #struct_instance_ident.update(msg);
         };
 
+        let msg = if msg_args.len() == 0 {
+            quote_spanned! { variant_ident.span() =>
+                let msg = #enum_ident::#variant_ident;
+            }
+        } else {
+            quote_spanned! { variant_ident.span() =>
+                let msg = #enum_ident::#variant_ident(#(#msg_args,)*);
+            }
+        };
+
         quote_spanned! { variant_ident.span() =>
             #[no_mangle]
             #[allow(non_snake_case)]
             pub extern "C" fn #fn_ident(ptr: *mut #struct_ident, #(#args,)* ) {
                 let mut #struct_instance_ident = #resolve_struct_ptr;
                 #(#args_resolvers)*
-                let msg = #enum_ident::#variant_ident(#(#msg_args,)*);
+                #msg
                 #update_method
             }
         }
