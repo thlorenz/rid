@@ -95,9 +95,22 @@ impl ParsedEnum {
                     let resolver = resolve_string_ptr(&arg, true);
                     Arg { arg, ty, resolver }
                 }
-                RustType::Value(CString) => todo!(),
-                RustType::Value(RVec(_)) => todo!(),
-                RustType::Value(RCustom(_)) => todo!(),
+                RustType::Value(CString) => {
+                    todo!("ParsedEnum::rust_method::RustType::Value(CString)")
+                }
+                RustType::Value(RVec(_)) => {
+                    todo!("ParsedEnum::rust_method::RustType::Value(RVec(_))")
+                }
+                RustType::Value(RCustom(p)) => {
+                    let arg = format_ident!("arg{}", f.slot);
+                    let ty = format_ident!("{}", p);
+                    let ty = quote_spanned! { arg.span() => #ty };
+                    Arg {
+                        arg,
+                        ty,
+                        resolver: Tokens::new(),
+                    }
+                }
                 RustType::Primitive(p) => {
                     let arg = format_ident!("arg{}", f.slot);
                     let ty = format_ident!("{}", p.to_string());
@@ -108,7 +121,7 @@ impl ParsedEnum {
                         resolver: Tokens::new(),
                     }
                 }
-                RustType::Unknown => unimplemented!(),
+                RustType::Unknown => unimplemented!("RustType::Unknown"),
             })
             .collect();
 
@@ -199,15 +212,25 @@ impl ParsedEnum {
                         slot = f.slot,
                         toNativeInt8 = STRING_TO_NATIVE_INT8
                     ),
-                    RustType::Value(CString) => todo!(),
-                    RustType::Value(RVec(_)) => todo!(),
-                    RustType::Value(RCustom(_)) => todo!(),
+                    RustType::Value(CString) => {
+                        todo!("ParsedEnum::dart_method::RustType::Value(CString)")
+                    }
+                    RustType::Value(RVec(_)) => {
+                        todo!("ParsedEnum::dart_method::RustType::Value(RVec(_))")
+                    }
                     RustType::Primitive(_) => format!("arg{}", f.slot),
+                    RustType::Value(RCustom(_)) => format!("arg{}", f.slot),
                     RustType::Unknown => unimplemented!("dart method for unknown rust type"),
+                };
+                let ty = if let RustType::Value(RCustom(_)) = f.rust_ty {
+                    // TODO: only works for enums
+                    "int".to_string()
+                } else {
+                    f.dart_ty.to_string()
                 };
                 Arg {
                     arg: format!("arg{}", f.slot),
-                    ty: format!("{}", f.dart_ty.to_string()),
+                    ty,
                     ffi_arg,
                 }
             })

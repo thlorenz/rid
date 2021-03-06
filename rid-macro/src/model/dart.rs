@@ -58,12 +58,10 @@ impl DartType {
                 ffigen_bind = FFI_GEN_BIND,
                 ty = inner
             ),
-            DartType::Custom(ty) => format!(
-                "{dart_ffi}.Pointer<{ffigen_bind}.{ty}>",
-                dart_ffi = DART_FFI,
-                ffigen_bind = FFI_GEN_BIND,
-                ty = ty
-            ),
+            // TODO: only works for Enums
+            DartType::Custom(_ty) => {
+                format!("{dart_ffi}.Pointer<{dart_ffi}.Int32>", dart_ffi = DART_FFI,)
+            }
         }
     }
 

@@ -53,9 +53,6 @@ impl ParsedStruct {
             #comment_header
             #dart_extension
         );
-        // TODO: generate comments for dart extension, but may be better to provide an indicator
-        // instead which the builder generates code for in order to provide iterators as well?
-        // Either way, a template might work a lot better here
         self.rust_module(comment)
     }
 
