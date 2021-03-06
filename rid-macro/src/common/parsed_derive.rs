@@ -23,11 +23,11 @@ impl ParsedDerive {
                 nested,
                 ..
             })) => {
-                let is_derive = match segments.first() {
-                    Some(segment) if segment.ident == "derive" => true,
+                let is_rid = match segments.first() {
+                    Some(segment) if segment.ident == "rid" => true,
                     _ => false,
                 };
-                if !is_derive {
+                if !is_rid {
                     return None;
                 }
                 let mut debug: bool = false;
@@ -35,7 +35,7 @@ impl ParsedDerive {
                     if let NestedMeta::Meta(Meta::Path(Path { segments, .. })) = x {
                         for segment in segments {
                             match segment.ident.to_string().as_str() {
-                                "Debug" => debug = true,
+                                "debug" => debug = true,
                                 _ => {}
                             }
                         }

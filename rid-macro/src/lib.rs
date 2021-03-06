@@ -3,11 +3,10 @@ mod message;
 mod model;
 mod templates;
 
-use quote::quote;
-use std::{convert::TryFrom, env, process};
+use std::{env, process};
 
-use common::callsite_error;
-use message::{attach::rid_ffi_message_impl, message_args::MessageArgs};
+use message::attach::rid_ffi_message_impl;
+
 use model::attach::rid_ffi_model_impl;
 use proc_macro::TokenStream;
 
@@ -16,37 +15,24 @@ use syn::{self, parse_macro_input};
 const RID_PRINT_MODEL: &str = "RID_PRINT_MODEL";
 const RID_PRINT_MESSAGE: &str = "RID_PRINT_MESSAGE";
 
-#[proc_macro_attribute]
-pub fn model(_attr: TokenStream, input: TokenStream) -> TokenStream {
-    let item = parse_macro_input!(input as syn::Item);
+#[proc_macro_derive(Model, attributes(rid))]
+pub fn model(input: TokenStream) -> TokenStream {
+    let ast = parse_macro_input!(input as syn::DeriveInput);
     if let Ok(_) = env::var(RID_PRINT_MODEL) {
-        println!("{:#?}", &item);
+        println!("{:#?}", &ast);
         process::exit(0)
     } else {
-        rid_ffi_model_impl(item).into()
+        rid_ffi_model_impl(ast).into()
     }
 }
 
-#[proc_macro_attribute]
-pub fn message(args: TokenStream, input: TokenStream) -> TokenStream {
-    let args = parse_macro_input!(args as syn::AttributeArgs);
-    let item = parse_macro_input!(input as syn::Item);
-
+#[proc_macro_derive(Message, attributes(rid))]
+pub fn message(input: TokenStream) -> TokenStream {
+    let ast = parse_macro_input!(input as syn::DeriveInput);
     if let Ok(_) = env::var(RID_PRINT_MESSAGE) {
-        // println!("input: {:#?}", &item);
-        println!("args:  {:#?}", &args);
+        println!("input: {:#?}", &ast);
         process::exit(0)
     } else {
-        match MessageArgs::try_from(args) {
-            Ok(args) => rid_ffi_message_impl(item, args).into(),
-            Err(errors) => {
-                let errors = errors.into_iter().map(|err| callsite_error(&err));
-                let q = quote! {
-                    #(#errors)*
-                    #item
-                };
-                q.into()
-            }
-        }
+        rid_ffi_message_impl(ast).into()
     }
 }

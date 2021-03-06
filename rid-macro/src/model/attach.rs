@@ -2,38 +2,29 @@ use crate::{
     common::{callsite_error, ParsedDerive},
     model::parsed_struct::ParsedStruct,
 };
-use syn::{self, Fields, FieldsNamed, ItemStruct};
+use syn::{self, Fields, FieldsNamed};
 
-use quote::quote;
-
-pub fn rid_ffi_model_impl(item: syn::Item) -> proc_macro2::TokenStream {
-    let model_struct = match &item {
-        syn::Item::Struct(s) => s,
+pub fn rid_ffi_model_impl(ast: syn::DeriveInput) -> proc_macro2::TokenStream {
+    let struct_ident = ast.ident;
+    let model_struct = match &ast.data {
+        syn::Data::Struct(s) => s,
         _ => return callsite_error("model can only be attached to structs"),
     };
 
-    let derive: ParsedDerive = match model_struct {
-        ItemStruct { attrs, .. } => ParsedDerive::from_attrs(attrs),
-    };
+    let derive: ParsedDerive = ParsedDerive::from_attrs(&ast.attrs);
 
-    let tokens = match model_struct {
-        ItemStruct {
+    match model_struct {
+        syn::DataStruct {
             fields: Fields::Named(FieldsNamed { named, .. }),
-            ident,
             ..
         } => {
-            let parsed_struct = ParsedStruct::new(ident.clone(), named.clone(), derive);
+            let parsed_struct = ParsedStruct::new(struct_ident, named.clone(), derive);
             parsed_struct.tokens()
         }
-        ItemStruct {
+        syn::DataStruct {
             fields: Fields::Unit,
             ..
         } => callsite_error("model attribute makes no sense on empty structs"),
         _ => unimplemented!(),
-    };
-
-    quote! {
-        #item
-        #tokens
     }
 }

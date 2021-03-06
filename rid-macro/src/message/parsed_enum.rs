@@ -27,7 +27,7 @@ impl ParsedEnum {
         let method_prefix = format!("rid_{}", ident_lower);
         let module_ident = format_ident!("__rid_{}_ffi", ident_lower);
         let parsed_variants = parse_variants(variants, &method_prefix);
-        let struct_ident = args.to;
+        let struct_ident = format_ident!("{}", args.to);
         Self {
             ident,
             parsed_variants,

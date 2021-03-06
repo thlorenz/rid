@@ -1,43 +1,44 @@
 #[derive(Debug)]
 pub struct MessageArgs {
-    pub to: syn::Ident,
+    pub to: String,
 }
 
-impl std::convert::TryFrom<Vec<syn::NestedMeta>> for MessageArgs {
+impl std::convert::TryFrom<Vec<syn::Attribute>> for MessageArgs {
     type Error = Vec<String>;
 
-    fn try_from(args: Vec<syn::NestedMeta>) -> Result<Self, Self::Error> {
-        let mut to: Option<syn::Ident> = None;
-        let mut errors: Vec<String> = vec![];
-        for meta in &args {
-            match meta {
-                syn::NestedMeta::Meta(syn::Meta::NameValue(syn::MetaNameValue {
-                    path,
-                    lit: syn::Lit::Str(lit_str),
-                    ..
-                })) => {
-                    if path.is_ident("to") {
-                        let lit: syn::Result<syn::Path> = lit_str.parse();
+    fn try_from(attrs: Vec<syn::Attribute>) -> Result<Self, Self::Error> {
+        use proc_macro2::TokenTree::*;
 
-                        let path = match &lit {
-                            Ok(lit) => lit.get_ident(),
-                            Err(err) => {
-                                errors.push(err.to_string());
-                                None
-                            }
-                        };
-                        if to.is_none() {
-                            to = path.map(|x| x.clone());
+        let mut to: Option<String> = None;
+        let mut errors: Vec<String> = vec![];
+        for attr in attrs {
+            match attr {
+                syn::Attribute { path, tokens, .. } => {
+                    if path.is_ident("rid") {
+                        for token in tokens {
+                            if let Group(group) = token {
+                                let mut stream = group.stream().into_iter();
+                                let (key, eq, val) = (stream.next(), stream.next(), stream.next());
+                                match (key, eq, val) {
+                                    (Some(Ident(key)), Some(Punct(_)), Some(Literal(val))) => {
+                                        if key == "to" {
+                                            // Remove quotes, this hopefully will go away once we
+                                            // figure out how to avoid them
+                                            let val = val.to_string();
+                                            let val = val.trim_matches('"');
+                                            to = Some(val.to_string());
+                                        };
+                                    }
+                                    _ => {}
+                                }
+                            };
                         }
-                    } else {
-                        errors.push(format!(
-                            "Arg '{}' is not supported on 'rid::message' attribute.",
-                            path.get_ident().unwrap()
-                        ));
                     }
                 }
-                _ => {}
-            };
+            }
+            if to.is_some() {
+                break;
+            }
         }
         if to.is_none() {
             errors.push("Arg 'to' is required, i.e. #[rid::message(to = \"Model\")].".to_string());
