@@ -13,3 +13,5 @@ ffigen:
 dependencies: 
   ffi: ^1.0.0
   ffigen: ^2.0.1
+
+  logger: ^1.0.0-nullsafety.0

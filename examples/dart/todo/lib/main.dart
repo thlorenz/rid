@@ -1,7 +1,8 @@
 import 'generated/rid_generated.dart';
 import 'dart:io';
+import 'dart:async';
 
-const LOG_VERBOSE = true;
+import 'log.dart';
 
 messages() {
   final model = rid_ffi.init_model_ptr();
@@ -10,38 +11,31 @@ messages() {
   model.msgAddTodo("Hola");
   model.msgAddTodo("Mundo");
 
-  print(model.debug(LOG_VERBOSE));
+  log.v(model.debug(LOG_VERBOSE));
 
-  print("completing 1");
   model.msgCompleteTodo(1);
-  print(model.debug(LOG_VERBOSE));
+  log.v(model.debug(LOG_VERBOSE));
 
-  print("restarting 1");
   model.msgRestartTodo(1);
-  print(model.debug(LOG_VERBOSE));
+  log.v(model.debug(LOG_VERBOSE));
 
-  print("removing 1");
   model.msgRemoveTodo(1);
-  print(model.debug(LOG_VERBOSE));
+  log.v(model.debug(LOG_VERBOSE));
 
-  print("toggling 2 and 3");
   model.msgToggleTodo(2);
   model.msgToggleTodo(3);
-  print(model.debug(LOG_VERBOSE));
+  log.v(model.debug(LOG_VERBOSE));
 
-  print("removing completed");
   model.msgRemoveCompleted();
-  print(model.debug(LOG_VERBOSE));
+  log.v(model.debug(LOG_VERBOSE));
 
-  print("completing all");
   model.msgCompleteAll();
-  print(model.debug(LOG_VERBOSE));
+  log.v(model.debug(LOG_VERBOSE));
 
-  print("restarting all");
   model.msgRestartAll();
-  print(model.debug(LOG_VERBOSE));
+  log.v(model.debug(LOG_VERBOSE));
 
-  // Does not exist and logs warning from rust
+  log.d("restarting non-existent todo");
   model.msgRestartTodo(5);
 }
 
@@ -53,6 +47,12 @@ interactive() {
   }
 }
 
-main() {
-  messages();
+onError(Object error, StackTrace stack) {
+  print(error);
+  print(stack);
+}
+
+void main(List<String> args) {
+  runZonedGuarded(messages, onError);
+  log.i("App run completed successfully");
 }

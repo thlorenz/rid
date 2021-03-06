@@ -1,3 +1,6 @@
+#[macro_use]
+extern crate log;
+
 #[rid::model]
 #[derive(Debug)]
 pub struct Model {
@@ -14,6 +17,7 @@ pub struct Todo {
 }
 
 #[rid::message(to = "Model")]
+#[derive(Debug)]
 pub enum Msg {
     AddTodo(String),
     RemoveTodo(u32),
@@ -28,6 +32,7 @@ pub enum Msg {
 
 impl Model {
     fn update(&mut self, msg: Msg) {
+        info!("Msg: {:?}", msg);
         use Msg::*;
         match msg {
             AddTodo(title) => {
@@ -43,7 +48,7 @@ impl Model {
                 let mut enumerated = self.todos.iter().enumerate();
                 let idx = match enumerated.find(|(_, todo)| todo.id == id) {
                     Some((idx, _)) => idx,
-                    None => return eprintln!("Could not find Todo with id '{}'", id),
+                    None => return warn!("Could not find Todo with id '{}'", id),
                 };
                 self.todos.swap_remove(idx);
             }
@@ -62,13 +67,14 @@ impl Model {
     fn update_todo<F: FnOnce(&mut Todo)>(&mut self, id: u32, update: F) {
         match self.todos.iter_mut().find(|x| x.id == id) {
             Some(todo) => update(todo),
-            None => eprintln!("Could not find Todo with id '{}'", id),
+            None => warn!("Could not find Todo with id '{}'", id),
         };
     }
 }
 
 #[no_mangle]
 pub extern "C" fn init_model_ptr() -> *const Model {
+    env_logger::init();
     let model = Model {
         last_added_id: 0,
         todos: vec![],
