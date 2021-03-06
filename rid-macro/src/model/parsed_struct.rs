@@ -3,14 +3,14 @@ use crate::{
     common::{
         errors::type_error,
         parsed_field::ParsedField,
-        resolvers::{instance_ident, resolve_ptr, resolve_vec_ptr},
+        resolvers::{cstring_free, instance_ident, resolve_ptr, resolve_vec_ptr},
         rust::ValueType,
         state::get_state,
         DartType, ParsedDerive, RustType,
     },
     templates::vec,
 };
-use rid_common::{CSTRING_FREE, DART_FFI, FFI_GEN_BIND};
+use rid_common::{DART_FFI, FFI_GEN_BIND, RID_FFI};
 
 use quote::{format_ident, quote, quote_spanned};
 use syn::{punctuated::Punctuated, token::Comma, Field};
@@ -38,7 +38,7 @@ impl ParsedStruct {
         }
     }
 
-    pub fn derive_code(&self) -> Tokens {
+    pub fn tokens(&self) -> Tokens {
         if self.parsed_fields.is_empty() {
             return Tokens::new();
         }
@@ -63,22 +63,9 @@ impl ParsedStruct {
     // Rust Module
     //
 
-    fn extract(&self) -> (Tokens, Vec<vec::ImplementVec>) {
-        let mut implemented_vecs: Vec<vec::ImplementVec> = vec![];
-        let method_tokens: Tokens = self
-            .parsed_fields
-            .iter()
-            .map(|f| {
-                let (tokens, mut vecs) = self.rust_method(f);
-                implemented_vecs.append(&mut vecs);
-                tokens
-            })
-            .collect();
-        (method_tokens, implemented_vecs)
-    }
-
     fn rust_module(&self, doc_comment: Tokens) -> Tokens {
-        let (method_tokens, implemented_vecs) = self.extract();
+        let (field_method_tokens, implemented_vecs) = self.rust_field_methods();
+        let rust_derive_tokens = self.rust_derive_methods();
         let builtins_comment: Tokens = if implemented_vecs.len() > 0 {
             let builtins_comment_str = implemented_vecs.iter().fold("".to_string(), |acc, v| {
                 format!("{}\n{}", acc, vec::render(v))
@@ -106,14 +93,62 @@ impl ParsedStruct {
 
                 #doc_comment
                 #builtins_comment
-                #method_tokens
+                #field_method_tokens
+                #rust_derive_tokens
             }
         };
 
         tokens
     }
 
-    fn rust_method(&self, field: &ParsedField) -> (Tokens, Vec<vec::ImplementVec>) {
+    fn rust_derive_methods(&self) -> Tokens {
+        if self.derive.debug {
+            let struct_ident = &self.ident;
+            let struct_instance_ident = instance_ident(&struct_ident);
+            let fn_debug_ident = format_ident!("{}_debug", self.method_prefix);
+            let fn_debug_pretty_ident = format_ident!("{}_debug_pretty", self.method_prefix);
+            let resolve_struct_ptr = resolve_ptr(struct_ident);
+            let cstring_free_tokens = cstring_free();
+
+            quote_spanned! { struct_ident.span() =>
+                #[no_mangle]
+                #[allow(non_snake_case)]
+                pub extern "C" fn #fn_debug_ident(ptr: *mut #struct_ident) -> *const ::std::os::raw::c_char {
+                    let #struct_instance_ident = #resolve_struct_ptr;
+                    let s = format!("{:?}", #struct_instance_ident);
+                    let cstring = ::std::ffi::CString::new(s.as_str()).unwrap();
+                    cstring.into_raw()
+                }
+                #[no_mangle]
+                #[allow(non_snake_case)]
+                pub extern "C" fn #fn_debug_pretty_ident(ptr: *mut #struct_ident) -> *const ::std::os::raw::c_char {
+                    let #struct_instance_ident = #resolve_struct_ptr;
+                    let s = format!("{:#?}", #struct_instance_ident);
+                    let cstring = ::std::ffi::CString::new(s.as_str()).unwrap();
+                    cstring.into_raw()
+                }
+                #cstring_free_tokens
+            }
+        } else {
+            Tokens::new()
+        }
+    }
+
+    fn rust_field_methods(&self) -> (Tokens, Vec<vec::ImplementVec>) {
+        let mut implemented_vecs: Vec<vec::ImplementVec> = vec![];
+        let field_method_tokens: Tokens = self
+            .parsed_fields
+            .iter()
+            .map(|f| {
+                let (tokens, mut vecs) = self.rust_field_method(f);
+                implemented_vecs.append(&mut vecs);
+                tokens
+            })
+            .collect();
+        (field_method_tokens, implemented_vecs)
+    }
+
+    fn rust_field_method(&self, field: &ParsedField) -> (Tokens, Vec<vec::ImplementVec>) {
         let field_ident = &field.ident;
         let fn_ident = &field.method_ident;
         let ty = &field.ty;
@@ -143,22 +178,7 @@ impl ParsedStruct {
             }
             Ok(RustType::Value(ValueType::RString)) => {
                 let fn_ident_len = format_ident!("{}_len", fn_ident);
-                let cstring_free_ident = format_ident!("{}", CSTRING_FREE);
-                let cstring_free_tokens = if get_state().needs_implementation(CSTRING_FREE) {
-                    quote_spanned! {
-                        proc_macro2::Span::call_site() =>
-                        #[no_mangle]
-                        #[allow(non_snake_case)]
-                        pub extern "C" fn #cstring_free_ident(ptr: *mut ::std::os::raw::c_char) {
-                            if !ptr.is_null() {
-                                ::core::mem::drop(unsafe { ::std::ffi::CString::from_raw(ptr) });
-                            }
-                        }
-                    }
-                } else {
-                    Tokens::new()
-                };
-
+                let cstring_free_tokens = cstring_free();
                 quote_spanned! { fn_ident.span() =>
                     #[no_mangle]
                     #[allow(non_snake_case)]
@@ -293,47 +313,72 @@ impl ParsedStruct {
     //
 
     fn dart_extension(&self) -> Tokens {
-        let indent = "  ";
-        let fields = self.parsed_fields.iter();
-        let mut dart_getters: Vec<String> = vec![];
-        let mut errors: Tokens = Tokens::new();
-        for field in fields {
-            match &field.dart_ty {
-                Ok(dart_ty) => dart_getters.push(self.dart_getter(&field, dart_ty)),
-                Err(err) => {
-                    let error = type_error(&field.ty, err);
-                    errors = quote!(
-                        #errors
-                        #error
-                    );
-                }
-            }
-        }
-
-        let dart_getters = dart_getters.into_iter().fold("".to_string(), |s, m| {
-            format!("{}{}\n{}{}", indent, s, indent, m)
-        });
-
+        let (dart_field_getters_string, errors) = self.dart_field_getters();
+        let dart_derive_methods_string = self.dart_derive_methods();
         let s = format!(
             r###"
 /// ```dart
-/// extension Rid_Model_ExtOnPointer{struct_ident} on {dart_ffi}.Pointer<{ffigen_bind}.{struct_ident}> {{  {getters}
+/// extension Rid_Model_ExtOnPointer{struct_ident} on {dart_ffi}.Pointer<{ffigen_bind}.{struct_ident}> {{  {field_getters}
+/// {derive_methods}
 /// }}
 /// ```
         "###,
             struct_ident = self.ident,
             dart_ffi = DART_FFI,
             ffigen_bind = FFI_GEN_BIND,
-            getters = dart_getters
+            field_getters = dart_field_getters_string,
+            derive_methods = dart_derive_methods_string
         );
         let comment: Tokens = s.parse().unwrap();
         quote!(
-            #errors
+            #(#errors)*
             #comment
         )
     }
 
-    fn dart_getter(&self, field: &ParsedField, dart_ty: &DartType) -> String {
+    fn dart_derive_methods(&self) -> String {
+        let mut getters = vec![];
+        if self.derive.debug {
+            let ffi_debug_method = format!("{}_debug", self.method_prefix);
+            let ffi_debug_pretty_method = format!("{}_debug_pretty", self.method_prefix);
+            getters.push(format!(
+                r###"
+                /// String debug([bool pretty = false]) {{ 
+                ///   final ptr = pretty 
+                ///     ? {rid_ffi}.{ffi_debug_pretty_method}(this)
+                ///     : {rid_ffi}.{ffi_debug_method}(this);
+                ///   final s = ptr.toDartString();
+                ///   ptr.free();
+                ///   return s;
+                /// }}
+                "###,
+                rid_ffi = RID_FFI,
+                ffi_debug_method = ffi_debug_method,
+                ffi_debug_pretty_method = ffi_debug_pretty_method
+            ));
+        }
+        getters.join("\n")
+    }
+
+    fn dart_field_getters(&self) -> (String, Vec<Tokens>) {
+        let indent = "  ";
+        let fields = self.parsed_fields.iter();
+        let mut dart_getters: Vec<String> = vec![];
+        let mut errors: Vec<Tokens> = vec![];
+        for field in fields {
+            match &field.dart_ty {
+                Ok(dart_ty) => dart_getters.push(self.dart_field_getter(&field, dart_ty)),
+                Err(err) => errors.push(type_error(&field.ty, err)),
+            }
+        }
+
+        let dart_getters = dart_getters.into_iter().fold("".to_string(), |s, m| {
+            format!("{}{}\n{}{}", indent, s, indent, m)
+        });
+        (dart_getters, errors)
+    }
+
+    fn dart_field_getter(&self, field: &ParsedField, dart_ty: &DartType) -> String {
         let return_ty = dart_ty.return_type();
 
         let attrib = match dart_ty.type_attribute() {

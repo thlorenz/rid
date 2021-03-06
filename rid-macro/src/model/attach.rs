@@ -23,7 +23,7 @@ pub fn rid_ffi_model_impl(item: syn::Item) -> proc_macro2::TokenStream {
             ..
         } => {
             let parsed_struct = ParsedStruct::new(ident.clone(), named.clone(), derive);
-            parsed_struct.derive_code()
+            parsed_struct.tokens()
         }
         ItemStruct {
             fields: Fields::Unit,
