@@ -16,6 +16,7 @@ pub struct Todo {
 #[rid::message(to = "Model")]
 pub enum Msg {
     AddTodo(String),
+    RemoveTodo(u32),
     CompleteTodo(u32),
     RestartTodo(u32),
 }
@@ -33,6 +34,15 @@ impl Model {
                 };
                 self.todos.push(todo);
             }
+            RemoveTodo(id) => {
+                let mut enumerated = self.todos.iter().enumerate();
+                let idx = match enumerated.find(|(_, todo)| todo.id == id) {
+                    Some((idx, _)) => idx,
+                    None => return eprintln!("Could not find Todo with id '{}'", id),
+                };
+                self.todos.remove(idx);
+            }
+
             CompleteTodo(id) => self.update_todo(id, |todo| todo.completed = true),
             RestartTodo(id) => self.update_todo(id, |todo| todo.completed = false),
         };

@@ -15,12 +15,15 @@ messages() {
 
   model.msgRestartTodo(1);
   print(model.debug(LOG_VERBOSE));
+
+  model.msgRemoveTodo(1);
+  print(model.debug(LOG_VERBOSE));
 }
 
 interactive() {
   final model = rid_ffi.init_model_ptr();
   for (int i = 0; i < 100; i++) {
-    stdin.readLineSync();
+    stdin.readLineSync;
     model.msgAddTodo("todo_$i");
   }
 }
