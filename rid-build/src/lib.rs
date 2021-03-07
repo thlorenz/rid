@@ -131,7 +131,7 @@ mod tests {
         };
         let result = generate(&build_config);
         match result {
-            Err(err) => assert!(false, format!("generate should not error {}", err)),
+            Err(err) => assert!(false, "generate should not error {}", err),
             Ok(result) => println!("{:#?}", result),
         };
     }
