@@ -1,23 +1,31 @@
 #[macro_use]
 extern crate log;
 
-#[rid::model]
-#[derive(Debug)]
+#[derive(Debug, rid::Model)]
+#[rid(debug)]
 pub struct Model {
     last_added_id: u32,
     todos: Vec<Todo>,
+    filter: Filter,
 }
 
-#[rid::model]
-#[derive(Debug)]
+#[derive(Debug, rid::Model)]
 pub struct Todo {
     id: u32,
     title: String,
     completed: bool,
 }
 
-#[rid::message(to = "Model")]
 #[derive(Debug)]
+#[repr(C)]
+pub enum Filter {
+    Completed,
+    Pending,
+    All,
+}
+
+#[derive(Debug, rid::Message)]
+#[rid(to = "Model")]
 pub enum Msg {
     AddTodo(String),
     RemoveTodo(u32),
@@ -28,6 +36,8 @@ pub enum Msg {
     ToggleTodo(u32),
     CompleteAll,
     RestartAll,
+
+    SetFilter(Filter),
 }
 
 impl Model {
@@ -61,6 +71,8 @@ impl Model {
 
             CompleteAll => self.todos.iter_mut().for_each(|x| x.completed = true),
             RestartAll => self.todos.iter_mut().for_each(|x| x.completed = false),
+
+            SetFilter(filter) => self.filter = filter,
         };
     }
 
@@ -78,6 +90,7 @@ pub extern "C" fn init_model_ptr() -> *const Model {
     let model = Model {
         last_added_id: 0,
         todos: vec![],
+        filter: Filter::All,
     };
     Box::into_raw(Box::new(model))
 }
