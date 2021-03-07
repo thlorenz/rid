@@ -4,14 +4,14 @@ use crate::{
 };
 use syn::{self, Fields, FieldsNamed};
 
-pub fn rid_ffi_model_impl(ast: syn::DeriveInput) -> proc_macro2::TokenStream {
-    let struct_ident = ast.ident;
-    let model_struct = match &ast.data {
+pub fn rid_ffi_model_impl(input: syn::DeriveInput) -> proc_macro2::TokenStream {
+    let struct_ident = input.ident;
+    let model_struct = match &input.data {
         syn::Data::Struct(s) => s,
         _ => return callsite_error("model can only be attached to structs"),
     };
 
-    let derive: ParsedDerive = ParsedDerive::from_attrs(&ast.attrs);
+    let derive: ParsedDerive = ParsedDerive::from_attrs(&input.attrs);
 
     match model_struct {
         syn::DataStruct {

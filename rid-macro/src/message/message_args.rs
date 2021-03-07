@@ -20,12 +20,8 @@ impl std::convert::TryFrom<Vec<syn::Attribute>> for MessageArgs {
                                 let mut stream = group.stream().into_iter();
                                 let (key, eq, val) = (stream.next(), stream.next(), stream.next());
                                 match (key, eq, val) {
-                                    (Some(Ident(key)), Some(Punct(_)), Some(Literal(val))) => {
+                                    (Some(Ident(key)), Some(Punct(_)), Some(Ident(val))) => {
                                         if key == "to" {
-                                            // Remove quotes, this hopefully will go away once we
-                                            // figure out how to avoid them
-                                            let val = val.to_string();
-                                            let val = val.trim_matches('"');
                                             to = Some(val.to_string());
                                         };
                                     }
@@ -40,8 +36,9 @@ impl std::convert::TryFrom<Vec<syn::Attribute>> for MessageArgs {
                 break;
             }
         }
+
         if to.is_none() {
-            errors.push("Arg 'to' is required, i.e. #[rid::message(to = \"Model\")].".to_string());
+            errors.push("Arg 'to' is required, i.e. #[rid::message(to = Model)].".to_string());
         }
 
         if errors.is_empty() {
