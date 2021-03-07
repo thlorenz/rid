@@ -100,13 +100,13 @@ impl ParsedStruct {
     }
 
     fn rust_derive_methods(&self) -> Tokens {
+        let cstring_free_tokens = cstring_free();
         if self.config.debug {
             let struct_ident = &self.ident;
             let struct_instance_ident = instance_ident(&struct_ident);
             let fn_debug_ident = format_ident!("{}_debug", self.method_prefix);
             let fn_debug_pretty_ident = format_ident!("{}_debug_pretty", self.method_prefix);
             let resolve_struct_ptr = resolve_ptr(struct_ident);
-            let cstring_free_tokens = cstring_free();
 
             quote_spanned! { struct_ident.span() =>
                 #[no_mangle]
@@ -128,7 +128,7 @@ impl ParsedStruct {
                 #cstring_free_tokens
             }
         } else {
-            Tokens::new()
+            cstring_free_tokens
         }
     }
 
