@@ -8,7 +8,7 @@ impl Model {
 }
 
 #[derive(rid::Message)]
-#[rid(to = "Model")]
+#[rid(to = Model)]
 pub enum Msg {
     Any,
 }

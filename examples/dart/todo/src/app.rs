@@ -25,7 +25,7 @@ pub enum Filter {
 }
 
 #[derive(Debug, rid::Message)]
-#[rid(to = "Model")]
+#[rid(to = Model)]
 pub enum Msg {
     AddTodo(String),
     RemoveTodo(u32),
