@@ -1,5 +1,6 @@
 use crate::{
-    common::{callsite_error, ParsedDerive},
+    attrs::{parse_rid_attrs, StructConfig},
+    common::callsite_error,
     model::parsed_struct::ParsedStruct,
 };
 use syn::{self, Fields, FieldsNamed};
@@ -10,15 +11,15 @@ pub fn rid_ffi_model_impl(input: syn::DeriveInput) -> proc_macro2::TokenStream {
         syn::Data::Struct(s) => s,
         _ => return callsite_error("model can only be attached to structs"),
     };
-
-    let derive: ParsedDerive = ParsedDerive::from_attrs(&input.attrs);
+    let rid_attrs = parse_rid_attrs(&input.attrs);
+    let struct_config = StructConfig::new(&rid_attrs);
 
     match model_struct {
         syn::DataStruct {
             fields: Fields::Named(FieldsNamed { named, .. }),
             ..
         } => {
-            let parsed_struct = ParsedStruct::new(struct_ident, named.clone(), derive);
+            let parsed_struct = ParsedStruct::new(struct_ident, named.clone(), struct_config);
             parsed_struct.tokens()
         }
         syn::DataStruct {

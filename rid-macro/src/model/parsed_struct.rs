@@ -1,12 +1,13 @@
 use super::dart::GetterBody;
 use crate::{
+    attrs::StructConfig,
     common::{
         errors::type_error,
         parsed_field::ParsedField,
         resolvers::{cstring_free, instance_ident, resolve_ptr, resolve_vec_ptr},
         rust::ValueType,
         state::get_state,
-        DartType, ParsedDerive, RustType,
+        DartType, RustType,
     },
     templates::vec,
 };
@@ -22,11 +23,11 @@ pub struct ParsedStruct {
     ident: syn::Ident,
     parsed_fields: Vec<ParsedField>,
     method_prefix: String,
-    derive: ParsedDerive,
+    config: StructConfig,
 }
 
 impl ParsedStruct {
-    pub fn new(ident: syn::Ident, fields: Punctuated<Field, Comma>, derive: ParsedDerive) -> Self {
+    pub fn new(ident: syn::Ident, fields: Punctuated<Field, Comma>, config: StructConfig) -> Self {
         let method_prefix = format!("rid_{}", ident.to_string().to_lowercase()).to_string();
         let parsed_fields = parse_fields(fields, &method_prefix);
 
@@ -34,7 +35,7 @@ impl ParsedStruct {
             ident,
             parsed_fields,
             method_prefix,
-            derive,
+            config,
         }
     }
 
@@ -99,7 +100,7 @@ impl ParsedStruct {
     }
 
     fn rust_derive_methods(&self) -> Tokens {
-        if self.derive.debug {
+        if self.config.debug {
             let struct_ident = &self.ident;
             let struct_instance_ident = instance_ident(&struct_ident);
             let fn_debug_ident = format_ident!("{}_debug", self.method_prefix);
@@ -335,7 +336,7 @@ impl ParsedStruct {
 
     fn dart_derive_methods(&self) -> String {
         let mut getters = vec![];
-        if self.derive.debug {
+        if self.config.debug {
             let ffi_debug_method = format!("{}_debug", self.method_prefix);
             let ffi_debug_pretty_method = format!("{}_debug_pretty", self.method_prefix);
             getters.push(format!(

@@ -18,6 +18,7 @@ rid_common = { path = "../rid-common" }
 syn = { version = "1.0.60", features = ["extra-traits", "full"] }
 quote = "1.0.9"
 proc-macro2 = "1.0.24"
+proc-macro-error = "1.0.4"
 
 [dev-dependencies]
 macrotest = "1"

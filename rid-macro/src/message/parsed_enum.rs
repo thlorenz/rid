@@ -1,8 +1,11 @@
-use super::{message_args::MessageArgs, parsed_variant::ParsedVariant};
-use crate::common::{
-    errors::derive_error,
-    resolvers::{instance_ident, resolve_ptr, resolve_string_ptr},
-    rust::RustType,
+use super::parsed_variant::ParsedVariant;
+use crate::{
+    attrs::EnumConfig,
+    common::{
+        errors::derive_error,
+        resolvers::{instance_ident, resolve_ptr, resolve_string_ptr},
+        rust::RustType,
+    },
 };
 use quote::{format_ident, quote_spanned};
 use rid_common::{DART_FFI, FFI_GEN_BIND, RID_FFI, STRING_TO_NATIVE_INT8};
@@ -20,14 +23,18 @@ pub struct ParsedEnum {
 }
 
 impl ParsedEnum {
-    pub fn new(ident: syn::Ident, variants: Punctuated<Variant, Comma>, args: MessageArgs) -> Self {
+    pub fn new(
+        ident: syn::Ident,
+        variants: Punctuated<Variant, Comma>,
+        config: EnumConfig,
+    ) -> Self {
         let ident_str = ident.to_string();
         let ident_lower_camel = lower_camel_case(&ident_str);
         let ident_lower = ident_str.to_lowercase();
         let method_prefix = format!("rid_{}", ident_lower);
         let module_ident = format_ident!("__rid_{}_ffi", ident_lower);
         let parsed_variants = parse_variants(variants, &method_prefix);
-        let struct_ident = format_ident!("{}", args.to);
+        let struct_ident = format_ident!("{}", config.to);
         Self {
             ident,
             parsed_variants,
