@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+
+RUST_LOG=trace DART_LOG=verbose \
+  dart                          \
+    --enable-asserts            \
+    --packages=.packages        \
+    package:dart_todo/messages.dart 
+
