@@ -13,7 +13,6 @@ pub struct VariantField {
 impl VariantField {
     pub fn new(f: Field, slot: usize) -> Result<Self, String> {
         let ty = f.ty;
-
         let rust_ty = RustType::try_from(&ty)
             .map_err(|err| format!("Encountered invalid rust type {:#?}\n{}", ty, err))?;
 

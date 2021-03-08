@@ -17,21 +17,27 @@ fn extract_ident(expr: &syn::Expr) -> Option<&syn::Ident> {
 
 impl EnumConfig {
     pub fn new(enum_ident: &syn::Ident, attrs: &[RidAttr]) -> Self {
+        use RidAttr::*;
         let mut to: Option<String> = None;
         for attr in attrs {
             match attr {
-                RidAttr::Debug(ident) => {
+                Debug(ident) => {
                     abort!(ident, "debug can only be exposed for model structs")
                 }
-                RidAttr::Model(_, model) => {
+                Model(_, model) => {
                     let ident = extract_ident(model);
                     match ident {
                         Some(ident) => to = Some(ident.to_string()),
-                        None => abort!(ident,
-                            "Arg 'to' is assigned incorrectly, use #[rid::message(to = Model)] instead."
+                        None => abort!(
+                            ident,
+                            "Arg 'to' is assigned incorrectly, use #[rid(to = Model)] instead."
                         ),
                     };
                 }
+                Types(ident, _) => {
+                    abort!(ident, "types can only be set on variant fields")
+                }
+                Wip => {}
             }
         }
 
@@ -39,7 +45,7 @@ impl EnumConfig {
             Some(to) => Self { to },
             None => abort!(
                 enum_ident,
-                "Arg 'to' is required, i.e. #[rid::message(to = Model)]."
+                "Arg 'to' is required on Messages, i.e. #[rid(to = Model)]."
             ),
         }
     }

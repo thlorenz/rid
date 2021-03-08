@@ -7,6 +7,10 @@ edition = "2018"
 [lib]
 proc-macro = true
 
+# [[bin]]
+# name = "main"
+# path = "src/main.rs"
+ 
 [[test]]
 name = "tests"
 path = "tests/expand.rs"

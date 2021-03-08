@@ -1,6 +1,7 @@
 use syn::Variant;
 
 use super::variant_field::VariantField;
+use crate::attrs::parse_rid_attrs;
 
 pub struct ParsedVariant {
     pub ident: syn::Ident,
@@ -28,6 +29,11 @@ impl ParsedVariant {
 }
 
 fn extract_fields(v: Variant) -> (Vec<String>, Vec<VariantField>) {
+    let variant_attrs = parse_rid_attrs(&v.attrs);
+    if v.attrs.len() > 0 {
+        eprintln!("attrs: {:#?}", variant_attrs);
+    }
+
     v.fields
         .into_iter()
         .enumerate()

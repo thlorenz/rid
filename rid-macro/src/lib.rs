@@ -1,3 +1,4 @@
+#![allow(dead_code, unused_variables, unused_imports)]
 mod attrs;
 mod common;
 mod message;
@@ -22,6 +23,10 @@ const RID_PRINT_MESSAGE: &str = "RID_PRINT_MESSAGE";
 #[proc_macro_error]
 pub fn model(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as syn::DeriveInput);
+
+    if let Ok(_) = env::var(RID_PRINT_MESSAGE) {
+        return TokenStream::new();
+    }
     if let Ok(_) = env::var(RID_PRINT_MODEL) {
         //    println!("{:#?}", &input);
         let args = attrs::parse_rid_attrs(&input.attrs);
@@ -37,18 +42,10 @@ pub fn model(input: TokenStream) -> TokenStream {
 pub fn message(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as syn::DeriveInput);
     if let Ok(_) = env::var(RID_PRINT_MESSAGE) {
-        println!("input: {:#?}", &input);
+        // println!("input: {:#?}", &input);
+        rid_ffi_message_impl(input);
         process::exit(0)
     } else {
         rid_ffi_message_impl(input).into()
     }
-}
-
-#[proc_macro_derive(RidTest, attributes(rid))]
-#[proc_macro_error]
-pub fn test(input: TokenStream) -> TokenStream {
-    let input = parse_macro_input!(input as syn::DeriveInput);
-    let args = attrs::parse_rid_attrs(&input.attrs);
-    println!("{:#?}", &args);
-    TokenStream::new()
 }

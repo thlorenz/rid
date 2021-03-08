@@ -1,10 +1,14 @@
+use std::collections::{HashMap, HashSet};
+
 use proc_macro2::Ident;
+use quote::__private::ext::RepToTokensExt;
 use syn::{
-    parenthesized,
     parse::{Parse, ParseStream},
-    Attribute, Expr, LitStr, Token,
+    Attribute, Expr, ExprArray, ExprBlock, ExprCall, ExprGroup, ExprStruct, ExprTuple, ExprType,
+    LitStr, Token,
 };
 
+use super::{type_category::ExprTypeCategory, ValidatedTypeCategoryItem};
 use proc_macro_error::{abort, ResultExt};
 
 #[derive(Debug)]
@@ -26,15 +30,35 @@ pub enum RidAttr {
 
     // ident = arbitrary_expr
     Model(syn::Ident, Expr),
+
+    Types(syn::Ident, HashMap<String, ValidatedTypeCategoryItem>),
+
+    Wip,
 }
 
 impl Parse for RidAttr {
-    fn parse(input: ParseStream<'_>) -> syn::Result<Self> {
+    fn parse(input: ParseStream) -> syn::Result<Self> {
         use self::RidAttr::*;
 
         let name: Ident = input.parse()?;
         let name_str = name.to_string();
 
+        eprintln!("{:#?}", input);
+        if name_str == "types" {
+            if input.peek(Token![=]) {
+                let assign_token = input.parse::<Token![=]>()?;
+                let res = input.parse::<ExprTypeCategory>()?;
+                return match res.into_validated() {
+                    Ok(hash) => Ok(Types(name, hash)),
+                    Err(err) => abort!(name, err),
+                };
+            } else {
+                abort!(
+                    name,
+                    "'types' need to be of the form #[rid(types = { Ty: Enum }] or similar"
+                )
+            }
+        }
         if input.peek(Token![=]) {
             // key = value
             let assign_token = input.parse::<Token![=]>()?;
@@ -43,24 +67,23 @@ impl Parse for RidAttr {
                 // TODO: more details about specific case
                 abort!(name, "don't use quotes in assignments")
             } else {
-                match input.parse::<Expr>() {
-                    Ok(expr) => match &*name_str {
-                        "to" => Ok(Model(name, expr)),
+                match &*name_str {
+                    "types" => match input.parse::<ExprTuple>() {
+                        Ok(tpl) => {
+                            eprintln!("tuple {:#?}", tpl);
+                            Ok(RidAttr::Wip)
+                        }
+                        Err(_) => abort!(name, "key: {} needs to be tuple", name_str),
+                    },
+                    "to" => match input.parse::<Expr>() {
+                        Ok(expr) => Ok(Model(name, expr)),
                         _ => abort!(name, "key: {} is not supported", name_str),
                     },
-                    Err(_) => abort! {
-                        assign_token,
-                        "expected `expression` after `=`"
-                    },
+                    _ => abort!(name, "key: {} is not supported", name_str),
                 }
             }
         } else if input.peek(syn::token::Paren) {
-            // value()
-            let nested;
-            parenthesized!(nested in input);
-
             match &*name_str {
-                "tuple" => print!("nested: {:#?}", nested),
                 "to" => abort!(
                     name,
                     "'{0}' needs to be assigned via '=', i.e. #[rid({0} = value)]",
@@ -68,8 +91,6 @@ impl Parse for RidAttr {
                 ),
                 _ => abort!(name, "unexpected parenthesized attribute: {}", name_str),
             }
-
-            Ok(Debug(name))
         } else {
             match &*name_str {
                 "debug" => Ok(Debug(name)),
