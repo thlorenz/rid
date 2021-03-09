@@ -1,6 +1,9 @@
 use rid_common::{DART_FFI, FFI_GEN_BIND, RID_FFI};
 
-use crate::common::DartType;
+use crate::{
+    attrs::{self, TypeInfo},
+    common::DartType,
+};
 
 pub enum GetterBody {
     Expression(String),
@@ -39,7 +42,7 @@ impl DartType {
                 rid_ffi = RID_FFI,
                 ffi_method = ffi_method
             )),
-            DartType::Custom(_) => Expression(format!(
+            DartType::Custom(_, _) => Expression(format!(
                 "{rid_ffi}.{ffi_method}(this);",
                 rid_ffi = RID_FFI,
                 ffi_method = ffi_method
@@ -58,9 +61,13 @@ impl DartType {
                 ffigen_bind = FFI_GEN_BIND,
                 ty = inner
             ),
-            // TODO: only works for Enums
-            DartType::Custom(_ty) => {
-                format!("{dart_ffi}.Pointer<{dart_ffi}.Int32>", dart_ffi = DART_FFI,)
+            DartType::Custom(info, ty) => {
+                use attrs::Category::*;
+                match info.cat {
+                    Enum => format!("{dart_ffi}.Pointer<{dart_ffi}.Int32>", dart_ffi = DART_FFI),
+                    Struct => todo!("dart::return_type Struct"),
+                    Prim => todo!("dart::return_type Prim"),
+                }
             }
         }
     }

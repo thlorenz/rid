@@ -6,8 +6,10 @@ pub enum DartType {
     Bool,
     String,
     Vec(String),
-    Custom(String),
+    Custom(TypeInfo, String),
 }
+
+use crate::attrs::TypeInfo;
 
 use super::RustType;
 
@@ -26,7 +28,7 @@ impl DartType {
                 // For now only supporting unnested Vecs
                 RVec((_, vec_indent)) => Ok(DartType::Vec(vec_indent.to_string())),
                 CString | RString => Ok(DartType::String),
-                RCustom((info, ty)) => Ok(DartType::Custom(ty.to_string())),
+                RCustom(info, ty) => Ok(DartType::Custom(info.clone(), ty.to_string())),
             },
             _ => Err(format!(
                 "Rust type '{}'/'{}' cannot be converted to a Dart type",
@@ -40,7 +42,7 @@ impl DartType {
             DartType::Int32 | DartType::Int64 | DartType::Bool => true,
             DartType::String => false,
             DartType::Vec(_) => false,
-            DartType::Custom(_) => false,
+            DartType::Custom(_, _) => false,
         }
     }
 }
@@ -58,7 +60,7 @@ impl Display for DartType {
             DartType::Bool => "bool".to_string(),
             DartType::String => "String".to_string(),
             DartType::Vec(inner) => format!("List<{}>", inner),
-            DartType::Custom(ty) => ty.to_string(),
+            DartType::Custom(info, ty) => format!("{:?}({})", info, ty.to_string()),
         };
         write!(f, "{}", s)
     }

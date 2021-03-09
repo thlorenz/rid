@@ -9,7 +9,7 @@ pub enum ValueType {
     CString,
     RString,
     RVec((Box<RustType>, syn::Ident)),
-    RCustom((TypeInfo, String)),
+    RCustom(TypeInfo, String),
 }
 
 impl Display for ValueType {
@@ -18,7 +18,7 @@ impl Display for ValueType {
             CString => "CString".to_string(),
             RString => "String".to_string(),
             RVec((rust_ty, ident)) => format!("Vec<{}|{}>", rust_ty, ident),
-            RCustom((info, s)) => format!("{:?}({})", info.cat, s),
+            RCustom(info, s) => format!("{:?}({})", info.cat, s),
         };
         write!(f, "{}", ty)
     }
@@ -125,7 +125,7 @@ fn extract_path_segment(
             // TODO: We don't currently verify that all types are being used. That would require
             // recording this across all variant fields.
             match types.get(&ident_str) {
-                Some(ty) => Value(RCustom((ty.clone(), ident_str))),
+                Some(ty) => Value(RCustom(ty.clone(), ident_str)),
                 None => abort!(
                     ident,
                     // TODO: Include info regarding which custom types are viable, link to URL?

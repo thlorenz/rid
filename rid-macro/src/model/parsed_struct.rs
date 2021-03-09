@@ -195,7 +195,7 @@ impl ParsedStruct {
                     #cstring_free_tokens
                 }
             }
-            Ok(RustType::Value(ValueType::RCustom(_))) => {
+            Ok(RustType::Value(ValueType::RCustom(_, _))) => {
                 quote_spanned! { fn_ident.span() =>
                     #[no_mangle]
                     #[allow(non_snake_case)]

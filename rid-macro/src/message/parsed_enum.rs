@@ -1,6 +1,6 @@
 use super::parsed_variant::ParsedVariant;
 use crate::{
-    attrs::EnumConfig,
+    attrs::{self, EnumConfig},
     common::{
         errors::derive_error,
         resolvers::{instance_ident, resolve_ptr, resolve_string_ptr},
@@ -108,10 +108,9 @@ impl ParsedEnum {
                 RustType::Value(RVec(_)) => {
                     todo!("ParsedEnum::rust_method::RustType::Value(RVec(_))")
                 }
-                RustType::Value(RCustom((info, p))) => {
+                RustType::Value(RCustom(_, p)) => {
                     let arg = format_ident!("arg{}", f.slot);
                     let ty = format_ident!("{}", p);
-                    // TODO: consider info here
                     let ty = quote_spanned! { arg.span() => #ty };
                     Arg {
                         arg,
@@ -227,12 +226,16 @@ impl ParsedEnum {
                         todo!("ParsedEnum::dart_method::RustType::Value(RVec(_))")
                     }
                     RustType::Primitive(_) => format!("arg{}", f.slot),
-                    RustType::Value(RCustom(_)) => format!("arg{}", f.slot),
+                    RustType::Value(RCustom(_, _)) => format!("arg{}", f.slot),
                     RustType::Unknown => unimplemented!("dart method for unknown rust type"),
                 };
-                let ty = if let RustType::Value(RCustom(_)) = f.rust_ty {
-                    // TODO: only works for enums
-                    "int".to_string()
+                let ty = if let RustType::Value(RCustom(info, _)) = &f.rust_ty {
+                    use attrs::Category::*;
+                    match info.cat {
+                        Enum => "int".to_string(),
+                        Struct => todo!("parsed_enum::rust_method Struct"),
+                        Prim => todo!("parsed_enum::rust_method Prim"),
+                    }
                 } else {
                     f.dart_ty.to_string()
                 };
