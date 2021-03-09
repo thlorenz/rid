@@ -8,7 +8,7 @@ use syn::{
     LitStr, Token,
 };
 
-use super::{type_category::ExprTypeCategory, ValidatedTypeCategoryItem};
+use super::{type_category::ExprTypeInfo, TypeInfo};
 use proc_macro_error::{abort, ResultExt};
 
 #[derive(Debug)]
@@ -31,7 +31,7 @@ pub enum RidAttr {
     // ident = arbitrary_expr
     Model(syn::Ident, Expr),
 
-    Types(syn::Ident, HashMap<String, ValidatedTypeCategoryItem>),
+    Types(syn::Ident, HashMap<String, TypeInfo>),
 
     Wip,
 }
@@ -43,11 +43,10 @@ impl Parse for RidAttr {
         let name: Ident = input.parse()?;
         let name_str = name.to_string();
 
-        eprintln!("{:#?}", input);
         if name_str == "types" {
             if input.peek(Token![=]) {
                 let assign_token = input.parse::<Token![=]>()?;
-                let res = input.parse::<ExprTypeCategory>()?;
+                let res = input.parse::<ExprTypeInfo>()?;
                 return match res.into_validated() {
                     Ok(hash) => Ok(Types(name, hash)),
                     Err(err) => abort!(name, err),
@@ -69,10 +68,7 @@ impl Parse for RidAttr {
             } else {
                 match &*name_str {
                     "types" => match input.parse::<ExprTuple>() {
-                        Ok(tpl) => {
-                            eprintln!("tuple {:#?}", tpl);
-                            Ok(RidAttr::Wip)
-                        }
+                        Ok(tpl) => Ok(RidAttr::Wip),
                         Err(_) => abort!(name, "key: {} needs to be tuple", name_str),
                     },
                     "to" => match input.parse::<Expr>() {

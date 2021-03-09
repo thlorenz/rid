@@ -12,18 +12,18 @@ use syn::{
     token, Ident, Token,
 };
 
-#[derive(Debug, PartialEq)]
-pub enum TypeCategory {
+#[derive(Debug, PartialEq, Clone)]
+pub enum Category {
     Enum,
     Struct,
     Prim,
 }
 
-impl TryFrom<&Ident> for TypeCategory {
+impl TryFrom<&Ident> for Category {
     type Error = String;
 
     fn try_from(ident: &Ident) -> Result<Self, Self::Error> {
-        use TypeCategory::*;
+        use Category::*;
         match ident.to_string().as_str() {
             "Enum" => Ok(Enum),
             "Struct" => Ok(Struct),
@@ -34,28 +34,28 @@ impl TryFrom<&Ident> for TypeCategory {
 }
 
 #[derive(Debug)]
-pub struct TypeCategoryItem {
+pub struct UnvalidatedTypeCategoryInfo {
     pub key: Ident,
     pub cat: Ident,
 }
 
-#[derive(Debug, PartialEq)]
-pub struct ValidatedTypeCategoryItem {
+#[derive(Debug, PartialEq, Clone)]
+pub struct TypeInfo {
     pub key: Ident,
-    pub cat: TypeCategory,
+    pub cat: Category,
 }
 
 #[derive(Debug)]
-pub struct ExprTypeCategory {
-    pub items: HashMap<String, TypeCategoryItem>,
+pub struct ExprTypeInfo {
+    pub items: HashMap<String, UnvalidatedTypeCategoryInfo>,
 }
 
-impl ExprTypeCategory {
-    pub fn into_validated(self) -> Result<HashMap<String, ValidatedTypeCategoryItem>, String> {
-        let mut validated: HashMap<String, ValidatedTypeCategoryItem> = HashMap::new();
+impl ExprTypeInfo {
+    pub fn into_validated(self) -> Result<HashMap<String, TypeInfo>, String> {
+        let mut validated: HashMap<String, TypeInfo> = HashMap::new();
         for (key, val) in self.items {
-            let cat = TypeCategory::try_from(&val.cat)?;
-            validated.insert(key, ValidatedTypeCategoryItem { key: val.key, cat });
+            let cat = Category::try_from(&val.cat)?;
+            validated.insert(key, TypeInfo { key: val.key, cat });
         }
         Ok(validated)
     }
@@ -81,7 +81,7 @@ impl Parse for Field {
     }
 }
 
-impl Parse for ExprTypeCategory {
+impl Parse for ExprTypeInfo {
     fn parse(input: ParseStream) -> syn::Result<Self> {
         let content;
         braced!(content in input);
@@ -90,7 +90,7 @@ impl Parse for ExprTypeCategory {
         for field in fields {
             items.insert(
                 field.name.to_string(),
-                TypeCategoryItem {
+                UnvalidatedTypeCategoryInfo {
                     key: field.name,
                     cat: field.ty,
                 },
@@ -103,7 +103,7 @@ impl Parse for ExprTypeCategory {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use TypeCategory::*;
+    use Category::*;
 
     use quote::quote;
 
@@ -112,8 +112,8 @@ mod tests {
         let input = quote! {
              { Filter: Enum, MyInt: Prim, Payload: Struct }
         };
-        let res = syn::parse2::<ExprTypeCategory>(input).unwrap();
-        let ExprTypeCategory { items } = &res;
+        let res = syn::parse2::<ExprTypeInfo>(input).unwrap();
+        let ExprTypeInfo { items } = &res;
 
         assert_eq!(items.len(), 3);
         assert!(items.get("Filter").is_some());
@@ -132,8 +132,8 @@ mod tests {
         let input = quote! {
              { Filter: Invalid }
         };
-        let res = syn::parse2::<ExprTypeCategory>(input).unwrap();
-        let ExprTypeCategory { items } = &res;
+        let res = syn::parse2::<ExprTypeInfo>(input).unwrap();
+        let ExprTypeInfo { items } = &res;
 
         assert_eq!(items.len(), 1);
         assert!(items.get("Filter").is_some());
@@ -151,7 +151,7 @@ mod tests {
         let input = quote! {
              { Payload: enum, Filter: Invalid }
         };
-        let res = syn::parse2::<ExprTypeCategory>(input);
+        let res = syn::parse2::<ExprTypeInfo>(input);
         if let Err(err) = res {
             eprintln!("{:#?}", err);
             assert_eq!(err.to_string(), "expected identifier");
