@@ -153,7 +153,6 @@ mod tests {
         };
         let res = syn::parse2::<ExprTypeInfo>(input);
         if let Err(err) = res {
-            eprintln!("{:#?}", err);
             assert_eq!(err.to_string(), "expected identifier");
         } else {
             assert!(false, "should have errored");

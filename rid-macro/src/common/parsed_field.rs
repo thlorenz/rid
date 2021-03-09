@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use syn::Field;
 
 use super::{DartType, RustType};
@@ -17,7 +19,8 @@ impl ParsedField {
         let method_ident = method_ident_from_field(method_prefix, &ident);
         let ty = f.ty;
 
-        let rust_res = RustType::try_from(&ty);
+        // TODO: pass FieldConfig with types hashmap
+        let rust_res = RustType::try_from(&ty, &HashMap::new());
         let dart_ty = match &rust_res {
             Ok((ident, ref rust_ty)) => DartType::try_from(rust_ty, ident),
             Err(_) => Err("Dart type not determined due to invalid Rust type".to_string()),

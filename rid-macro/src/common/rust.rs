@@ -1,11 +1,15 @@
 #![allow(dead_code)]
-use std::fmt::{Debug, Display};
+use proc_macro_error::abort;
+use std::{
+    collections::HashMap,
+    fmt::{Debug, Display},
+};
 
 pub enum ValueType {
     CString,
     RString,
     RVec((Box<RustType>, syn::Ident)),
-    RCustom(String),
+    RCustom((TypeInfo, String)),
 }
 
 impl Display for ValueType {
@@ -14,7 +18,7 @@ impl Display for ValueType {
             CString => "CString".to_string(),
             RString => "String".to_string(),
             RVec((rust_ty, ident)) => format!("Vec<{}|{}>", rust_ty, ident),
-            RCustom(s) => s.to_string(),
+            RCustom((info, s)) => format!("{:?}({})", info.cat, s),
         };
         write!(f, "{}", ty)
     }
@@ -78,11 +82,17 @@ use PrimitiveType::*;
 use RustType::*;
 use ValueType::*;
 
-fn extract_path_segment(path: &syn::Path) -> (&syn::Ident, RustType) {
+use crate::attrs::TypeInfo;
+
+fn extract_path_segment(
+    path: &syn::Path,
+    types: &HashMap<String, TypeInfo>,
+) -> (syn::Ident, RustType) {
     let syn::PathSegment {
         ident, arguments, ..
     } = path.segments.last().unwrap();
-    let rust_ty = match ident.to_string().as_str() {
+    let ident_str = ident.to_string();
+    let rust_ty = match ident_str.as_str() {
         "CString" => Value(CString),
         "String" => Value(RString),
         "u8" => Primitive(U8),
@@ -99,7 +109,7 @@ fn extract_path_segment(path: &syn::Path) -> (&syn::Ident, RustType) {
                 ..
             }) => match &args[0] {
                 syn::GenericArgument::Type(syn::Type::Path(syn::TypePath { path, .. })) => {
-                    let (ident, vec_type) = extract_path_segment(path);
+                    let (ident, vec_type) = extract_path_segment(path, types);
                     Value(RVec((Box::new(vec_type), ident.clone())))
                 }
                 _ => Unknown,
@@ -111,16 +121,32 @@ fn extract_path_segment(path: &syn::Path) -> (&syn::Ident, RustType) {
         // for which the same generic code we generate works?
         // However since for built in rust types we won't have an opaque structs,
         // the access methods will be missing, so at least that we need to consider somwehow.
-        _ => Value(RCustom(ident.to_string())),
+        _ => {
+            // TODO: We don't currently verify that all types are being used. That would require
+            // recording this across all variant fields.
+            match types.get(&ident_str) {
+                Some(ty) => Value(RCustom((ty.clone(), ident_str))),
+                None => abort!(
+                    ident,
+                    // TODO: Include info regarding which custom types are viable, link to URL?
+                    "[rid] Missing info for custom type {0}. \
+                    Specify via '#[rid(types = {{ {0}: Enum }})]' or similar.",
+                    ident_str
+                ),
+            }
+        }
     };
 
-    (ident, rust_ty)
+    (ident.clone(), rust_ty)
 }
 
 impl RustType {
-    pub fn try_from(ty: &syn::Type) -> Result<(&syn::Ident, RustType), String> {
-        match ty {
-            syn::Type::Path(syn::TypePath { path, .. }) => Ok(extract_path_segment(path)),
+    pub fn try_from(
+        ty: &syn::Type,
+        types: &HashMap<String, TypeInfo>,
+    ) -> Result<(syn::Ident, RustType), String> {
+        match &ty {
+            syn::Type::Path(syn::TypePath { path, .. }) => Ok(extract_path_segment(path, types)),
             syn::Type::Array(ty) => Err(format!("Array: {:#?}", &ty)),
             syn::Type::BareFn(ty) => Err(format!("BareFn: {:#?}", &ty)),
             syn::Type::Group(ty) => Err(format!("Group: {:#?}", &ty)),

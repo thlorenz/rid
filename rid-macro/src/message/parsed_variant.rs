@@ -31,9 +31,6 @@ impl ParsedVariant {
 fn extract_fields(v: Variant) -> (Vec<String>, Vec<VariantField>) {
     let variant_attrs = parse_rid_attrs(&v.attrs);
     let config = VariantConfig::new(&variant_attrs);
-    if v.attrs.len() > 0 {
-        eprint!("{:#?}", config);
-    }
 
     v.fields
         .into_iter()

@@ -26,7 +26,7 @@ impl DartType {
                 // For now only supporting unnested Vecs
                 RVec((_, vec_indent)) => Ok(DartType::Vec(vec_indent.to_string())),
                 CString | RString => Ok(DartType::String),
-                RCustom(ty) => Ok(DartType::Custom(ty.to_string())),
+                RCustom((info, ty)) => Ok(DartType::Custom(ty.to_string())),
             },
             _ => Err(format!(
                 "Rust type '{}'/'{}' cannot be converted to a Dart type",

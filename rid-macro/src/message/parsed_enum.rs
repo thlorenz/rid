@@ -108,9 +108,10 @@ impl ParsedEnum {
                 RustType::Value(RVec(_)) => {
                     todo!("ParsedEnum::rust_method::RustType::Value(RVec(_))")
                 }
-                RustType::Value(RCustom(p)) => {
+                RustType::Value(RCustom((info, p))) => {
                     let arg = format_ident!("arg{}", f.slot);
                     let ty = format_ident!("{}", p);
+                    // TODO: consider info here
                     let ty = quote_spanned! { arg.span() => #ty };
                     Arg {
                         arg,
