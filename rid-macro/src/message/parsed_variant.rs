@@ -1,7 +1,7 @@
 use syn::Variant;
 
 use super::variant_field::VariantField;
-use crate::attrs::{parse_rid_attrs, VariantConfig};
+use crate::attrs::{parse_rid_attrs, FieldConfig};
 
 pub struct ParsedVariant {
     pub ident: syn::Ident,
@@ -30,7 +30,7 @@ impl ParsedVariant {
 
 fn extract_fields(v: Variant) -> (Vec<String>, Vec<VariantField>) {
     let variant_attrs = parse_rid_attrs(&v.attrs);
-    let config = VariantConfig::new(&variant_attrs);
+    let config = FieldConfig::new(&variant_attrs);
 
     v.fields
         .into_iter()

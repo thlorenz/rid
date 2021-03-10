@@ -1,6 +1,6 @@
 use super::dart::GetterBody;
 use crate::{
-    attrs::StructConfig,
+    attrs::{self, StructConfig, TypeInfo},
     common::{
         errors::type_error,
         parsed_field::ParsedField,
@@ -195,14 +195,27 @@ impl ParsedStruct {
                     #cstring_free_tokens
                 }
             }
-            Ok(RustType::Value(ValueType::RCustom(_, _))) => {
-                quote_spanned! { fn_ident.span() =>
-                    #[no_mangle]
-                    #[allow(non_snake_case)]
-                    pub extern "C" fn #fn_ident(ptr: *mut #struct_ident) -> *const #ty {
-                        let #struct_instance_ident = #resolve_struct_ptr;
-                        &#struct_instance_ident.#field_ident as *const _ as *const #ty
-                    }
+            Ok(RustType::Value(ValueType::RCustom(info, _))) => {
+                use attrs::Category::*;
+                match info.cat {
+                    // TODO: we are assuming each enum is #[repr(C)]
+                    Enum => quote_spanned! { fn_ident.span() =>
+                        #[no_mangle]
+                        #[allow(non_snake_case)]
+                        pub extern "C" fn #fn_ident(ptr: *mut #struct_ident) -> i32 {
+                            let #struct_instance_ident = #resolve_struct_ptr;
+                            #struct_instance_ident.#field_ident.clone() as i32
+                        }
+                    },
+                    Struct => quote_spanned! { fn_ident.span() =>
+                        #[no_mangle]
+                        #[allow(non_snake_case)]
+                        pub extern "C" fn #fn_ident(ptr: *mut #struct_ident) -> *const #ty {
+                            let #struct_instance_ident = #resolve_struct_ptr;
+                            &#struct_instance_ident.#field_ident as *const _ as *const #ty
+                        }
+                    },
+                    Prim => todo!("parsed_struct:rust_field_method Prim"),
                 }
             }
             Ok(RustType::Primitive(p)) => {

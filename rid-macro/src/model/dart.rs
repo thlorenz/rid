@@ -64,8 +64,9 @@ impl DartType {
             DartType::Custom(info, ty) => {
                 use attrs::Category::*;
                 match info.cat {
-                    Enum => format!("{dart_ffi}.Pointer<{dart_ffi}.Int32>", dart_ffi = DART_FFI),
-                    Struct => todo!("dart::return_type Struct"),
+                    // TODO: we are assuming each enum is #[repr(C)]
+                    Enum => "int".to_string(),
+                    Struct => format!("{dart_ffi}.Pointer<{dart_ffi}.Int32>", dart_ffi = DART_FFI),
                     Prim => todo!("dart::return_type Prim"),
                 }
             }

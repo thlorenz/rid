@@ -2,6 +2,8 @@ use std::collections::HashMap;
 
 use syn::Field;
 
+use crate::attrs::{parse_rid_attrs, FieldConfig};
+
 use super::{DartType, RustType};
 
 #[derive(Debug)]
@@ -19,8 +21,10 @@ impl ParsedField {
         let method_ident = method_ident_from_field(method_prefix, &ident);
         let ty = f.ty;
 
-        // TODO: pass FieldConfig with types hashmap
-        let rust_res = RustType::try_from(&ty, &HashMap::new());
+        let field_attrs = parse_rid_attrs(&f.attrs);
+        let config = FieldConfig::new(&field_attrs);
+
+        let rust_res = RustType::try_from(&ty, &config.types);
         let dart_ty = match &rust_res {
             Ok((ident, ref rust_ty)) => DartType::try_from(rust_ty, ident),
             Err(_) => Err("Dart type not determined due to invalid Rust type".to_string()),

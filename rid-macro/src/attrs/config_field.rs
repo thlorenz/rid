@@ -7,7 +7,7 @@ use crate::attrs::{RidAttr, TypeInfo};
 use crate::message::VariantField;
 
 #[derive(Debug)]
-pub struct VariantConfig {
+pub struct FieldConfig {
     pub types: HashMap<String, TypeInfo>,
 }
 
@@ -20,7 +20,7 @@ fn merge(tgt: &mut HashMap<String, TypeInfo>, src: &HashMap<String, TypeInfo>) {
     }
 }
 
-impl VariantConfig {
+impl FieldConfig {
     pub fn new(attrs: &[RidAttr]) -> Self {
         use RidAttr::*;
         let mut types: HashMap<String, TypeInfo> = HashMap::new();

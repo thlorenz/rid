@@ -53,6 +53,8 @@ impl Debug for DartType {
     }
 }
 
+// WARN: this is used to determine dart return type.
+// Should probably move into a separate method
 impl Display for DartType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let s = match self {
@@ -60,7 +62,7 @@ impl Display for DartType {
             DartType::Bool => "bool".to_string(),
             DartType::String => "String".to_string(),
             DartType::Vec(inner) => format!("List<{}>", inner),
-            DartType::Custom(info, ty) => format!("{:?}({})", info, ty.to_string()),
+            DartType::Custom(_, ty) => ty.to_string(),
         };
         write!(f, "{}", s)
     }

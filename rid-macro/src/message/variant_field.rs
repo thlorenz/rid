@@ -2,7 +2,7 @@ use proc_macro_error::abort;
 use syn::Field;
 
 use crate::{
-    attrs::{TypeInfo, VariantConfig},
+    attrs::{FieldConfig, TypeInfo},
     common::{rust::ValueType, DartType, RustType},
 };
 
@@ -15,7 +15,7 @@ pub struct VariantField {
 }
 
 impl VariantField {
-    pub fn new(f: Field, slot: usize, config: &VariantConfig) -> Result<Self, String> {
+    pub fn new(f: Field, slot: usize, config: &FieldConfig) -> Result<Self, String> {
         let ty = f.ty;
         let rust_ty = RustType::try_from(&ty, &config.types)
             .map_err(|err| format!("Encountered invalid rust type {:#?}\n{}", ty, err))?;
