@@ -5,7 +5,9 @@ extern crate log;
 #[rid(debug)]
 pub struct Model {
     last_added_id: u32,
+    #[rid(types = { Todo: Struct })]
     todos: Vec<Todo>,
+    #[rid(types = { Filter: Enum })]
     filter: Filter,
 }
 
@@ -16,7 +18,7 @@ pub struct Todo {
     completed: bool,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 #[repr(C)]
 pub enum Filter {
     Completed,
@@ -37,6 +39,7 @@ pub enum Msg {
     CompleteAll,
     RestartAll,
 
+    #[rid(types = { Filter: Enum })]
     SetFilter(Filter),
 }
 

@@ -1,3 +1,4 @@
+import 'generated/ffigen_binding.dart';
 import 'generated/rid_generated.dart';
 import 'dart:io';
 import 'dart:async';
@@ -24,6 +25,9 @@ messages() {
 
   model.msgToggleTodo(2);
   model.msgToggleTodo(3);
+  log.v(model.debug(LOG_VERBOSE));
+
+  model.msgSetFilter(Filter.Completed);
   log.v(model.debug(LOG_VERBOSE));
 
   model.msgRemoveCompleted();
