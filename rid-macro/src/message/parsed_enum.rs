@@ -163,7 +163,7 @@ impl ParsedEnum {
             #[no_mangle]
             #[allow(non_snake_case)]
             pub extern "C" fn #fn_ident(ptr: *mut #struct_ident, #(#args,)* ) {
-                let mut #struct_instance_ident = #resolve_struct_ptr;
+                let #struct_instance_ident = #resolve_struct_ptr;
                 #(#args_resolvers)*
                 #msg
                 #update_method
