@@ -30,6 +30,10 @@ messages() {
   model.msgSetFilter(Filter.Completed);
   log.v(model.debug(LOG_VERBOSE));
 
+  for (final filtered in model.filtered_todos.iter()) {
+    log.v("filtered: ${filtered.debug(LOG_VERBOSE)}");
+  }
+
   model.msgRemoveCompleted();
   log.v(model.debug(LOG_VERBOSE));
 

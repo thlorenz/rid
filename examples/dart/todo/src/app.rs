@@ -7,11 +7,14 @@ pub struct Model {
     last_added_id: u32,
     #[rid(types = { Todo: Struct })]
     todos: Vec<Todo>,
+    #[rid(types = { Todo: Struct })]
+    filtered_todos: Vec<Todo>,
     #[rid(types = { Filter: Enum })]
     filter: Filter,
 }
 
-#[derive(Debug, rid::Model)]
+#[derive(Debug, Clone, rid::Model)]
+#[rid(debug)]
 pub struct Todo {
     id: u32,
     title: String,
@@ -77,12 +80,36 @@ impl Model {
 
             SetFilter(filter) => self.filter = filter,
         };
+
+        self.update_filtered_todos();
     }
 
     fn update_todo<F: FnOnce(&mut Todo)>(&mut self, id: u32, update: F) {
         match self.todos.iter_mut().find(|x| x.id == id) {
             Some(todo) => update(todo),
             None => warn!("Could not find Todo with id '{}'", id),
+        };
+    }
+
+    fn update_filtered_todos(&mut self) {
+        match self.filter {
+            Filter::Completed => {
+                self.filtered_todos = self
+                    .todos
+                    .iter()
+                    .filter(|x| x.completed)
+                    .map(|x| x.clone())
+                    .collect()
+            }
+            Filter::Pending => {
+                self.filtered_todos = self
+                    .todos
+                    .iter()
+                    .filter(|x| !x.completed)
+                    .map(|x| x.clone())
+                    .collect()
+            }
+            Filter::All => self.filtered_todos = self.todos.iter().map(|x| x.clone()).collect(),
         };
     }
 }
@@ -93,6 +120,7 @@ pub extern "C" fn init_model_ptr() -> *const Model {
     let model = Model {
         last_added_id: 0,
         todos: vec![],
+        filtered_todos: vec![],
         filter: Filter::All,
     };
     Box::into_raw(Box::new(model))
