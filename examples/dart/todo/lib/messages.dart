@@ -45,6 +45,8 @@ messages() {
 
   log.d("restarting non-existent todo");
   model.msgRestartTodo(5);
+
+  rid_ffi.free_model_ptr(model);
 }
 
 interactive() {

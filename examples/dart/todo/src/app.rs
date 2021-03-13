@@ -125,3 +125,15 @@ pub extern "C" fn init_model_ptr() -> *const Model {
     };
     Box::into_raw(Box::new(model))
 }
+
+#[no_mangle]
+pub extern "C" fn free_model_ptr(ptr: *mut Model) {
+    let model = unsafe {
+        assert!(!ptr.is_null());
+        let ptr: *mut Model = &mut *ptr;
+        let ptr = ptr.as_mut().unwrap();
+        Box::from_raw(ptr)
+    };
+    info!("Freeing model: {:?}", model);
+    drop(model);
+}
