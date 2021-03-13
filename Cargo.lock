@@ -460,6 +460,10 @@ name = "rid_common"
 version = "0.1.0"
 
 [[package]]
+name = "rid_ffi"
+version = "0.1.0"
+
+[[package]]
 name = "rid_macro"
 version = "0.1.0"
 dependencies = [

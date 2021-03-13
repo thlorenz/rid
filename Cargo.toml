@@ -6,9 +6,10 @@ edition = "2018"
 
 [workspace]
 members=[
-  "rid-common",
-  "rid-macro",
   "rid-build",
+  "rid-common",
+  "rid-ffi",
+  "rid-macro",
   "examples/dart/todo"
 ]
 
