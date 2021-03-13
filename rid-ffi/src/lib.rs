@@ -5,6 +5,8 @@ use std::{
     ptr,
 };
 
+use rid_common::resolve_ptr;
+
 // Similar impl with more features and limited to primitive types since
 // it needs to guarantee reprC layout for the Vector.
 // Rid sends opaque structs so we don't need that part.
@@ -33,15 +35,6 @@ impl<T> From<&RidVec<T>> for ManDropVec<T> {
         let vec = unsafe { Vec::from_raw_parts(rv.ptr, rv.len, rv.capacity) };
         mem::ManuallyDrop::new(vec)
     }
-}
-
-unsafe fn resolve_ptr_mut<'a, T>(ptr: *mut T) -> &'a mut T {
-    assert!(!ptr.is_null());
-    ptr.as_mut().unwrap()
-}
-
-fn resolve_ptr<'a, T>(ptr: *mut T) -> &'a T {
-    unsafe { resolve_ptr_mut(ptr) }
 }
 
 impl<T> Index<usize> for RidVec<T> {
