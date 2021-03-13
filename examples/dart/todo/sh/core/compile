@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+
+ROOT="$DIR/../.."
+LIB="$ROOT/lib"
+BUILD="$ROOT/build"
+mkdir -p $BUILD
+
+dart compile exe       \
+  --packages .packages \
+  --output "$BUILD/$1" \
+  $LIB/$1.dart

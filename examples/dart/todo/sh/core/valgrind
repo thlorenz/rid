@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+
+ROOT="$DIR/../../"
+BUILD="$ROOT/build"
+PROG=$1
+
+[[ -n "${DC}" ]] && $DIR/compile $PROG
+[[ -n "${RC}" ]] && cargo build 
+
+if [[ -n "${VERBOSE}" ]]
+then
+  valgrind                      \
+    --leak-check=full           \
+    --ignore-ranges=0x000-0xFFF \
+    "$BUILD/$PROG" 2>&1       
+else
+  valgrind                     \
+    --leak-check=full           \
+    --ignore-ranges=0x000-0xFFF \
+    "$BUILD/$PROG" 2>&1         \
+    | grep -A2 -B3 -e 'alloc::' -e 'still reachable'
+fi
