@@ -15,3 +15,4 @@ members=[
 
 [dependencies]
 rid_macro = { path = "rid-macro" }
+rid_ffi = { path = "rid-ffi" }

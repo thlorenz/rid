@@ -441,6 +441,7 @@ dependencies = [
 name = "rid"
 version = "0.1.0"
 dependencies = [
+ "rid_ffi",
  "rid_macro",
 ]
 
@@ -452,6 +453,7 @@ dependencies = [
  "cbindgen",
  "log",
  "rid_common",
+ "rid_ffi",
  "simple_logger",
 ]
 
@@ -462,6 +464,9 @@ version = "0.1.0"
 [[package]]
 name = "rid_ffi"
 version = "0.1.0"
+dependencies = [
+ "rid_common",
+]
 
 [[package]]
 name = "rid_macro"
@@ -601,6 +606,7 @@ dependencies = [
  "log",
  "rid",
  "rid_build",
+ "rid_common",
 ]
 
 [[package]]
