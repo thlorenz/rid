@@ -6,8 +6,8 @@ ROOT="$DIR/../../"
 BUILD="$ROOT/build"
 PROG=$1
 
-[[ -n "${DC}" ]] && $DIR/compile $PROG
 [[ -n "${RC}" ]] && cargo build 
+[[ -n "${DC}" ]] && $DIR/compile $PROG
 
 if [[ -n "${VERBOSE}" ]]
 then
