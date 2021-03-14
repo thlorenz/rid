@@ -10,6 +10,7 @@ members=[
   "rid-common",
   "rid-ffi",
   "rid-macro",
+  "rid-macro-impl",
   "examples/dart/todo"
 ]
 

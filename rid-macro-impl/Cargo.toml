@@ -1,27 +1,20 @@
 [package]
-name = "rid_macro"
+name = "rid_macro_impl"
 version = "0.1.0"
 authors = ["Thorsten Lorenz <thlorenz@gmx.de>"]
 edition = "2018"
 
 [lib]
-proc-macro = true
 
 # [[bin]]
 # name = "main"
 # path = "src/main.rs"
  
-[[test]]
-name = "tests"
-path = "tests/expand.rs"
-
 [dependencies]
-rid_macro_impl = { path = "../rid-macro-impl" }
+rid_common = { path = "../rid-common" }
 
 # extra traits only needed to print debug info in development
 syn = { version = "1.0.60", features = ["extra-traits", "full"] }
 quote = "1.0.9"
+proc-macro2 = "1.0.24"
 proc-macro-error = "1.0.4"
-
-[dev-dependencies]
-macrotest = "1"
