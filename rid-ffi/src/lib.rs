@@ -14,10 +14,27 @@ use rid_common::resolve_ptr;
 
 pub type ManDropVec<T> = mem::ManuallyDrop<Vec<T>>;
 
+#[derive(Debug)]
+#[repr(C)]
 pub struct RidVec<T> {
     pub ptr: *mut T,
     pub len: usize,
     pub capacity: usize,
+}
+
+// Needs to match the struct above and is included by rid_build in order to expose it to cbindgen
+pub fn code_rid_vec() -> String {
+    let s = stringify! {
+    mod rid_ffi_rid_vec {
+        #[repr(C)]
+        pub struct RidVec<T> {
+            pub ptr: *mut T,
+            pub len: usize,
+            pub capacity: usize,
+        }
+    }
+    };
+    s.to_string()
 }
 
 impl<T> From<Vec<T>> for RidVec<T> {

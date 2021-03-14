@@ -7,6 +7,14 @@ pub(crate) struct BindingsGenerator<'a> {
     pub(crate) crate_name: &'a str,
 }
 
+pub fn inject_rid_ffi_types(stdout: &[u8]) -> String {
+    format!(
+        "{stdout}\n{rid_ffi}",
+        stdout = std::str::from_utf8(stdout).unwrap(),
+        rid_ffi = rid_ffi::code_rid_vec()
+    )
+}
+
 impl<'a> BindingsGenerator<'a> {
     pub(crate) fn generate(&self) -> Result<cbindgen::Bindings> {
         let expanded_rust_path = self.expand_crate()?;
@@ -30,7 +38,8 @@ impl<'a> BindingsGenerator<'a> {
         }
 
         let expanded_rust_path = self.expand_crate_path();
-        fs::write(&expanded_rust_path, output.stdout)?;
+        let code = inject_rid_ffi_types(&output.stdout);
+        fs::write(&expanded_rust_path, code)?;
 
         Ok(format!(
             "{}",

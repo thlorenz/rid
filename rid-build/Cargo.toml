@@ -6,6 +6,7 @@ edition = "2018"
 
 [dependencies]
 rid_common = { path = "../rid-common" }
+rid_ffi = { path = "../rid-ffi" }
 cbindgen = "0.18.0"
 anyhow = "1.0.38"
 simple_logger = "1.11.0"
