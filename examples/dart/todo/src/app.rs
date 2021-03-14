@@ -14,12 +14,18 @@ pub struct Model {
     filter: Filter,
 }
 
-#[derive(Debug, Clone, rid::Model)]
+#[derive(Debug, PartialEq, Eq, PartialOrd, rid::Model)]
 #[rid(debug)]
 pub struct Todo {
     id: u32,
     title: String,
     completed: bool,
+}
+
+impl Ord for Todo {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.id.cmp(&other.id)
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -91,11 +97,13 @@ impl Model {
     }
 
     fn filtered_todos(&self) -> Vec<&Todo> {
-        match self.filter {
+        let mut vec: Vec<&Todo> = match self.filter {
             Filter::Completed => self.todos.iter().filter(|x| x.completed).collect(),
             Filter::Pending => self.todos.iter().filter(|x| !x.completed).collect(),
             Filter::All => self.todos.iter().collect(),
-        }
+        };
+        vec.sort();
+        vec
     }
 }
 
