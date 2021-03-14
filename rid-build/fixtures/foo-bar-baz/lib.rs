@@ -1,20 +1,17 @@
 use std::ffi::CString;
 
-use rid_macro::Rid;
-
-#[derive(Rid)]
+#[derive(rid::Model)]
 pub struct Foo {
     prim_u8: u8,
     prim_u16: u16,
 }
 
-#[derive(Rid)]
+#[derive(rid::Model)]
 pub struct Bar {
     f: bool,
 }
 
-#[derive(Rid)]
+#[derive(rid::Model)]
 pub struct Baz {
     name: CString,
 }
-fn main() {}

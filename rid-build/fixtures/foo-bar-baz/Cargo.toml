@@ -6,9 +6,9 @@ publish = false
 
 [workspace]
 
-[[bin]]
+[lib]
 name = "foo_bar_baz"
-path = "main.rs"
+path = "lib.rs"
 
 [dependencies]
-rid_macro = { path = "../../../rid-macro" }
+rid = { path = "../../../" }

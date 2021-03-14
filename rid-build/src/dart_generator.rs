@@ -268,12 +268,4 @@ mod tests {
         let (extensions, _) = setup(&binding_h, &BuildTarget::Debug).parse_binding();
         assert_eq!(extensions, binding_dart.trim_end())
     }
-
-    #[test]
-    fn test_dart_generation() {
-        let binding_h = include_str!("../fixtures/two_structs_binding.h");
-        let binding_dart = include_str!("../fixtures/two_structs_binding.dart");
-        let dart = setup(&binding_h, &BuildTarget::Debug).generate();
-        assert_eq!(dart, binding_dart.trim())
-    }
 }
