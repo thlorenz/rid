@@ -16,6 +16,7 @@ path = "rid_build.rs"
 [dependencies]
 rid = { path = "../../../" }
 rid_build = { path = "../../../rid-build" }
+rid_common = { path = "../../../rid-common" }
 log = "0.4.14"
 env_logger = "0.8.3"
 

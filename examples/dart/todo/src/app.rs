@@ -1,3 +1,6 @@
+use rid::RidVec;
+use rid_common::resolve_ptr;
+
 #[macro_use]
 extern crate log;
 
@@ -7,8 +10,6 @@ pub struct Model {
     last_added_id: u32,
     #[rid(types = { Todo: Struct })]
     todos: Vec<Todo>,
-    #[rid(types = { Todo: Struct })]
-    filtered_todos: Vec<Todo>,
     #[rid(types = { Filter: Enum })]
     filter: Filter,
 }
@@ -80,8 +81,6 @@ impl Model {
 
             SetFilter(filter) => self.filter = filter,
         };
-
-        self.update_filtered_todos();
     }
 
     fn update_todo<F: FnOnce(&mut Todo)>(&mut self, id: u32, update: F) {
@@ -91,27 +90,29 @@ impl Model {
         };
     }
 
-    fn update_filtered_todos(&mut self) {
+    fn filtered_todos(&self) -> Vec<&Todo> {
         match self.filter {
-            Filter::Completed => {
-                self.filtered_todos = self
-                    .todos
-                    .iter()
-                    .filter(|x| x.completed)
-                    .map(|x| x.clone())
-                    .collect()
-            }
-            Filter::Pending => {
-                self.filtered_todos = self
-                    .todos
-                    .iter()
-                    .filter(|x| !x.completed)
-                    .map(|x| x.clone())
-                    .collect()
-            }
-            Filter::All => self.filtered_todos = self.todos.iter().map(|x| x.clone()).collect(),
-        };
+            Filter::Completed => self.todos.iter().filter(|x| x.completed).collect(),
+            Filter::Pending => self.todos.iter().filter(|x| !x.completed).collect(),
+            Filter::All => self.todos.iter().collect(),
+        }
     }
+}
+
+#[no_mangle]
+pub extern "C" fn filtered_todos<'a>(ptr: *mut Model) -> RidVec<&'a Todo> {
+    let model = resolve_ptr(ptr);
+    model.filtered_todos().into()
+}
+
+#[no_mangle]
+pub extern "C" fn todos_get_idx<'a>(todos: RidVec<&'a Todo>, idx: usize) -> &'a Todo {
+    todos[idx]
+}
+
+#[no_mangle]
+pub extern "C" fn todos_free<'a>(todos: RidVec<&'a Todo>) {
+    todos.free()
 }
 
 #[no_mangle]
@@ -120,7 +121,6 @@ pub extern "C" fn init_model_ptr() -> *const Model {
     let model = Model {
         last_added_id: 0,
         todos: vec![],
-        filtered_todos: vec![],
         filter: Filter::All,
     };
     Box::into_raw(Box::new(model))
@@ -134,6 +134,6 @@ pub extern "C" fn free_model_ptr(ptr: *mut Model) {
         let ptr = ptr.as_mut().unwrap();
         Box::from_raw(ptr)
     };
-    info!("Freeing model: {:?}", model);
+    info!("Freeing model: {:#?}", model);
     drop(model);
 }
