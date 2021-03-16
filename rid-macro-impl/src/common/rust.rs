@@ -5,6 +5,7 @@ use std::{
     fmt::{Debug, Display},
 };
 
+#[derive(PartialEq)]
 pub enum ValueType {
     CString,
     RString,
@@ -24,6 +25,7 @@ impl Display for ValueType {
     }
 }
 
+#[derive(PartialEq)]
 pub enum PrimitiveType {
     U8,
     I8,
@@ -55,6 +57,7 @@ impl Display for PrimitiveType {
     }
 }
 
+#[derive(PartialEq)]
 pub enum RustType {
     Value(ValueType),
     Primitive(PrimitiveType),

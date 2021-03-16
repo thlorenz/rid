@@ -8,4 +8,4 @@ pub mod state;
 pub use dart::DartType;
 pub use errors::*;
 pub use parsed_field::ParsedField;
-pub use rust::{extract_path_segment, RustType};
+pub use rust::{extract_path_segment, PrimitiveType, RustType, ValueType};
