@@ -128,6 +128,7 @@ impl ParsedEnum {
                         resolver: Tokens::new(),
                     }
                 }
+                RustType::Unit => todo!("ParsedEnum::rust_method::RustType::Unit"),
                 RustType::Unknown => unimplemented!("RustType::Unknown"),
             })
             .collect();
@@ -227,7 +228,11 @@ impl ParsedEnum {
                     }
                     RustType::Primitive(_) => format!("arg{}", f.slot),
                     RustType::Value(RCustom(_, _)) => format!("arg{}", f.slot),
-                    RustType::Unknown => unimplemented!("dart method for unknown rust type"),
+
+                    RustType::Unit => todo!("ParsedEnum::dart_method::RustType::Unit"),
+                    RustType::Unknown => {
+                        unimplemented!("ParsedEnum::dart_method::RustType::Unknown")
+                    }
                 };
                 let ty = if let RustType::Value(RCustom(info, _)) = &f.rust_ty {
                     use attrs::Category::*;

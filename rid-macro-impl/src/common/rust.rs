@@ -58,6 +58,7 @@ impl Display for PrimitiveType {
 pub enum RustType {
     Value(ValueType),
     Primitive(PrimitiveType),
+    Unit,
     Unknown,
 }
 
@@ -72,6 +73,7 @@ impl Display for RustType {
         let ty = match self {
             Value(x) => format!("Value({})", x),
             Primitive(x) => format!("Primitive(({})", x),
+            Unit => "()".to_string(),
             Unknown => "Unknown".to_string(),
         };
         write!(f, "{}", ty)
@@ -82,16 +84,17 @@ use PrimitiveType::*;
 use RustType::*;
 use ValueType::*;
 
-use crate::attrs::TypeInfo;
+use crate::attrs::{self, TypeInfo};
 
-fn extract_path_segment(
+pub fn extract_path_segment(
     path: &syn::Path,
-    types: &HashMap<String, TypeInfo>,
+    types: Option<&HashMap<String, TypeInfo>>,
 ) -> (syn::Ident, RustType) {
     let syn::PathSegment {
         ident, arguments, ..
     } = path.segments.last().unwrap();
     let ident_str = ident.to_string();
+    // TODO: consider  path.type_id() for built in types here instead
     let rust_ty = match ident_str.as_str() {
         "CString" => Value(CString),
         "String" => Value(RString),
@@ -122,17 +125,29 @@ fn extract_path_segment(
         // However since for built in rust types we won't have an opaque structs,
         // the access methods will be missing, so at least that we need to consider somwehow.
         _ => {
-            // TODO: We don't currently verify that all types are being used. That would require
-            // recording this across all variant fields.
-            match types.get(&ident_str) {
-                Some(ty) => Value(RCustom(ty.clone(), ident_str)),
-                None => abort!(
-                    ident,
-                    // TODO: Include info regarding which custom types are viable, link to URL?
-                    "[rid] Missing info for custom type {0}. \
+            if let Some(types) = types {
+                // TODO: We don't currently verify that all types are being used. That would require
+                // recording this across all variant fields.
+                match types.get(&ident_str) {
+                    Some(ty) => Value(RCustom(ty.clone(), ident_str)),
+                    None => abort!(
+                        ident,
+                        // TODO: Include info regarding which custom types are viable, link to URL?
+                        "[rid] Missing info for custom type {0}. \
                     Specify via '#[rid(types = {{ {0}: Enum }})]' or similar.",
-                    ident_str
-                ),
+                        ident_str
+                    ),
+                }
+            } else {
+                // TODO: For now we always assume struct since this branch only hits of struct
+                // impls ATM
+                Value(RCustom(
+                    TypeInfo {
+                        key: ident.clone(),
+                        cat: attrs::Category::Struct,
+                    },
+                    ident_str,
+                ))
             }
         }
     };
@@ -146,7 +161,9 @@ impl RustType {
         types: &HashMap<String, TypeInfo>,
     ) -> Result<(syn::Ident, RustType), String> {
         match &ty {
-            syn::Type::Path(syn::TypePath { path, .. }) => Ok(extract_path_segment(path, types)),
+            syn::Type::Path(syn::TypePath { path, .. }) => {
+                Ok(extract_path_segment(path, Some(types)))
+            }
             syn::Type::Array(ty) => Err(format!("Array: {:#?}", &ty)),
             syn::Type::BareFn(ty) => Err(format!("BareFn: {:#?}", &ty)),
             syn::Type::Group(ty) => Err(format!("Group: {:#?}", &ty)),

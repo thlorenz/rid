@@ -311,6 +311,7 @@ impl ParsedStruct {
                     #vec_impl
                 }
             }
+            Ok(RustType::Unit) => type_error(&field.ty, &"Unhandled Rust Type Unit".to_string()),
             Ok(RustType::Unknown) => type_error(&field.ty, &"Unhandled Rust Type".to_string()),
             Err(err) => type_error(&field.ty, err),
         };
