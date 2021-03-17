@@ -1,6 +1,7 @@
 #![allow(dead_code)]
 use proc_macro_error::abort;
 use std::{
+    any::{Any, TypeId},
     collections::HashMap,
     fmt::{Debug, Display},
 };
@@ -19,7 +20,7 @@ impl Display for ValueType {
             CString => "CString".to_string(),
             RString => "String".to_string(),
             RVec((rust_ty, ident)) => format!("Vec<{}|{}>", rust_ty, ident),
-            RCustom(info, s) => format!("{:?}({})", info.cat, s),
+            RCustom(info, s) => format!("ValueType::RCustom({:?}, {})", info, s),
         };
         write!(f, "{}", ty)
     }
@@ -74,10 +75,10 @@ impl Debug for RustType {
 impl Display for RustType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let ty = match self {
-            Value(x) => format!("Value({})", x),
-            Primitive(x) => format!("Primitive(({})", x),
-            Unit => "()".to_string(),
-            Unknown => "Unknown".to_string(),
+            Value(x) => format!("RustType::Value({})", x),
+            Primitive(x) => format!("RustType::Primitive(({})", x),
+            Unit => "RustType::Unit".to_string(),
+            Unknown => "RustType::Unknown".to_string(),
         };
         write!(f, "{}", ty)
     }
@@ -189,6 +190,25 @@ impl RustType {
         match self {
             Primitive(_) => true,
             _ => false,
+        }
+    }
+
+    pub fn with_replaced_self(self, owner: &syn::Ident) -> RustType {
+        match self {
+            RustType::Value(ValueType::RCustom(
+                TypeInfo {
+                    key: _,
+                    cat: attrs::Category::Struct,
+                },
+                name,
+            )) if name == "Self" => RustType::Value(ValueType::RCustom(
+                TypeInfo {
+                    key: owner.clone(),
+                    cat: attrs::Category::Struct,
+                },
+                owner.to_string(),
+            )),
+            _ => self,
         }
     }
 }

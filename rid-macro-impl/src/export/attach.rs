@@ -21,7 +21,7 @@ pub fn rid_export_impl(item: syn::Item, args: syn::AttributeArgs) -> TokenStream
             block, // Box<Block>,
         }) => {
             let attrs = attrs::parse_rid_attrs(&attrs);
-            let parsed = ParsedFunction::new(sig, attrs);
+            let parsed = ParsedFunction::new(sig, attrs, None);
             eprintln!("impl: {:#?}", parsed);
             TokenStream::new()
         }
@@ -55,22 +55,24 @@ mod tests {
     use super::*;
     use quote::quote;
 
-    #[test]
+    // TODO: #[test]
     fn struct_impl() {
         let attrs = TokenStream::new();
         let input: TokenStream = quote! {
+          #[rid::export]
           impl MyStruct {
+              #[rid::export]
               pub fn new(id: u8, title: String) -> Self {
                   Self { id, title }
               }
 
+              #[rid::export]
               pub fn dispose(msg: String) {}
           }
         }
         .into();
 
         let item = syn::parse2::<syn::Item>(input).unwrap();
-        // let args = syn::parse2::<syn::AttributeArgs>(attrs).unwrap();
         let args = syn::AttributeArgs::new();
 
         let res = rid_export_impl(item, args);

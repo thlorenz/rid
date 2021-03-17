@@ -32,6 +32,10 @@ impl FieldConfig {
                 Model(ident, _) => {
                     abort!(ident, "debug can only be exposed for model structs")
                 }
+                Export(ident) => abort!(
+                    ident,
+                    "export can only be applied to functions and struct impl blocks"
+                ),
                 Types(ident, hash) => merge(&mut types, hash),
                 Wip => {}
             }

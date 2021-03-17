@@ -1,4 +1,5 @@
 use std::{
+    any::TypeId,
     collections::{HashMap, HashSet},
     convert::{TryFrom, TryInto},
 };
@@ -43,6 +44,12 @@ pub struct UnvalidatedTypeCategoryInfo {
 pub struct TypeInfo {
     pub key: Ident,
     pub cat: Category,
+}
+
+impl TypeInfo {
+    pub fn is_self(&self) -> bool {
+        self.cat == Category::Struct && self.key.to_string() == "Self"
+    }
 }
 
 #[derive(Debug)]

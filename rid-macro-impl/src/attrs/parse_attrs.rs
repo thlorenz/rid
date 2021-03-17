@@ -33,7 +33,18 @@ pub enum RidAttr {
 
     Types(syn::Ident, HashMap<String, TypeInfo>),
 
+    Export(syn::Ident),
+
     Wip,
+}
+
+impl RidAttr {
+    pub fn is_export(&self) -> bool {
+        match self {
+            RidAttr::Export(_) => true,
+            _ => false,
+        }
+    }
 }
 
 impl Parse for RidAttr {
@@ -90,6 +101,7 @@ impl Parse for RidAttr {
         } else {
             match &*name_str {
                 "debug" => Ok(Debug(name)),
+                "export" => Ok(Export(name)),
                 "to" => abort!(
                     name,
                     "'{0}' needs to be assigned via '=', i.e. #[rid({0} = value)]",

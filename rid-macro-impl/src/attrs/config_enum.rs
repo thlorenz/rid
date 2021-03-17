@@ -35,8 +35,12 @@ impl EnumConfig {
                     };
                 }
                 Types(ident, _) => {
-                    abort!(ident, "types can only be set on variant fields")
+                    abort!(ident, "types can only be set on fields")
                 }
+                Export(ident) => abort!(
+                    ident,
+                    "export can only be applied to functions and struct impl blocks"
+                ),
                 Wip => {}
             }
         }
