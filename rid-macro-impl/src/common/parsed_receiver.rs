@@ -1,14 +1,10 @@
-#[derive(Debug, PartialEq)]
-pub enum ReceiverReference {
-    Owned,
-    OwnedMut,
-    Ref,
-    RefMut,
-}
+use syn::Lifetime;
+
+use super::ParsedReference;
 
 #[derive(Debug, PartialEq)]
 pub struct ParsedReceiver {
-    pub reference: ReceiverReference,
+    pub reference: ParsedReference,
 }
 
 impl ParsedReceiver {
@@ -20,12 +16,16 @@ impl ParsedReceiver {
             self_token, // Token![self],
         } = receiver;
 
-        // NOTE: ignoring lifetime for now, as it isn't important for wrapper function
+        let lifetime_ident = match reference {
+            Some((_, Some(Lifetime { ident, .. }))) => Some(ident.clone()),
+            _ => None,
+        };
+
         let r = match reference {
-            Some(_) if mutability.is_none() => ReceiverReference::Ref,
-            Some(_) => ReceiverReference::RefMut,
-            None if mutability.is_none() => ReceiverReference::Owned,
-            None => ReceiverReference::OwnedMut,
+            Some(_) if mutability.is_none() => ParsedReference::Ref(lifetime_ident),
+            Some(_) => ParsedReference::RefMut(lifetime_ident),
+            None if mutability.is_none() => ParsedReference::Owned,
+            None => ParsedReference::OwnedMut,
         };
         ParsedReceiver { reference: r }
     }

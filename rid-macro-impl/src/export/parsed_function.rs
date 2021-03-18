@@ -1,8 +1,11 @@
 use proc_macro_error::abort;
 
 use crate::{
-    attrs::{self, TypeInfo},
-    common::{extract_path_segment, ParsedReceiver, PrimitiveType, RustType, ValueType},
+    attrs::{Category, RidAttr, TypeInfo, TypeInfoMap},
+    common::{
+        extract_path_segment, ParsedReceiver, ParsedReference, PrimitiveType, RustArg, RustType,
+        ValueType,
+    },
 };
 use std::{any::Any, collections::HashMap};
 
@@ -10,14 +13,14 @@ use std::{any::Any, collections::HashMap};
 pub struct ParsedFunction {
     pub fn_ident: syn::Ident,
     pub receiver: Option<ParsedReceiver>,
-    pub args: Vec<(syn::Ident, RustType)>,
-    pub return_ty: (syn::Ident, RustType),
+    pub args: Vec<RustArg>,
+    pub return_arg: RustArg,
 }
 
 impl ParsedFunction {
     pub fn new(
         sig: syn::Signature,
-        _attrs: Vec<attrs::RidAttr>,
+        fn_attrs: &[RidAttr],
         owner: Option<&syn::Ident>,
     ) -> ParsedFunction {
         use syn::*;
@@ -36,8 +39,10 @@ impl ParsedFunction {
             output,      // ReturnType,
         } = sig;
 
+        let type_infos = get_type_infos(fn_attrs, owner);
+
         let mut receiver = None;
-        let mut args: Vec<(Ident, RustType)> = vec![];
+        let mut args: Vec<RustArg> = vec![];
         for arg in inputs {
             match arg {
                 FnArg::Receiver(rec) => receiver = Some(ParsedReceiver::new(&rec)),
@@ -47,12 +52,26 @@ impl ParsedFunction {
                     colon_token, // Token![:],
                     ty,          // Box<Type>,
                 }) => {
-                    // TODO: For now we don't support passing custom types, but that should change
-                    // same for return type
-                    let ty_tpl = if let Type::Path(TypePath { ref path, .. }) = &*ty {
-                        let arg_info = extract_path_segment(path, None);
-                        args.push(arg_info);
+                    let (ty, parsed_ref) = match *ty {
+                        Type::Reference(r) => {
+                            let pr = Some(ParsedReference::from(&r));
+                            (r.elem, pr)
+                        }
+                        Type::Path(_) => (ty, None),
+                        _ => {
+                            eprintln!("{:#?}", &*ty);
+                            abort!(
+                                ty,
+                                "[rid] Type not supported for exported functions {:#?}",
+                                *ty
+                            );
+                        }
+                    };
+                    let ty_tpl = if let Type::Path(TypePath { ref path, .. }) = *ty {
+                        let (ident, ty) = extract_path_segment(path, Some(&type_infos));
+                        args.push(RustArg::new(ident, ty, parsed_ref));
                     } else {
+                        eprintln!("{:#?}", &*ty);
                         abort!(
                             ty,
                             "[rid] Type not supported for exported functions {:#?}",
@@ -63,7 +82,7 @@ impl ParsedFunction {
             };
         }
 
-        let return_ty = match output {
+        let (ret_ident, ret_ty) = match output {
             ReturnType::Default => (ident.clone(), RustType::Unit),
             ReturnType::Type(_, ty) => {
                 if let Type::Path(TypePath { ref path, .. }) = &*ty {
@@ -82,19 +101,42 @@ impl ParsedFunction {
                 }
             }
         };
+        // TODO: where do we get return arg reference from?
+        let return_arg = RustArg::new(ret_ident, ret_ty, None);
 
         Self {
             fn_ident: ident,
             receiver,
             args,
-            return_ty,
+            return_arg,
         }
     }
 }
 
+fn get_type_infos(fn_attrs: &[RidAttr], owner: Option<&syn::Ident>) -> TypeInfoMap {
+    // TODO: merge owner RidAttrs here in order to avoid having to specify types of
+    // an impl block multiple times.
+    let mut type_infos: TypeInfoMap = fn_attrs.into();
+    if let Some(ident) = owner {
+        // NOTE: assuming that the owner is always a Struct as the only way that
+        // this function must be an impl method (we don't allow exporting Enum impl
+        // methods at this point)
+        type_infos.insert(
+            ident.to_string(),
+            TypeInfo {
+                key: ident.clone(),
+                cat: Category::Struct,
+            },
+        );
+    };
+    type_infos
+}
+
 #[cfg(test)]
 mod tests {
-    use crate::common::ReceiverReference;
+    use crate::{attrs, common::ParsedReference};
+
+    use assert_matches::assert_matches;
 
     use super::*;
     use quote::quote;
@@ -110,7 +152,7 @@ mod tests {
                 block, // Box<Block>,
             }) => {
                 let attrs = attrs::parse_rid_attrs(&attrs);
-                ParsedFunction::new(sig, attrs, None)
+                ParsedFunction::new(sig, &attrs, None)
             }
             _ => panic!("Unexpected item, we're trying to parse functions here"),
         }
@@ -122,7 +164,7 @@ mod tests {
             fn_ident,
             receiver,
             args,
-            return_ty: (_, ret_ty),
+            return_arg: RustArg { ty: ret_ty, .. },
         } = parse(quote! {
             fn me() {}
         });
@@ -139,7 +181,7 @@ mod tests {
             fn_ident,
             receiver,
             args,
-            return_ty: (_, ret_ty),
+            return_arg: RustArg { ty: ret_ty, .. },
         } = parse(quote! {
             fn me() -> u8 {}
         });
@@ -156,7 +198,7 @@ mod tests {
             fn_ident,
             receiver,
             args,
-            return_ty: (_, ret_ty),
+            return_arg: RustArg { ty: ret_ty, .. },
         } = parse(quote! {
             fn me(id: i32) -> u8 {}
         });
@@ -165,7 +207,7 @@ mod tests {
         assert_eq!(receiver, None, "no receiver");
         assert_eq!(args.len(), 1, "one arg");
         assert_eq!(
-            args[0].1,
+            args[0].ty,
             RustType::Primitive(PrimitiveType::I32),
             "first arg i32"
         );
@@ -178,7 +220,7 @@ mod tests {
             fn_ident,
             receiver,
             args,
-            return_ty: (_, ret_ty),
+            return_arg: RustArg { ty: ret_ty, .. },
         } = parse(quote! {
             fn me(id: i32, s: String) -> String {}
         });
@@ -187,12 +229,12 @@ mod tests {
         assert_eq!(receiver, None, "no receiver");
         assert_eq!(args.len(), 2, "two args");
         assert_eq!(
-            args[0].1,
+            args[0].ty,
             RustType::Primitive(PrimitiveType::I32),
             "first arg i32"
         );
         assert_eq!(
-            args[1].1,
+            args[1].ty,
             RustType::Value(ValueType::RString),
             "second arg String"
         );
@@ -209,7 +251,7 @@ mod tests {
             fn_ident,
             receiver,
             args,
-            return_ty: (_, ret_ty),
+            return_arg: RustArg { ty: ret_ty, .. },
         } = parse(quote! {
             fn me(&self) {}
         });
@@ -218,7 +260,7 @@ mod tests {
         assert_eq!(
             receiver,
             Some(ParsedReceiver {
-                reference: ReceiverReference::Ref
+                reference: ParsedReference::Ref(None)
             }),
             "no receiver"
         );
@@ -232,7 +274,7 @@ mod tests {
             fn_ident,
             receiver,
             args,
-            return_ty: (_, ret_ty),
+            return_arg: RustArg { ty: ret_ty, .. },
         } = parse(quote! {
             fn me(&mut self, id: usize) {}
         });
@@ -241,13 +283,13 @@ mod tests {
         assert_eq!(
             receiver,
             Some(ParsedReceiver {
-                reference: ReceiverReference::RefMut
+                reference: ParsedReference::RefMut(None)
             }),
             "no receiver"
         );
         assert_eq!(args.len(), 1, "empty args");
         assert_eq!(
-            args[0].1,
+            args[0].ty,
             RustType::Primitive(PrimitiveType::USize),
             "first arg of type usize"
         );
@@ -260,7 +302,7 @@ mod tests {
             fn_ident,
             receiver,
             args,
-            return_ty: (_, ret_ty),
+            return_arg: RustArg { ty: ret_ty, .. },
         } = parse(quote! {
             fn me(self) {}
         });
@@ -269,9 +311,9 @@ mod tests {
         assert_eq!(
             receiver,
             Some(ParsedReceiver {
-                reference: ReceiverReference::Owned
+                reference: ParsedReference::Owned
             }),
-            "no receiver"
+            "owned receiver"
         );
         assert_eq!(args.len(), 0, "empty args");
         assert_eq!(ret_ty, RustType::Unit, "returns ()");
@@ -283,7 +325,7 @@ mod tests {
             fn_ident,
             receiver,
             args,
-            return_ty: (_, ret_ty),
+            return_arg: RustArg { ty: ret_ty, .. },
         } = parse(quote! {
             fn new(id: u8) -> Self {}
         });
@@ -292,7 +334,7 @@ mod tests {
         assert_eq!(receiver, None, "no receiver");
         assert_eq!(args.len(), 1, "one arg");
         assert_eq!(
-            args[0].1,
+            args[0].ty,
             RustType::Primitive(PrimitiveType::U8),
             "first arg u8"
         );
@@ -305,4 +347,75 @@ mod tests {
             panic!("Expected Self return");
         }
     }
+
+    #[test]
+    fn u8_function_custom_struct_arg() {
+        let ParsedFunction {
+            fn_ident,
+            receiver,
+            args,
+            return_arg: RustArg { ty: ret_ty, .. },
+        } = parse(quote! {
+            #[rid(types = { ItemStruct: Struct })]
+            fn id(item: &ItemStruct) -> u8 {}
+        });
+
+        assert_eq!(fn_ident.to_string(), "id", "function name");
+        assert_eq!(receiver, None, "no receiver");
+        assert_eq!(args.len(), 1, "one arg");
+
+        assert_matches!(
+            &args[0],
+            RustArg {
+                ident: _,
+                reference: Some(ParsedReference::Ref(None,)),
+                ty: RustType::Value(ValueType::RCustom(
+                    TypeInfo {
+                        cat: Category::Struct,
+                        ..
+                    },
+                    name
+                )),
+            } if name == "ItemStruct" => {}
+        );
+
+        assert_eq!(ret_ty, RustType::Primitive(PrimitiveType::U8), "returns u8");
+    }
+
+    #[test]
+    fn custom_return_type() {
+        let ParsedFunction {
+            fn_ident,
+            receiver,
+            args,
+            return_arg: RustArg { ty: ret_ty, .. },
+        } = parse(quote! {
+            fn get_todo(&self) -> Todo {}
+        });
+
+        assert_eq!(fn_ident.to_string(), "get_todo", "function name");
+        assert_eq!(
+            receiver,
+            Some(ParsedReceiver {
+                reference: ParsedReference::Ref(None)
+            }),
+            "ref receiver"
+        );
+        assert_eq!(args.len(), 0, "no arg");
+
+        match &ret_ty {
+            RustType::Value(ValueType::RCustom(TypeInfo { key, cat }, name)) => {
+                assert_eq!(
+                    (cat, name.as_str()),
+                    (&attrs::Category::Struct, "Todo"),
+                    "custom return type"
+                );
+            }
+            _ => panic!("did not match return type"),
+        };
+
+        eprintln!("return: {:#?}", ret_ty);
+    }
+
+    // fn filtered_todos(&self) -> Vec<&Todo> {
 }

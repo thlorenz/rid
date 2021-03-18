@@ -1,6 +1,6 @@
 use super::dart::GetterBody;
 use crate::{
-    attrs::{self, StructConfig, TypeInfo},
+    attrs::{self, StructConfig},
     common::{
         errors::type_error,
         parsed_field::ParsedField,

@@ -8,7 +8,7 @@ use syn::{
     LitStr, Token,
 };
 
-use super::{type_category::ExprTypeInfo, TypeInfo};
+use super::{type_category::ExprTypeInfo, TypeInfo, TypeInfoMap};
 use proc_macro_error::{abort, ResultExt};
 
 #[derive(Debug)]
@@ -31,7 +31,7 @@ pub enum RidAttr {
     // ident = arbitrary_expr
     Model(syn::Ident, Expr),
 
-    Types(syn::Ident, HashMap<String, TypeInfo>),
+    Types(syn::Ident, TypeInfoMap),
 
     Export(syn::Ident),
 

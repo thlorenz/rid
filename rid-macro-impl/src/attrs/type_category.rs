@@ -2,6 +2,7 @@ use std::{
     any::TypeId,
     collections::{HashMap, HashSet},
     convert::{TryFrom, TryInto},
+    ops::{Deref, DerefMut},
 };
 
 use quote::quote;
@@ -53,13 +54,28 @@ impl TypeInfo {
 }
 
 #[derive(Debug)]
+pub struct TypeInfoMap(pub HashMap<String, TypeInfo>);
+impl Deref for TypeInfoMap {
+    type Target = HashMap<String, TypeInfo>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+impl DerefMut for TypeInfoMap {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
+#[derive(Debug)]
 pub struct ExprTypeInfo {
     pub items: HashMap<String, UnvalidatedTypeCategoryInfo>,
 }
 
 impl ExprTypeInfo {
-    pub fn into_validated(self) -> Result<HashMap<String, TypeInfo>, String> {
-        let mut validated: HashMap<String, TypeInfo> = HashMap::new();
+    pub fn into_validated(self) -> Result<TypeInfoMap, String> {
+        let mut validated: TypeInfoMap = TypeInfoMap(HashMap::new());
         for (key, val) in self.items {
             let cat = Category::try_from(&val.cat)?;
             validated.insert(key, TypeInfo { key: val.key, cat });

@@ -8,11 +8,12 @@ pub fn rid_export_impl(item: syn::Item, args: syn::AttributeArgs) -> TokenStream
     match item {
         syn::Item::Impl(item) => {
             let attrs = attrs::parse_rid_attrs(&item.attrs);
-
-            // TODO: ignore if no #[rid(export)] attr present
-            let parsed = ParsedImplBlock::new(item, &attrs);
-            eprintln!("impl: {:#?}", parsed);
-            TokenStream::new()
+            if attrs.iter().any(|x| x.is_export()) {
+                let parsed = ParsedImplBlock::new(item, &attrs);
+                todo!("convert parsed impl block to rendered wrapper")
+            } else {
+                TokenStream::new()
+            }
         }
         syn::Item::Fn(syn::ItemFn {
             attrs, // Vec<Attribute>,
@@ -21,9 +22,12 @@ pub fn rid_export_impl(item: syn::Item, args: syn::AttributeArgs) -> TokenStream
             block, // Box<Block>,
         }) => {
             let attrs = attrs::parse_rid_attrs(&attrs);
-            let parsed = ParsedFunction::new(sig, attrs, None);
-            eprintln!("impl: {:#?}", parsed);
-            TokenStream::new()
+            if attrs.iter().any(|x| x.is_export()) {
+                let parsed = ParsedFunction::new(sig, &attrs, None);
+                todo!("convert parsed function to rendered wrapper")
+            } else {
+                TokenStream::new()
+            }
         }
 
         syn::Item::Const(_)
@@ -55,7 +59,7 @@ mod tests {
     use super::*;
     use quote::quote;
 
-    // TODO: #[test]
+    // #[test]
     fn struct_impl() {
         let attrs = TokenStream::new();
         let input: TokenStream = quote! {

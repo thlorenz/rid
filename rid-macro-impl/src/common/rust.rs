@@ -88,11 +88,11 @@ use PrimitiveType::*;
 use RustType::*;
 use ValueType::*;
 
-use crate::attrs::{self, TypeInfo};
+use crate::attrs::{self, TypeInfo, TypeInfoMap};
 
 pub fn extract_path_segment(
     path: &syn::Path,
-    types: Option<&HashMap<String, TypeInfo>>,
+    types: Option<&TypeInfoMap>,
 ) -> (syn::Ident, RustType) {
     let syn::PathSegment {
         ident, arguments, ..
@@ -160,10 +160,7 @@ pub fn extract_path_segment(
 }
 
 impl RustType {
-    pub fn try_from(
-        ty: &syn::Type,
-        types: &HashMap<String, TypeInfo>,
-    ) -> Result<(syn::Ident, RustType), String> {
+    pub fn try_from(ty: &syn::Type, types: &TypeInfoMap) -> Result<(syn::Ident, RustType), String> {
         match &ty {
             syn::Type::Path(syn::TypePath { path, .. }) => {
                 Ok(extract_path_segment(path, Some(types)))

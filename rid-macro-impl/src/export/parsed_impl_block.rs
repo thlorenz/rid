@@ -5,7 +5,7 @@ use proc_macro_error::abort;
 use super::parsed_function::ParsedFunction;
 use crate::{
     attrs,
-    common::{extract_path_segment, ParsedReceiver, PrimitiveType, RustType, ValueType},
+    common::{extract_path_segment, ParsedReceiver, PrimitiveType, RustArg, RustType, ValueType},
 };
 
 #[derive(Debug)]
@@ -43,7 +43,7 @@ impl ParsedImplBlock {
                 }) => {
                     let attrs = attrs::parse_rid_attrs(&attrs);
                     if attrs.iter().any(|x| x.is_export()) {
-                        Some(ParsedFunction::new(sig, attrs, Some(&ty.0)))
+                        Some(ParsedFunction::new(sig, &attrs, Some(&ty.0)))
                     } else {
                         None
                     }
@@ -69,7 +69,7 @@ impl ParsedImplBlock {
 
 #[cfg(test)]
 mod tests {
-    use crate::common::ReceiverReference;
+    use crate::common::ParsedReference;
 
     use super::*;
     use attrs::{Category, TypeInfo};
@@ -124,7 +124,7 @@ mod tests {
             fn_ident,
             receiver,
             args,
-            return_ty: (_, ret_ty),
+            return_arg: RustArg { ty: ret_ty, .. },
         } = &methods[0];
 
         assert_eq!(ty, owner_ty, "impl type");
@@ -138,7 +138,7 @@ mod tests {
         );
         assert_eq!(args.len(), 1, "one arg");
         assert_eq!(
-            args[0].1,
+            args[0].ty,
             RustType::Primitive(PrimitiveType::U8),
             "first arg u8"
         );
@@ -149,7 +149,7 @@ mod tests {
             fn_ident,
             receiver,
             args,
-            return_ty: (_, ret_ty),
+            return_arg: RustArg { ty: ret_ty, .. },
         } = &methods[1];
 
         assert_eq!(fn_ident.to_string(), "get_id", "function ident");
@@ -157,7 +157,7 @@ mod tests {
         assert_eq!(
             receiver,
             &Some(ParsedReceiver {
-                reference: ReceiverReference::Ref
+                reference: ParsedReference::Ref(None),
             }),
             "receiver is ref"
         );
@@ -172,19 +172,19 @@ mod tests {
             fn_ident,
             receiver,
             args,
-            return_ty: (_, ret_ty),
+            return_arg: RustArg { ty: ret_ty, .. },
         } = &methods[2];
         assert_eq!(fn_ident.to_string(), "set_id", "function ident");
         assert_eq!(args.len(), 1, "one arg");
         assert_eq!(
-            args[0].1,
+            args[0].ty,
             RustType::Primitive(PrimitiveType::U8),
             "first arg u8"
         );
         assert_eq!(
             receiver,
             &Some(ParsedReceiver {
-                reference: ReceiverReference::RefMut
+                reference: ParsedReference::RefMut(None),
             }),
             "receiver is ref mut"
         );
