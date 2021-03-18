@@ -1,11 +1,13 @@
 use std::collections::HashMap;
 
-use crate::attrs::{RidAttr, TypeInfo};
-use proc_macro_error::abort;
+use crate::{
+    attrs::{RidAttr, TypeInfo},
+    common::abort,
+};
 
 use super::TypeInfoMap;
 
-fn merge_type_infos(tgt: &mut TypeInfoMap, src: &TypeInfoMap) {
+pub fn merge_type_infos(tgt: &mut TypeInfoMap, src: &TypeInfoMap) {
     for (key, val) in src.iter() {
         if tgt.contains_key(key) {
             abort!(val.key, "duplicate type info key")

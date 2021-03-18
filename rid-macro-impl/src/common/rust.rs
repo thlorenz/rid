@@ -1,5 +1,5 @@
 #![allow(dead_code)]
-use proc_macro_error::abort;
+use super::abort;
 use std::{
     any::{Any, TypeId},
     collections::HashMap,

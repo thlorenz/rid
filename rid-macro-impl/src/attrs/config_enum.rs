@@ -1,4 +1,4 @@
-use proc_macro_error::abort;
+use crate::common::abort;
 
 use super::RidAttr;
 

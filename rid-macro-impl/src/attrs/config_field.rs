@@ -1,10 +1,10 @@
 use std::collections::{HashMap, HashSet};
 
-use proc_macro_error::abort;
-
-use crate::attrs::{RidAttr, TypeInfo, TypeInfoMap};
-
-use crate::message::VariantField;
+use crate::{
+    attrs::{RidAttr, TypeInfo, TypeInfoMap},
+    common::abort,
+    message::VariantField,
+};
 
 #[derive(Debug)]
 pub struct FieldConfig {

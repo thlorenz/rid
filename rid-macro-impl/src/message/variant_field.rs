@@ -1,9 +1,8 @@
-use proc_macro_error::abort;
 use syn::Field;
 
 use crate::{
     attrs::{FieldConfig, TypeInfo},
-    common::{rust::ValueType, DartType, RustType},
+    common::{abort, rust::ValueType, DartType, RustType},
 };
 
 #[derive(Debug)]

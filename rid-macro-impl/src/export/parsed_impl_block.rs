@@ -1,11 +1,13 @@
 use std::collections::HashMap;
 
-use proc_macro_error::abort;
+use attrs::TypeInfoMap;
 
 use super::parsed_function::ParsedFunction;
 use crate::{
     attrs,
-    common::{extract_path_segment, ParsedReceiver, PrimitiveType, RustArg, RustType, ValueType},
+    common::{
+        abort, extract_path_segment, ParsedReceiver, PrimitiveType, RustArg, RustType, ValueType,
+    },
 };
 
 #[derive(Debug)]
@@ -15,10 +17,11 @@ pub struct ParsedImplBlock {
 }
 
 impl ParsedImplBlock {
-    pub fn new(item_impl: syn::ItemImpl, attrs: &[attrs::RidAttr]) -> Self {
+    pub fn new(item_impl: syn::ItemImpl, impl_attrs: &[attrs::RidAttr]) -> Self {
         use syn::*;
 
         let self_ty = *item_impl.self_ty;
+        let impl_type_infos = TypeInfoMap::from(impl_attrs);
 
         let ty = if let Type::Path(TypePath {
             qself, // Option<QSelf>,
@@ -41,9 +44,13 @@ impl ParsedImplBlock {
                     block,       // Block,
                     sig,         // Signature
                 }) => {
-                    let attrs = attrs::parse_rid_attrs(&attrs);
-                    if attrs.iter().any(|x| x.is_export()) {
-                        Some(ParsedFunction::new(sig, &attrs, Some(&ty.0)))
+                    let method_attrs = attrs::parse_rid_attrs(&attrs);
+                    if method_attrs.iter().any(|x| x.is_export()) {
+                        Some(ParsedFunction::new(
+                            sig,
+                            &method_attrs,
+                            Some((&ty.0, &impl_type_infos)),
+                        ))
                     } else {
                         None
                     }
@@ -85,6 +92,22 @@ mod tests {
             }
             _ => panic!("Unexpected item, we're trying to parse functions here"),
         }
+    }
+
+    #[test]
+    fn impl_block_with_new_returning_self() {
+        let ParsedImplBlock {
+            ty: (ident, ty),
+            methods,
+        } = parse(quote! {
+            #[rid(export)]
+            impl MyStruct {
+                #[rid(export)]
+                pub fn new(id: u8) -> Self {
+                    Self { id }
+                }
+            }
+        });
     }
 
     #[test]
