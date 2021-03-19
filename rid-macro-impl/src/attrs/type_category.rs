@@ -1,6 +1,7 @@
 use std::{
     collections::HashMap,
     convert::TryFrom,
+    fmt::Debug,
     ops::{Deref, DerefMut},
 };
 
@@ -11,11 +12,21 @@ use syn::{
     Ident, Token,
 };
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(PartialEq, Clone)]
 pub enum Category {
     Enum,
     Struct,
     Prim,
+}
+
+impl Debug for Category {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Category::Enum => write!(f, "Category::Enum"),
+            Category::Struct => write!(f, "Category::Struct"),
+            Category::Prim => write!(f, "Category::Prim"),
+        }
+    }
 }
 
 impl TryFrom<&Ident> for Category {
@@ -62,6 +73,12 @@ impl Deref for TypeInfoMap {
 impl DerefMut for TypeInfoMap {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.0
+    }
+}
+
+impl Default for TypeInfoMap {
+    fn default() -> Self {
+        Self(HashMap::new())
     }
 }
 

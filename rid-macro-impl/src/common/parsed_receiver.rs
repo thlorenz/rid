@@ -24,8 +24,10 @@ impl ParsedReceiver {
         let r = match reference {
             Some(_) if mutability.is_none() => ParsedReference::Ref(lifetime_ident),
             Some(_) => ParsedReference::RefMut(lifetime_ident),
-            None if mutability.is_none() => ParsedReference::Owned,
-            None => ParsedReference::OwnedMut,
+            None => {
+                assert!(mutability.is_none(), "cannot pass mut owned");
+                ParsedReference::Owned
+            }
         };
         ParsedReceiver { reference: r }
     }

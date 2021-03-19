@@ -1,11 +1,23 @@
+use std::fmt::Debug;
+
 use syn::{Lifetime, TypeReference};
 
-#[derive(Debug, PartialEq)]
+#[derive(PartialEq)]
 pub enum ParsedReference {
     Owned,
-    OwnedMut,
     Ref(Option<syn::Ident>),
     RefMut(Option<syn::Ident>),
+}
+
+impl Debug for ParsedReference {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let r = match self {
+            ParsedReference::Owned => "ParsedReference".to_string(),
+            ParsedReference::Ref(ident) => format!("ParsedReference::Ref({:?})", ident),
+            ParsedReference::RefMut(ident) => format!("ParsedReference::RefMut({:?})", ident),
+        };
+        write!(f, "{}", r)
+    }
 }
 
 impl From<&TypeReference> for ParsedReference {
