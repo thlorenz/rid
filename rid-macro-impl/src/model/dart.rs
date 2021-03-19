@@ -1,9 +1,6 @@
 use rid_common::{DART_FFI, FFI_GEN_BIND, RID_FFI};
 
-use crate::{
-    attrs::{self, TypeInfo},
-    common::DartType,
-};
+use crate::{attrs, common::DartType};
 
 pub enum GetterBody {
     Expression(String),
@@ -61,7 +58,7 @@ impl DartType {
                 ffigen_bind = FFI_GEN_BIND,
                 ty = inner
             ),
-            DartType::Custom(info, ty) => {
+            DartType::Custom(info, _ty) => {
                 use attrs::Category::*;
                 match info.cat {
                     // TODO: we are assuming each enum is #[repr(C)]
