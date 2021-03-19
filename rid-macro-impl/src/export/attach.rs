@@ -1,7 +1,9 @@
 use super::{ParsedFunction, ParsedImplBlock};
+
 use crate::attrs;
+use crate::common::abort;
+
 use proc_macro2::TokenStream;
-use proc_macro_error::abort;
 
 pub fn rid_export_impl(item: syn::Item, _args: syn::AttributeArgs) -> TokenStream {
     match item {

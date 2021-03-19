@@ -5,7 +5,9 @@ use syn::{
 };
 
 use super::{type_category::ExprTypeInfo, TypeInfoMap};
-use proc_macro_error::{abort, ResultExt};
+
+use crate::common::abort;
+use proc_macro_error::ResultExt;
 
 #[derive(Debug)]
 pub enum RidAttr {

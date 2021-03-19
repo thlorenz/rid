@@ -26,6 +26,9 @@ macro_rules! abort {
     ($err:expr) => {
         panic!($err)
     };
+    ($span:expr, $tts:tt) => {
+        panic!("proc_macro_error::abort! for:\n\n{:?}\n\n{}", $span, $tts)
+    };
     ($span:expr, $($tts:tt)*) => {
         panic!("proc_macro_error::abort! for:\n\n{:?}\n\n{}", $span, format!($($tts)*))
     };
