@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use syn::Field;
 
 use crate::attrs::{parse_rid_attrs, FieldConfig};

@@ -1,9 +1,6 @@
 use std::collections::HashMap;
 
-use crate::{
-    attrs::{RidAttr, TypeInfo},
-    common::abort,
-};
+use crate::{attrs::RidAttr, common::abort};
 
 use super::TypeInfoMap;
 
@@ -22,7 +19,7 @@ impl From<&[RidAttr]> for TypeInfoMap {
         let mut types: TypeInfoMap = TypeInfoMap(HashMap::new());
         for attr in attrs {
             match attr {
-                Types(ident, hash) => merge_type_infos(&mut types, hash),
+                Types(_ident, hash) => merge_type_infos(&mut types, hash),
                 _ => {}
             }
         }

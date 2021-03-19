@@ -1,8 +1,8 @@
 use syn::Field;
 
 use crate::{
-    attrs::{FieldConfig, TypeInfo},
-    common::{abort, rust::ValueType, DartType, RustType},
+    attrs::FieldConfig,
+    common::{DartType, RustType},
 };
 
 #[derive(Debug)]

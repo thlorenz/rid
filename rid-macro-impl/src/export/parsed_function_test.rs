@@ -2,26 +2,21 @@ use assert_matches::assert_matches;
 
 use crate::{
     attrs,
-    attrs::{merge_type_infos, Category, RidAttr, TypeInfo, TypeInfoMap},
-    common::{
-        abort, extract_path_segment, ParsedReceiver, ParsedReference, PrimitiveType, RustArg,
-        RustType, ValueType,
-    },
+    attrs::{Category, TypeInfo},
+    common::{ParsedReceiver, ParsedReference, PrimitiveType, RustArg, RustType, ValueType},
 };
 use quote::quote;
-use std::{any::Any, collections::HashMap};
 
 use super::ParsedFunction;
 
 fn parse(input: proc_macro2::TokenStream) -> ParsedFunction {
     let item = syn::parse2::<syn::Item>(input).unwrap();
-    let args = syn::AttributeArgs::new();
     match item {
         syn::Item::Fn(syn::ItemFn {
-            attrs, // Vec<Attribute>,
-            vis,   // Visibility,
-            sig,   // Signature,
-            block, // Box<Block>,
+            attrs,    // Vec<Attribute>,
+            vis: _,   // Visibility,
+            sig,      // Signature,
+            block: _, // Box<Block>,
         }) => {
             let attrs = attrs::parse_rid_attrs(&attrs);
             ParsedFunction::new(sig, &attrs, None)
@@ -251,7 +246,7 @@ fn custom_return_type() {
 
     assert_matches!(
         &ret_ty ,
-        RustType::Value(ValueType::RCustom(TypeInfo { key, cat }, name)) => {
+        RustType::Value(ValueType::RCustom(TypeInfo { key: _, cat }, name)) => {
             assert_eq!(
                 (cat, name.as_str()),
                 (&attrs::Category::Struct, "Todo"),
@@ -284,7 +279,7 @@ fn custom_return_type_ref() {
 
     assert_matches!(
         &ret_ty ,
-        RustType::Value(ValueType::RCustom(TypeInfo { key, cat }, name)) => {
+        RustType::Value(ValueType::RCustom(TypeInfo { key: _, cat }, name)) => {
             assert_eq!(
                 (cat, name.as_str()),
                 (&attrs::Category::Struct, "Todo"),

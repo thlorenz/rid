@@ -10,10 +10,10 @@ pub struct ParsedReceiver {
 impl ParsedReceiver {
     pub fn new(receiver: &syn::Receiver) -> Self {
         let syn::Receiver {
-            attrs,      // Vec<Attribute>,
-            reference,  // Option<(Token![&], Option<Lifetime>)>,
-            mutability, // Option<Token![mut]>,
-            self_token, // Token![self],
+            attrs: _,      // Vec<Attribute>,
+            reference,     // Option<(Token![&], Option<Lifetime>)>,
+            mutability,    // Option<Token![mut]>,
+            self_token: _, // Token![self],
         } = receiver;
 
         let lifetime_ident = match reference {

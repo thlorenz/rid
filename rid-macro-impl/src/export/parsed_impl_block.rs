@@ -1,13 +1,9 @@
-use std::collections::HashMap;
-
 use attrs::TypeInfoMap;
 
 use super::parsed_function::ParsedFunction;
 use crate::{
     attrs,
-    common::{
-        abort, extract_path_segment, ParsedReceiver, PrimitiveType, RustArg, RustType, ValueType,
-    },
+    common::{abort, extract_path_segment, RustType},
 };
 
 #[derive(Debug)]
@@ -24,8 +20,8 @@ impl ParsedImplBlock {
         let impl_type_infos = TypeInfoMap::from(impl_attrs);
 
         let ty = if let Type::Path(TypePath {
-            qself, // Option<QSelf>,
-            path,  // Path,
+            qself: _, // Option<QSelf>,
+            path,     // Path,
         }) = self_ty
         {
             extract_path_segment(&path, None)
@@ -38,11 +34,11 @@ impl ParsedImplBlock {
             .into_iter()
             .flat_map(|item| match item {
                 ImplItem::Method(ImplItemMethod {
-                    attrs,       // Vec<Attribute>,
-                    vis,         // Visibility,
-                    defaultness, // Option<Token![default]>,
-                    block,       // Block,
-                    sig,         // Signature
+                    attrs,          // Vec<Attribute>,
+                    vis: _,         // Visibility,
+                    defaultness: _, // Option<Token![default]>,
+                    block: _,       // Block,
+                    sig,            // Signature
                 }) => {
                     let method_attrs = attrs::parse_rid_attrs(&attrs);
                     if method_attrs.iter().any(|x| x.is_export()) {

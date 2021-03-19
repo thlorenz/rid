@@ -1,9 +1,6 @@
-use std::collections::{HashMap, HashSet};
-
 use crate::{
-    attrs::{RidAttr, TypeInfo, TypeInfoMap},
+    attrs::{RidAttr, TypeInfoMap},
     common::abort,
-    message::VariantField,
 };
 
 #[derive(Debug)]
@@ -26,7 +23,7 @@ fn validate_attrs(attrs: &[RidAttr]) {
                 ident,
                 "export can only be applied to functions and struct impl blocks"
             ),
-            Types(ident, hash) => {}
+            Types(_ident, _hash) => {}
             Wip => {}
         }
     }

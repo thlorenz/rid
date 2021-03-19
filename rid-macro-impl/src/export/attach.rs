@@ -1,29 +1,28 @@
 use super::{ParsedFunction, ParsedImplBlock};
 use crate::attrs;
 use proc_macro2::TokenStream;
-use proc_macro_error::{abort, ResultExt};
-use quote::quote;
+use proc_macro_error::abort;
 
-pub fn rid_export_impl(item: syn::Item, args: syn::AttributeArgs) -> TokenStream {
+pub fn rid_export_impl(item: syn::Item, _args: syn::AttributeArgs) -> TokenStream {
     match item {
         syn::Item::Impl(item) => {
             let attrs = attrs::parse_rid_attrs(&item.attrs);
             if attrs.iter().any(|x| x.is_export()) {
-                let parsed = ParsedImplBlock::new(item, &attrs);
+                let _parsed = ParsedImplBlock::new(item, &attrs);
                 todo!("convert parsed impl block to rendered wrapper")
             } else {
                 TokenStream::new()
             }
         }
         syn::Item::Fn(syn::ItemFn {
-            attrs, // Vec<Attribute>,
-            vis,   // Visibility,
-            sig,   // Signature,
-            block, // Box<Block>,
+            attrs,    // Vec<Attribute>,
+            vis: _,   // Visibility,
+            sig,      // Signature,
+            block: _, // Box<Block>,
         }) => {
             let attrs = attrs::parse_rid_attrs(&attrs);
             if attrs.iter().any(|x| x.is_export()) {
-                let parsed = ParsedFunction::new(sig, &attrs, None);
+                let _parsed = ParsedFunction::new(sig, &attrs, None);
                 todo!("convert parsed function to rendered wrapper")
             } else {
                 TokenStream::new()
@@ -60,8 +59,9 @@ mod tests {
     use quote::quote;
 
     // #[test]
+    #[allow(dead_code)]
     fn struct_impl() {
-        let attrs = TokenStream::new();
+        let _attrs = TokenStream::new();
         let input: TokenStream = quote! {
           #[rid::export]
           impl MyStruct {

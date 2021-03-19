@@ -1,13 +1,7 @@
-use std::collections::HashMap;
-
-use attrs::TypeInfoMap;
-
 use super::parsed_function::ParsedFunction;
 use crate::{
     attrs,
-    common::{
-        abort, extract_path_segment, ParsedReceiver, PrimitiveType, RustArg, RustType, ValueType,
-    },
+    common::{ParsedReceiver, PrimitiveType, RustArg, RustType, ValueType},
 };
 
 use crate::common::ParsedReference;
@@ -18,7 +12,6 @@ use quote::quote;
 
 fn parse(input: proc_macro2::TokenStream) -> ParsedImplBlock {
     let item = syn::parse2::<syn::Item>(input).unwrap();
-    let args = syn::AttributeArgs::new();
     match item {
         syn::Item::Impl(item) => {
             let attrs = attrs::parse_rid_attrs(&item.attrs);
@@ -31,8 +24,8 @@ fn parse(input: proc_macro2::TokenStream) -> ParsedImplBlock {
 #[test]
 fn impl_block_with_new_returning_self() {
     let ParsedImplBlock {
-        ty: (ident, ty),
-        methods,
+        ty: (_ident, _ty),
+        methods: _,
     } = parse(quote! {
         #[rid(export)]
         impl MyStruct {

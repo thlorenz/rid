@@ -1,17 +1,14 @@
 use std::{
-    any::TypeId,
-    collections::{HashMap, HashSet},
-    convert::{TryFrom, TryInto},
+    collections::HashMap,
+    convert::TryFrom,
     ops::{Deref, DerefMut},
 };
-
-use quote::quote;
 
 use syn::{
     braced,
     parse::{Parse, ParseStream},
     punctuated::Punctuated,
-    token, Ident, Token,
+    Ident, Token,
 };
 
 #[derive(Debug, PartialEq, Clone)]

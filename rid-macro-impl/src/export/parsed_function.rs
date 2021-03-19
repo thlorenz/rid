@@ -1,11 +1,7 @@
 use crate::{
     attrs::{merge_type_infos, Category, RidAttr, TypeInfo, TypeInfoMap},
-    common::{
-        abort, extract_path_segment, ParsedReceiver, ParsedReference, PrimitiveType, RustArg,
-        RustType, ValueType,
-    },
+    common::{abort, ParsedReceiver, RustArg, RustType},
 };
-use std::{any::Any, collections::HashMap};
 
 #[derive(Debug)]
 pub struct ParsedFunction {
@@ -24,17 +20,17 @@ impl ParsedFunction {
         use syn::*;
 
         let Signature {
-            constness,   // Option<Token![const]>,
-            asyncness,   // Option<Token![async]>,
-            unsafety,    // Option<Token![unsafe]>,
-            abi,         // Option<Abi>,
-            fn_token,    // Token![fn],
-            ident,       // Ident,
-            generics,    // Generics,
-            paren_token, // token::Paren,
-            variadic,    // Option<Variadic>,
-            inputs,      // Punctuated<FnArg, Token![,]>,
-            output,      // ReturnType,
+            constness: _,   // Option<Token![const]>,
+            asyncness: _,   // Option<Token![async]>,
+            unsafety: _,    // Option<Token![unsafe]>,
+            abi: _,         // Option<Abi>,
+            fn_token: _,    // Token![fn],
+            ident,          // Ident,
+            generics: _,    // Generics,
+            paren_token: _, // token::Paren,
+            variadic: _,    // Option<Variadic>,
+            inputs,         // Punctuated<FnArg, Token![,]>,
+            output,         // ReturnType,
         } = sig;
 
         let type_infos = get_type_infos(fn_attrs, owner);
@@ -44,13 +40,13 @@ impl ParsedFunction {
         let mut receiver = None;
         let mut args: Vec<RustArg> = vec![];
         for arg in inputs {
-            let rust_arg = match arg {
+            match arg {
                 FnArg::Receiver(rec) => receiver = Some(ParsedReceiver::new(&rec)),
                 FnArg::Typed(PatType {
-                    attrs,       // Vec<Attribute>,
-                    pat,         // Box<Pat>,
-                    colon_token, // Token![:],
-                    ty,          // Box<Type>,
+                    attrs: _,       // Vec<Attribute>,
+                    pat: _,         // Box<Pat>,
+                    colon_token: _, // Token![:],
+                    ty,             // Box<Type>,
                 }) => match RustArg::from_ty(ty.clone(), Some(&type_infos), None) {
                     Some(rust_arg) => args.push(rust_arg),
                     None => abort!(

@@ -2,7 +2,7 @@ use syn::{Ident, Type, TypePath};
 
 use crate::attrs::TypeInfoMap;
 
-use super::{abort, extract_path_segment, ParsedReference, RustType};
+use super::{extract_path_segment, ParsedReference, RustType};
 
 #[derive(Debug)]
 pub struct RustArg {

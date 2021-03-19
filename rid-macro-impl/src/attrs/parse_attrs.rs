@@ -1,14 +1,10 @@
-use std::collections::{HashMap, HashSet};
-
 use proc_macro2::Ident;
-use quote::__private::ext::RepToTokensExt;
 use syn::{
     parse::{Parse, ParseStream},
-    Attribute, Expr, ExprArray, ExprBlock, ExprCall, ExprGroup, ExprStruct, ExprTuple, ExprType,
-    LitStr, Token,
+    Attribute, Expr, ExprTuple, LitStr, Token,
 };
 
-use super::{type_category::ExprTypeInfo, TypeInfo, TypeInfoMap};
+use super::{type_category::ExprTypeInfo, TypeInfoMap};
 use proc_macro_error::{abort, ResultExt};
 
 #[derive(Debug)]
@@ -56,7 +52,7 @@ impl Parse for RidAttr {
 
         if name_str == "types" {
             if input.peek(Token![=]) {
-                let assign_token = input.parse::<Token![=]>()?;
+                let _ = input.parse::<Token![=]>()?;
                 let res = input.parse::<ExprTypeInfo>()?;
                 return match res.into_validated() {
                     Ok(hash) => Ok(Types(name, hash)),
@@ -71,7 +67,7 @@ impl Parse for RidAttr {
         }
         if input.peek(Token![=]) {
             // key = value
-            let assign_token = input.parse::<Token![=]>()?;
+            let _ = input.parse::<Token![=]>()?;
 
             if input.peek(LitStr) {
                 // TODO: more details about specific case
@@ -79,7 +75,7 @@ impl Parse for RidAttr {
             } else {
                 match &*name_str {
                     "types" => match input.parse::<ExprTuple>() {
-                        Ok(tpl) => Ok(RidAttr::Wip),
+                        Ok(_tpl) => Ok(RidAttr::Wip),
                         Err(_) => abort!(name, "key: {} needs to be tuple", name_str),
                     },
                     "to" => match input.parse::<Expr>() {
