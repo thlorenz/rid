@@ -1,13 +1,10 @@
 use attrs::TypeInfoMap;
 
-use super::parsed_function::ParsedFunction;
-use crate::{
-    attrs,
-    common::{
-        abort,
-        rust_type::{RustType, TypeKind},
-    },
+use super::{
+    parsed_function::ParsedFunction,
+    rust_type::{RustType, TypeKind},
 };
+use crate::{attrs, common::abort};
 
 #[derive(Debug)]
 pub struct ParsedImplBlock {

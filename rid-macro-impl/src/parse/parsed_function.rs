@@ -1,10 +1,10 @@
+use super::{
+    rust_type::{RustType, TypeKind},
+    ParsedReceiver, ParsedReference,
+};
 use crate::{
     attrs::{merge_type_infos, Category, RidAttr, TypeInfo, TypeInfoMap},
-    common::{
-        abort,
-        rust_type::{RustType, TypeKind},
-        ParsedReceiver, ParsedReference,
-    },
+    common::abort,
 };
 
 #[derive(Debug)]

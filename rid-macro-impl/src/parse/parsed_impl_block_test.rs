@@ -1,10 +1,5 @@
-use crate::{
-    attrs,
-    common::{
-        rust_type::{Primitive, RustType, TypeKind, Value},
-        ParsedReceiver, ParsedReference,
-    },
-};
+use super::rust_type::{Primitive, RustType, TypeKind, Value};
+use crate::attrs;
 use assert_matches::assert_matches;
 use attrs::{Category, TypeInfo};
 

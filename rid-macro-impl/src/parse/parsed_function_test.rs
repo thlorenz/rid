@@ -1,16 +1,14 @@
 use assert_matches::assert_matches;
 
+use super::{
+    rust_type::{Composite, Primitive, RustType, TypeKind, Value},
+    ParsedFunction, ParsedReceiver, ParsedReference,
+};
 use crate::{
     attrs,
     attrs::{Category, TypeInfo},
-    common::{
-        rust_type::{Composite, Primitive, RustType, TypeKind, Value},
-        ParsedReceiver, ParsedReference,
-    },
 };
 use quote::quote;
-
-use super::ParsedFunction;
 
 fn parse(input: proc_macro2::TokenStream) -> ParsedFunction {
     let item = syn::parse2::<syn::Item>(input).unwrap();

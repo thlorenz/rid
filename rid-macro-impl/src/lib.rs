@@ -4,6 +4,7 @@ mod common;
 mod export;
 mod message;
 mod model;
+mod parse;
 mod templates;
 
 pub use attrs::parse_rid_attrs;

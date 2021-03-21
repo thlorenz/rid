@@ -1,7 +1,6 @@
-use super::{ParsedFunction, ParsedImplBlock};
+use crate::parse::{ParsedFunction, ParsedImplBlock};
 
-use crate::attrs;
-use crate::common::abort;
+use crate::{attrs, common::abort};
 
 use proc_macro2::TokenStream;
 
