@@ -49,7 +49,8 @@ impl ParsedEnum {
         if self.parsed_variants.is_empty() {
             return Tokens::new();
         }
-        let method_tokens = self.parsed_variants.iter().map(|v| self.rust_method(v));
+        let method_tokens =
+            self.parsed_variants.iter().map(|v| self.rust_method(v));
         let dart_comment = self.dart_extension();
         let module_ident = &self.module_ident;
 
@@ -137,7 +138,8 @@ impl ParsedEnum {
             .iter()
             .map(|Arg { arg, ty, .. }| quote_spanned! { fn_ident.span() => #arg: #ty });
 
-        let args_resolvers = arg_idents.iter().map(|Arg { resolver, .. }| resolver);
+        let args_resolvers =
+            arg_idents.iter().map(|Arg { resolver, .. }| resolver);
 
         let msg_args = arg_idents
             .iter()
@@ -221,17 +223,25 @@ impl ParsedEnum {
                         toNativeInt8 = STRING_TO_NATIVE_INT8
                     ),
                     RustType::Value(CString) => {
-                        todo!("ParsedEnum::dart_method::RustType::Value(CString)")
+                        todo!(
+                            "ParsedEnum::dart_method::RustType::Value(CString)"
+                        )
                     }
                     RustType::Value(RVec(_)) => {
-                        todo!("ParsedEnum::dart_method::RustType::Value(RVec(_))")
+                        todo!(
+                            "ParsedEnum::dart_method::RustType::Value(RVec(_))"
+                        )
                     }
                     RustType::Primitive(_) => format!("arg{}", f.slot),
                     RustType::Value(RCustom(_, _)) => format!("arg{}", f.slot),
 
-                    RustType::Unit => todo!("ParsedEnum::dart_method::RustType::Unit"),
+                    RustType::Unit => {
+                        todo!("ParsedEnum::dart_method::RustType::Unit")
+                    }
                     RustType::Unknown => {
-                        unimplemented!("ParsedEnum::dart_method::RustType::Unknown")
+                        unimplemented!(
+                            "ParsedEnum::dart_method::RustType::Unknown"
+                        )
                     }
                 };
                 let ty = if let RustType::Value(RCustom(info, _)) = &f.rust_ty {
@@ -253,9 +263,9 @@ impl ParsedEnum {
             .enumerate()
             .collect();
 
-        let args_decl = args_info
-            .iter()
-            .fold("".to_string(), |acc, (idx, Arg { arg, ty, .. })| {
+        let args_decl = args_info.iter().fold(
+            "".to_string(),
+            |acc, (idx, Arg { arg, ty, .. })| {
                 let comma = if *idx == 0 { "" } else { ", " };
                 format!(
                     "{acc}{comma}{ty} {arg}",
@@ -264,14 +274,21 @@ impl ParsedEnum {
                     ty = ty,
                     arg = arg
                 )
-            });
+            },
+        );
 
-        let args_call = args_info
-            .iter()
-            .fold("".to_string(), |acc, (idx, Arg { ffi_arg, .. })| {
+        let args_call = args_info.iter().fold(
+            "".to_string(),
+            |acc, (idx, Arg { ffi_arg, .. })| {
                 let comma = if *idx == 0 { "" } else { ", " };
-                format!("{acc}{comma}{arg}", acc = acc, comma = comma, arg = ffi_arg)
-            });
+                format!(
+                    "{acc}{comma}{arg}",
+                    acc = acc,
+                    comma = comma,
+                    arg = ffi_arg
+                )
+            },
+        );
 
         format!(
             "///   void {dart_method_name}({args_decl}) => {rid_ffi}.{method_name}(this, {args_call});",
@@ -291,7 +308,10 @@ impl ParsedEnum {
     }
 }
 
-fn parse_variants(variants: Punctuated<Variant, Comma>, method_prefix: &str) -> Vec<ParsedVariant> {
+fn parse_variants(
+    variants: Punctuated<Variant, Comma>,
+    method_prefix: &str,
+) -> Vec<ParsedVariant> {
     variants
         .into_iter()
         .map(|v| ParsedVariant::new(v, &method_prefix))

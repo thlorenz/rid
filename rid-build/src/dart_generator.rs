@@ -1,5 +1,6 @@
 use rid_common::{
-    CSTRING_FREE, DART_COLLECTION, DART_FFI, FFI_GEN_BIND, RID_FFI, STRING_TO_NATIVE_INT8,
+    CSTRING_FREE, DART_COLLECTION, DART_FFI, FFI_GEN_BIND, RID_FFI,
+    STRING_TO_NATIVE_INT8,
 };
 const PACKAGE_FFI: &str = "package_ffi";
 
@@ -111,7 +112,8 @@ impl<'a> DartGenerator<'a> {
             open_dl = self.dart_open_dl(),
             extensions = extensions,
             string_from_pointer_extension = dart_string_from_pointer(),
-            string_pointer_from_string_extension = dart_string_pointer_from_string(),
+            string_pointer_from_string_extension =
+                dart_string_pointer_from_string(),
             native_export = dart_rid_native()
         )
         .to_string()
@@ -177,9 +179,10 @@ import '{ffigen_binding}' as {ffigen_bind};
                 if trimmed.starts_with("* ```dart") {
                     inside_extension = true;
                 } else if trimmed.starts_with(TYPEDEF_STRUCT) {
-                    let (struct_name, _) = trimmed[TYPEDEF_STRUCT_LEN..]
-                        .split_once(" ")
-                        .expect(&format!("Invalid struct definition {}", &trimmed));
+                    let (struct_name, _) =
+                        trimmed[TYPEDEF_STRUCT_LEN..].split_once(" ").expect(
+                            &format!("Invalid struct definition {}", &trimmed),
+                        );
                     structs.push(struct_name.to_string());
                 }
                 continue;
@@ -202,10 +205,9 @@ import '{ffigen_binding}' as {ffigen_bind};
             .into_iter()
             .map(|section| {
                 let last_line = section.len() - 1;
-                section
-                    .into_iter()
-                    .enumerate()
-                    .fold("".to_string(), |acc, (idx, ext)| {
+                section.into_iter().enumerate().fold(
+                    "".to_string(),
+                    |acc, (idx, ext)| {
                         if idx == 0 || idx == last_line {
                             let new_line = if idx == 0 { "" } else { "\n" };
                             format!(
@@ -217,7 +219,8 @@ import '{ffigen_binding}' as {ffigen_bind};
                         } else {
                             format!("{acc}\n  {ext}", acc = acc, ext = ext)
                         }
-                    })
+                    },
+                )
             })
             .fold("".to_string(), |acc, ref section| {
                 let new_line = if acc == "" { "" } else { "\n\n" };
@@ -239,7 +242,10 @@ import '{ffigen_binding}' as {ffigen_bind};
 mod tests {
     use super::*;
 
-    fn setup<'a>(binding: &'a str, target: &'a BuildTarget) -> DartGenerator<'a> {
+    fn setup<'a>(
+        binding: &'a str,
+        target: &'a BuildTarget,
+    ) -> DartGenerator<'a> {
         let ffigen_binding = "./ffigen_binding.dart";
         let path_to_target = "target";
         let lib_name = "libapp_todo";
@@ -256,16 +262,20 @@ mod tests {
     #[test]
     fn test_dart_extensions_single_struct_prims_and_strings() {
         let binding_h = include_str!("../fixtures/prims+strings_binding.h");
-        let binding_dart = include_str!("../fixtures/prims+strings_binding.dart");
-        let (extensions, _) = setup(&binding_h, &BuildTarget::Debug).parse_binding();
+        let binding_dart =
+            include_str!("../fixtures/prims+strings_binding.dart");
+        let (extensions, _) =
+            setup(&binding_h, &BuildTarget::Debug).parse_binding();
         assert_eq!(extensions, binding_dart.trim_end())
     }
 
     #[test]
     fn test_dart_extensions_three_structs() {
         let binding_h = include_str!("../fixtures/three_structs_binding.h");
-        let binding_dart = include_str!("../fixtures/three_structs_binding.dart");
-        let (extensions, _) = setup(&binding_h, &BuildTarget::Debug).parse_binding();
+        let binding_dart =
+            include_str!("../fixtures/three_structs_binding.dart");
+        let (extensions, _) =
+            setup(&binding_h, &BuildTarget::Debug).parse_binding();
         assert_eq!(extensions, binding_dart.trim_end())
     }
 }

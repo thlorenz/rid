@@ -80,7 +80,8 @@ fn generate(
         "./{}",
         ffigen_generated_path.file_name().unwrap().to_string_lossy()
     );
-    let path_to_target = &format!("{}", project.path_to_target(target_crate_root).display());
+    let path_to_target =
+        &format!("{}", project.path_to_target(target_crate_root).display());
 
     let dart_generator = DartGenerator {
         lib_name,

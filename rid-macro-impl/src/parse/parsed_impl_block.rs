@@ -13,7 +13,10 @@ pub struct ParsedImplBlock {
 }
 
 impl ParsedImplBlock {
-    pub fn new(item_impl: syn::ItemImpl, impl_attrs: &[attrs::RidAttr]) -> Self {
+    pub fn new(
+        item_impl: syn::ItemImpl,
+        impl_attrs: &[attrs::RidAttr],
+    ) -> Self {
         use syn::*;
 
         let self_ty = *item_impl.self_ty;

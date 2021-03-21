@@ -38,7 +38,8 @@ fn extract_fields(v: Variant) -> (Vec<String>, Vec<VariantField>) {
         .map(|(idx, f)| VariantField::new(f, idx, &config))
         .fold(
             (vec![], vec![]),
-            |(mut errors, mut fields): (Vec<String>, Vec<VariantField>), res| {
+            |(mut errors, mut fields): (Vec<String>, Vec<VariantField>),
+             res| {
                 match res {
                     Ok(field) => fields.push(field),
                     Err(err) => errors.push(err),
@@ -48,7 +49,10 @@ fn extract_fields(v: Variant) -> (Vec<String>, Vec<VariantField>) {
         )
 }
 
-fn method_ident_from_variant(method_prefix: &str, variant_ident: &syn::Ident) -> syn::Ident {
+fn method_ident_from_variant(
+    method_prefix: &str,
+    variant_ident: &syn::Ident,
+) -> syn::Ident {
     let fn_name = format!("{}_{}", method_prefix, variant_ident);
     syn::Ident::new(&fn_name, variant_ident.span())
 }

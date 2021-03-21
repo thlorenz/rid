@@ -43,35 +43,43 @@ impl ParsedFunction {
         let mut args: Vec<RustType> = vec![];
         for arg in inputs {
             match arg {
-                FnArg::Receiver(rec) => receiver = Some(ParsedReceiver::new(&rec)),
+                FnArg::Receiver(rec) => {
+                    receiver = Some(ParsedReceiver::new(&rec))
+                }
                 FnArg::Typed(PatType {
                     attrs: _,       // Vec<Attribute>,
                     pat: _,         // Box<Pat>,
                     colon_token: _, // Token![:],
                     ty,             // Box<Type>,
-                }) => match RustType::from_boxed_type(ty.clone(), &type_infos) {
-                    Some(rust_type) => args.push(rust_type),
+                }) => {
+                    match RustType::from_boxed_type(ty.clone(), &type_infos) {
+                        Some(rust_type) => args.push(rust_type),
+                        None => abort!(
+                        ty,
+                        "[rid] Type not supported for exported functions {:#?}",
+                        *ty
+                    ),
+                    }
+                }
+            };
+        }
+
+        let return_arg = match output {
+            ReturnType::Default => RustType::new(
+                ident.clone(),
+                TypeKind::Unit,
+                ParsedReference::Owned,
+            ),
+            ReturnType::Type(_, ty) => {
+                match RustType::from_boxed_type(ty.clone(), &type_infos) {
+                    Some(rust_type) => rust_type,
                     None => abort!(
                         ty,
                         "[rid] Type not supported for exported functions {:#?}",
                         *ty
                     ),
-                },
-            };
-        }
-
-        let return_arg = match output {
-            ReturnType::Default => {
-                RustType::new(ident.clone(), TypeKind::Unit, ParsedReference::Owned)
+                }
             }
-            ReturnType::Type(_, ty) => match RustType::from_boxed_type(ty.clone(), &type_infos) {
-                Some(rust_type) => rust_type,
-                None => abort!(
-                    ty,
-                    "[rid] Type not supported for exported functions {:#?}",
-                    *ty
-                ),
-            },
         };
 
         let return_arg = match owner {
@@ -88,7 +96,10 @@ impl ParsedFunction {
     }
 }
 
-fn get_type_infos(fn_attrs: &[RidAttr], owner: Option<(&syn::Ident, &TypeInfoMap)>) -> TypeInfoMap {
+fn get_type_infos(
+    fn_attrs: &[RidAttr],
+    owner: Option<(&syn::Ident, &TypeInfoMap)>,
+) -> TypeInfoMap {
     let mut type_infos: TypeInfoMap = fn_attrs.into();
 
     if let Some((ident, owner_type_infos)) = owner {

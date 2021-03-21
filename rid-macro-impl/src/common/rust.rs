@@ -16,7 +16,9 @@ impl Display for ValueType {
             CString => "CString".to_string(),
             RString => "String".to_string(),
             RVec((rust_ty, ident)) => format!("Vec<{}|{}>", rust_ty, ident),
-            RCustom(info, s) => format!("ValueType::RCustom({:?}, {})", info, s),
+            RCustom(info, s) => {
+                format!("ValueType::RCustom({:?}, {})", info, s)
+            }
         };
         write!(f, "{}", ty)
     }
@@ -107,11 +109,12 @@ pub fn extract_path_segment(
         "usize" => Primitive(USize),
         "bool" => Primitive(Bool),
         "Vec" => match arguments {
-            syn::PathArguments::AngleBracketed(syn::AngleBracketedGenericArguments {
-                args,
-                ..
-            }) => match &args[0] {
-                syn::GenericArgument::Type(syn::Type::Path(syn::TypePath { path, .. })) => {
+            syn::PathArguments::AngleBracketed(
+                syn::AngleBracketedGenericArguments { args, .. },
+            ) => match &args[0] {
+                syn::GenericArgument::Type(syn::Type::Path(
+                    syn::TypePath { path, .. },
+                )) => {
                     let (ident, vec_type) = extract_path_segment(path, types);
                     Value(RVec((Box::new(vec_type), ident.clone())))
                 }
@@ -156,7 +159,10 @@ pub fn extract_path_segment(
 }
 
 impl RustType {
-    pub fn try_from(ty: &syn::Type, types: &TypeInfoMap) -> Result<(syn::Ident, RustType), String> {
+    pub fn try_from(
+        ty: &syn::Type,
+        types: &TypeInfoMap,
+    ) -> Result<(syn::Ident, RustType), String> {
         match &ty {
             syn::Type::Path(syn::TypePath { path, .. }) => {
                 Ok(extract_path_segment(path, Some(types)))
@@ -172,7 +178,9 @@ impl RustType {
             syn::Type::Ptr(ty) => Err(format!("Ptr: {:#?}", &ty)),
             syn::Type::Reference(ty) => Err(format!("Reference: {:#?}", &ty)),
             syn::Type::Slice(ty) => Err(format!("Slice: {:#?}", &ty)),
-            syn::Type::TraitObject(ty) => Err(format!("TraitObject: {:#?}", &ty)),
+            syn::Type::TraitObject(ty) => {
+                Err(format!("TraitObject: {:#?}", &ty))
+            }
             syn::Type::Tuple(ty) => Err(format!("Tuple: {:#?}", &ty)),
             syn::Type::Verbatim(ty) => Err(format!("Verbatim: {:#?}", &ty)),
             _ => Err(format!("Unexpected: {:#?}", &ty)),

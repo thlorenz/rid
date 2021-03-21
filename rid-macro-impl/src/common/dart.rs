@@ -14,7 +14,10 @@ use crate::attrs::TypeInfo;
 use super::RustType;
 
 impl DartType {
-    pub fn try_from(rust_ty: &RustType, ident: &syn::Ident) -> Result<Self, String> {
+    pub fn try_from(
+        rust_ty: &RustType,
+        ident: &syn::Ident,
+    ) -> Result<Self, String> {
         use super::rust::{PrimitiveType::*, ValueType::*};
 
         match &rust_ty {
@@ -26,9 +29,13 @@ impl DartType {
             },
             RustType::Value(v) => match v {
                 // For now only supporting unnested Vecs
-                RVec((_, vec_indent)) => Ok(DartType::Vec(vec_indent.to_string())),
+                RVec((_, vec_indent)) => {
+                    Ok(DartType::Vec(vec_indent.to_string()))
+                }
                 CString | RString => Ok(DartType::String),
-                RCustom(info, ty) => Ok(DartType::Custom(info.clone(), ty.to_string())),
+                RCustom(info, ty) => {
+                    Ok(DartType::Custom(info.clone(), ty.to_string()))
+                }
             },
             _ => Err(format!(
                 "Rust type '{}'/'{}' cannot be converted to a Dart type",

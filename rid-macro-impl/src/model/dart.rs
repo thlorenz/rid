@@ -63,7 +63,10 @@ impl DartType {
                 match info.cat {
                     // TODO: we are assuming each enum is #[repr(C)]
                     Enum => "int".to_string(),
-                    Struct => format!("{dart_ffi}.Pointer<{dart_ffi}.Int32>", dart_ffi = DART_FFI),
+                    Struct => format!(
+                        "{dart_ffi}.Pointer<{dart_ffi}.Int32>",
+                        dart_ffi = DART_FFI
+                    ),
                     Prim => todo!("dart::return_type Prim"),
                 }
             }
@@ -72,8 +75,12 @@ impl DartType {
 
     pub fn type_attribute(&self) -> Option<String> {
         match self {
-            DartType::Int32 => Some(format!("@{dart_ffi}.Int32()", dart_ffi = DART_FFI)),
-            DartType::Int64 => Some(format!("@{dart_ffi}.Int64()", dart_ffi = DART_FFI)),
+            DartType::Int32 => {
+                Some(format!("@{dart_ffi}.Int32()", dart_ffi = DART_FFI))
+            }
+            DartType::Int64 => {
+                Some(format!("@{dart_ffi}.Int64()", dart_ffi = DART_FFI))
+            }
             _ => None,
         }
     }

@@ -4,7 +4,9 @@ use proc_macro::TokenStream;
 
 use proc_macro_error::proc_macro_error;
 
-use rid_macro_impl::{parse_rid_attrs, rid_ffi_message_impl, rid_ffi_model_impl};
+use rid_macro_impl::{
+    parse_rid_attrs, rid_ffi_message_impl, rid_ffi_model_impl,
+};
 use syn::{self, parse_macro_input};
 
 const RID_PRINT_MODEL: &str = "RID_PRINT_MODEL";

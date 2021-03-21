@@ -25,7 +25,10 @@ impl ParsedField {
         let rust_res = RustType::try_from(&ty, &config.types);
         let dart_ty = match &rust_res {
             Ok((ident, ref rust_ty)) => DartType::try_from(rust_ty, ident),
-            Err(_) => Err("Dart type not determined due to invalid Rust type".to_string()),
+            Err(_) => {
+                Err("Dart type not determined due to invalid Rust type"
+                    .to_string())
+            }
         };
         let rust_ty = rust_res.map(|(_, rust_ty)| rust_ty);
 
@@ -39,7 +42,10 @@ impl ParsedField {
     }
 }
 
-fn method_ident_from_field(method_prefix: &str, field_ident: &syn::Ident) -> syn::Ident {
+fn method_ident_from_field(
+    method_prefix: &str,
+    field_ident: &syn::Ident,
+) -> syn::Ident {
     let fn_name = format!("{}_{}", method_prefix, field_ident);
     syn::Ident::new(&fn_name, field_ident.span())
 }

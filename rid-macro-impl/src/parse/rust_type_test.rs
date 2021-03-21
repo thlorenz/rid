@@ -32,7 +32,9 @@ fn parse(input: proc_macro2::TokenStream) -> Option<RustType> {
                 _ => panic!("Unexpected item, we're trying to parse simple function args here"),
             }
         }
-        _ => panic!("Unexpected item, we're trying to parse function args here"),
+        _ => {
+            panic!("Unexpected item, we're trying to parse function args here")
+        }
     }
 }
 

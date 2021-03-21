@@ -78,7 +78,9 @@ impl Parse for RidAttr {
                 match &*name_str {
                     "types" => match input.parse::<ExprTuple>() {
                         Ok(_tpl) => Ok(RidAttr::Wip),
-                        Err(_) => abort!(name, "key: {} needs to be tuple", name_str),
+                        Err(_) => {
+                            abort!(name, "key: {} needs to be tuple", name_str)
+                        }
                     },
                     "to" => match input.parse::<Expr>() {
                         Ok(expr) => Ok(Model(name, expr)),

@@ -66,7 +66,8 @@ impl<T> Index<usize> for RidVec<T> {
 
 impl<T> RidVec<T> {
     pub fn free(self) {
-        let _ = unsafe { Vec::from_raw_parts(self.ptr, self.len, self.capacity) };
+        let _ =
+            unsafe { Vec::from_raw_parts(self.ptr, self.len, self.capacity) };
     }
 }
 
@@ -144,12 +145,18 @@ mod tests {
             let s1 = Something {
                 id: 1,
                 label: "something".to_string(),
-                small: vec![Small("Hello".to_string()), Small("World".to_string())],
+                small: vec![
+                    Small("Hello".to_string()),
+                    Small("World".to_string()),
+                ],
             };
             let s2 = Something {
                 id: 2,
                 label: "something else".to_string(),
-                small: vec![Small("Hola".to_string()), Small("Mundo".to_string())],
+                small: vec![
+                    Small("Hola".to_string()),
+                    Small("Mundo".to_string()),
+                ],
             };
             let vec = vec![s1, s2];
 
@@ -168,7 +175,10 @@ mod tests {
                 &Something {
                     id: 1,
                     label: "something".to_string(),
-                    small: vec![Small("Hello".to_string()), Small("World".to_string())],
+                    small: vec![
+                        Small("Hello".to_string()),
+                        Small("World".to_string())
+                    ],
                 },
                 "get item 1"
             );
@@ -177,7 +187,10 @@ mod tests {
                 &Something {
                     id: 2,
                     label: "something else".to_string(),
-                    small: vec![Small("Hola".to_string()), Small("Mundo".to_string())],
+                    small: vec![
+                        Small("Hola".to_string()),
+                        Small("Mundo".to_string())
+                    ],
                 },
                 "get item 1"
             );
@@ -200,7 +213,8 @@ mod tests {
         let vec = vec![s1, s2];
 
         let rvec: RidVec<&Something> = {
-            let filtered: Vec<&Something> = vec.iter().filter(|&x| x.id == 2).collect();
+            let filtered: Vec<&Something> =
+                vec.iter().filter(|&x| x.id == 2).collect();
             filtered.into()
         };
 
@@ -214,7 +228,10 @@ mod tests {
                 &Something {
                     id: 2,
                     label: "something else".to_string(),
-                    small: vec![Small("Hola".to_string()), Small("Mundo".to_string())],
+                    small: vec![
+                        Small("Hola".to_string()),
+                        Small("Mundo".to_string())
+                    ],
                 },
                 "get item 1"
             );

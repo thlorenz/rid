@@ -94,6 +94,8 @@ mod tests {
         let binding_h = fs::read_to_string(&binding_h).unwrap();
         assert!(binding_h.len() > 0);
         assert!(binding_h.contains("typedef struct Foo Foo;"));
-        assert!(binding_h.contains("FFI access methods generated for struct 'Baz'"));
+        assert!(
+            binding_h.contains("FFI access methods generated for struct 'Baz'")
+        );
     }
 }

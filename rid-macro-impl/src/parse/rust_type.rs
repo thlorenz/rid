@@ -1,6 +1,6 @@
 use syn::{
-    AngleBracketedGenericArguments, GenericArgument, Ident, Path, PathArguments, PathSegment, Type,
-    TypePath,
+    AngleBracketedGenericArguments, GenericArgument, Ident, Path,
+    PathArguments, PathSegment, Type, TypePath,
 };
 
 use std::fmt::Debug;
@@ -17,7 +17,11 @@ pub struct RustType {
 }
 
 impl RustType {
-    pub fn new(ident: Ident, kind: TypeKind, reference: ParsedReference) -> Self {
+    pub fn new(
+        ident: Ident,
+        kind: TypeKind,
+        reference: ParsedReference,
+    ) -> Self {
         Self {
             ident,
             kind,
@@ -48,11 +52,14 @@ pub enum TypeKind {
 impl PartialEq for TypeKind {
     fn eq(&self, other: &Self) -> bool {
         match (self, other) {
-            (TypeKind::Primitive(prim1), TypeKind::Primitive(prim2)) => prim1 == prim2,
-            (TypeKind::Value(val1), TypeKind::Value(val2)) => val1 == val2,
-            (TypeKind::Composite(com1, ty1), TypeKind::Composite(com2, ty2)) => {
-                com1 == com2 && ty1 == ty2
+            (TypeKind::Primitive(prim1), TypeKind::Primitive(prim2)) => {
+                prim1 == prim2
             }
+            (TypeKind::Value(val1), TypeKind::Value(val2)) => val1 == val2,
+            (
+                TypeKind::Composite(com1, ty1),
+                TypeKind::Composite(com2, ty2),
+            ) => com1 == com2 && ty1 == ty2,
             (TypeKind::Unit, TypeKind::Unit) => true,
             (TypeKind::Unknown, TypeKind::Unknown) => true,
             _ => false,
@@ -146,7 +153,9 @@ impl Debug for Value {
 impl Value {
     fn self_unaliased(self, owner_name: String) -> Self {
         match self {
-            Value::Custom(type_info, name) if name == "Self" => Self::Custom(type_info, owner_name),
+            Value::Custom(type_info, name) if name == "Self" => {
+                Self::Custom(type_info, owner_name)
+            }
             _ => self,
         }
     }
@@ -176,7 +185,10 @@ impl Debug for Composite {
 // RustType Impl
 // --------------
 impl RustType {
-    pub fn from_boxed_type(ty: Box<Type>, type_infos: &TypeInfoMap) -> Option<RustType> {
+    pub fn from_boxed_type(
+        ty: Box<Type>,
+        type_infos: &TypeInfoMap,
+    ) -> Option<RustType> {
         resolve_rust_ty(ty.as_ref(), type_infos)
     }
 
@@ -212,7 +224,11 @@ fn resolve_rust_ty(ty: &Type, type_infos: &TypeInfoMap) -> Option<RustType> {
     })
 }
 
-fn ident_to_kind(ident: &Ident, arguments: &PathArguments, type_infos: &TypeInfoMap) -> TypeKind {
+fn ident_to_kind(
+    ident: &Ident,
+    arguments: &PathArguments,
+    type_infos: &TypeInfoMap,
+) -> TypeKind {
     let ident_str = ident.to_string();
 
     match arguments {
@@ -243,24 +259,35 @@ fn ident_to_kind(ident: &Ident, arguments: &PathArguments, type_infos: &TypeInfo
 
             // custom value types
             if let Some(type_info) = type_infos.get(&ident_str) {
-                return TypeKind::Value(Value::Custom(type_info.clone(), ident_str.clone()));
+                return TypeKind::Value(Value::Custom(
+                    type_info.clone(),
+                    ident_str.clone(),
+                ));
             }
 
             TypeKind::Unknown
         }
 
         // Composite Types
-        PathArguments::AngleBracketed(AngleBracketedGenericArguments { args, .. }) => {
+        PathArguments::AngleBracketed(AngleBracketedGenericArguments {
+            args,
+            ..
+        }) => {
             // For now assuming one arg
             match &args[0] {
                 GenericArgument::Type(ty) => {
-                    let inner = resolve_rust_ty(ty, type_infos).map(|x| Box::new(x));
+                    let inner =
+                        resolve_rust_ty(ty, type_infos).map(|x| Box::new(x));
                     match ident_str.as_str() {
                         "Vec" => TypeKind::Composite(Composite::Vec, inner),
                         _ => {
-                            if let Some(type_info) = type_infos.get(&ident_str) {
+                            if let Some(type_info) = type_infos.get(&ident_str)
+                            {
                                 TypeKind::Composite(
-                                    Composite::Custom(type_info.clone(), ident_str.clone()),
+                                    Composite::Custom(
+                                        type_info.clone(),
+                                        ident_str.clone(),
+                                    ),
                                     inner,
                                 )
                             } else {

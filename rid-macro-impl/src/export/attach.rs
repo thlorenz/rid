@@ -4,7 +4,10 @@ use crate::{attrs, common::abort};
 
 use proc_macro2::TokenStream;
 
-pub fn rid_export_impl(item: syn::Item, _args: syn::AttributeArgs) -> TokenStream {
+pub fn rid_export_impl(
+    item: syn::Item,
+    _args: syn::AttributeArgs,
+) -> TokenStream {
     match item {
         syn::Item::Impl(item) => {
             let attrs = attrs::parse_rid_attrs(&item.attrs);

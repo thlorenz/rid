@@ -24,7 +24,10 @@ impl Project {
         project_root.join("ios").join("Classes").join("binding.h")
     }
 
-    pub(crate) fn path_to_generated_ffigen(&self, project_root: &Path) -> PathBuf {
+    pub(crate) fn path_to_generated_ffigen(
+        &self,
+        project_root: &Path,
+    ) -> PathBuf {
         // TODO: assuming lib/generated/ffigen_binding.dart for now, however we'll
         // need to read the pubspec.yaml and get the ffigen config from there.
         // @see: https://github.com/dart-lang/ffigen#configurations
@@ -39,7 +42,10 @@ impl Project {
             .to_path_buf()
     }
 
-    pub(crate) fn path_to_generated_c_bindings(&self, project_root: &Path) -> PathBuf {
+    pub(crate) fn path_to_generated_c_bindings(
+        &self,
+        project_root: &Path,
+    ) -> PathBuf {
         match self {
             Project::Dart => self
                 .path_to_generated_dir(project_root)

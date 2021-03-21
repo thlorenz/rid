@@ -122,7 +122,8 @@ impl Parse for ExprTypeInfo {
     fn parse(input: ParseStream) -> syn::Result<Self> {
         let content;
         braced!(content in input);
-        let fields: Punctuated<Field, Token![,]> = content.parse_terminated(Field::parse)?;
+        let fields: Punctuated<Field, Token![,]> =
+            content.parse_terminated(Field::parse)?;
         let mut items = HashMap::new();
         for field in fields {
             items.insert(

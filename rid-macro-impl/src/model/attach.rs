@@ -19,7 +19,8 @@ pub fn rid_ffi_model_impl(input: syn::DeriveInput) -> proc_macro2::TokenStream {
             fields: Fields::Named(FieldsNamed { named, .. }),
             ..
         } => {
-            let parsed_struct = ParsedStruct::new(struct_ident, named.clone(), struct_config);
+            let parsed_struct =
+                ParsedStruct::new(struct_ident, named.clone(), struct_config);
             parsed_struct.tokens()
         }
         syn::DataStruct {
