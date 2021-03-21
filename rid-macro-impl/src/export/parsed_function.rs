@@ -1,14 +1,18 @@
 use crate::{
     attrs::{merge_type_infos, Category, RidAttr, TypeInfo, TypeInfoMap},
-    common::{abort, ParsedReceiver, RustArg, RustType},
+    common::{
+        abort,
+        rust_type::{RustType, TypeKind},
+        ParsedReceiver, ParsedReference,
+    },
 };
 
 #[derive(Debug)]
 pub struct ParsedFunction {
     pub fn_ident: syn::Ident,
     pub receiver: Option<ParsedReceiver>,
-    pub args: Vec<RustArg>,
-    pub return_arg: RustArg,
+    pub args: Vec<RustType>,
+    pub return_arg: RustType,
 }
 
 impl ParsedFunction {
@@ -34,11 +38,9 @@ impl ParsedFunction {
         } = sig;
 
         let type_infos = get_type_infos(fn_attrs, owner);
-        let type_infos_string = format!("{:#?}", type_infos);
-        eprintln!("{}", type_infos_string);
 
         let mut receiver = None;
-        let mut args: Vec<RustArg> = vec![];
+        let mut args: Vec<RustType> = vec![];
         for arg in inputs {
             match arg {
                 FnArg::Receiver(rec) => receiver = Some(ParsedReceiver::new(&rec)),
@@ -47,8 +49,8 @@ impl ParsedFunction {
                     pat: _,         // Box<Pat>,
                     colon_token: _, // Token![:],
                     ty,             // Box<Type>,
-                }) => match RustArg::from_ty(ty.clone(), Some(&type_infos), None) {
-                    Some(rust_arg) => args.push(rust_arg),
+                }) => match RustType::from_type(ty.clone(), &type_infos) {
+                    Some(rust_type) => args.push(rust_type),
                     None => abort!(
                         ty,
                         "[rid] Type not supported for exported functions {:#?}",
@@ -59,18 +61,24 @@ impl ParsedFunction {
         }
 
         let return_arg = match output {
-            ReturnType::Default => RustArg::new(ident.clone(), RustType::Unit, None),
-            ReturnType::Type(_, ty) => {
-                match RustArg::from_ty(ty.clone(), Some(&type_infos), owner.map(|(idnt, _)| idnt)) {
-                    Some(rust_arg) => rust_arg,
-                    None => abort!(
-                        ty,
-                        "[rid] Type not supported for exported functions {:#?}",
-                        *ty
-                    ),
-                }
+            ReturnType::Default => {
+                RustType::new(ident.clone(), TypeKind::Unit, ParsedReference::Owned)
             }
+            ReturnType::Type(_, ty) => match RustType::from_type(ty.clone(), &type_infos) {
+                Some(rust_type) => rust_type,
+                None => abort!(
+                    ty,
+                    "[rid] Type not supported for exported functions {:#?}",
+                    *ty
+                ),
+            },
         };
+
+        let return_arg = match owner {
+            Some((ident, _)) => return_arg.self_unaliased(ident.to_string()),
+            None => return_arg,
+        };
+
         Self {
             fn_ident: ident,
             receiver,

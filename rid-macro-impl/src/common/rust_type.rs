@@ -16,6 +16,24 @@ pub struct RustType {
     pub reference: ParsedReference,
 }
 
+impl RustType {
+    pub fn new(ident: Ident, kind: TypeKind, reference: ParsedReference) -> Self {
+        Self {
+            ident,
+            kind,
+            reference,
+        }
+    }
+
+    pub fn self_unaliased(self, owner_name: String) -> Self {
+        RustType {
+            ident: self.ident,
+            kind: self.kind.self_unaliased(owner_name),
+            reference: self.reference,
+        }
+    }
+}
+
 // --------------
 // TypeKind
 // --------------
@@ -23,6 +41,7 @@ pub enum TypeKind {
     Primitive(Primitive),
     Value(Value),
     Composite(Composite, Option<Box<RustType>>),
+    Unit,
     Unknown,
 }
 
@@ -34,6 +53,7 @@ impl PartialEq for TypeKind {
             (TypeKind::Composite(com1, ty1), TypeKind::Composite(com2, ty2)) => {
                 com1 == com2 && ty1 == ty2
             }
+            (TypeKind::Unit, TypeKind::Unit) => true,
             (TypeKind::Unknown, TypeKind::Unknown) => true,
             _ => false,
         }
@@ -48,9 +68,19 @@ impl Debug for TypeKind {
             TypeKind::Composite(com, inner) => {
                 format!("TypeKind::Composite({:?}, {:?})", com, inner)
             }
+            TypeKind::Unit => "TypeKind::Unit".to_string(),
             TypeKind::Unknown => "TypeKind::Unknown".to_string(),
         };
         write!(f, "{}", kind)
+    }
+}
+
+impl TypeKind {
+    fn self_unaliased(self, owner_name: String) -> Self {
+        match self {
+            TypeKind::Value(val) => Self::Value(val.self_unaliased(owner_name)),
+            _ => self,
+        }
     }
 }
 
@@ -109,6 +139,15 @@ impl Debug for Value {
             Value::Custom(type_info, name) => {
                 write!(f, "Value::Custom({:?}, \"{}\")", type_info, name)
             }
+        }
+    }
+}
+
+impl Value {
+    fn self_unaliased(self, owner_name: String) -> Self {
+        match self {
+            Value::Custom(type_info, name) if name == "Self" => Self::Custom(type_info, owner_name),
+            _ => self,
         }
     }
 }
