@@ -5,7 +5,6 @@ pub mod parsed_receiver;
 pub mod parsed_reference;
 pub mod resolvers;
 pub mod rust;
-pub mod rust_arg;
 pub mod rust_type;
 pub mod state;
 
@@ -15,7 +14,6 @@ pub use parsed_field::ParsedField;
 pub use parsed_receiver::*;
 pub use parsed_reference::*;
 pub use rust::{extract_path_segment, PrimitiveType, RustType, ValueType};
-pub use rust_arg::*;
 
 #[cfg(test)]
 mod rust_type_test;
