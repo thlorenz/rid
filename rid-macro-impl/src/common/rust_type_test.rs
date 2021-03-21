@@ -27,7 +27,7 @@ fn parse(input: proc_macro2::TokenStream) -> Option<RustType> {
 
             match arg {
                 syn::FnArg::Typed(syn::PatType { ty, .. }) => {
-                    RustType::from_type(ty.clone(), &type_infos)
+                    RustType::from_boxed_type(ty.clone(), &type_infos)
                 }
                 _ => panic!("Unexpected item, we're trying to parse simple function args here"),
             }
@@ -361,6 +361,10 @@ mod vec {
         };
     }
 }
+
+// -----------------
+// Custom Composites
+// -----------------
 
 mod custom_composites {
     use super::*;

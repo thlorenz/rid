@@ -176,8 +176,12 @@ impl Debug for Composite {
 // RustType Impl
 // --------------
 impl RustType {
-    pub fn from_type(ty: Box<Type>, type_infos: &TypeInfoMap) -> Option<RustType> {
+    pub fn from_boxed_type(ty: Box<Type>, type_infos: &TypeInfoMap) -> Option<RustType> {
         resolve_rust_ty(ty.as_ref(), type_infos)
+    }
+
+    pub fn from_type(ty: &Type, type_infos: &TypeInfoMap) -> Option<RustType> {
+        resolve_rust_ty(ty, type_infos)
     }
 }
 

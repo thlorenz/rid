@@ -49,7 +49,7 @@ impl ParsedFunction {
                     pat: _,         // Box<Pat>,
                     colon_token: _, // Token![:],
                     ty,             // Box<Type>,
-                }) => match RustType::from_type(ty.clone(), &type_infos) {
+                }) => match RustType::from_boxed_type(ty.clone(), &type_infos) {
                     Some(rust_type) => args.push(rust_type),
                     None => abort!(
                         ty,
@@ -64,7 +64,7 @@ impl ParsedFunction {
             ReturnType::Default => {
                 RustType::new(ident.clone(), TypeKind::Unit, ParsedReference::Owned)
             }
-            ReturnType::Type(_, ty) => match RustType::from_type(ty.clone(), &type_infos) {
+            ReturnType::Type(_, ty) => match RustType::from_boxed_type(ty.clone(), &type_infos) {
                 Some(rust_type) => rust_type,
                 None => abort!(
                     ty,

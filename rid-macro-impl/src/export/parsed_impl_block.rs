@@ -3,12 +3,15 @@ use attrs::TypeInfoMap;
 use super::parsed_function::ParsedFunction;
 use crate::{
     attrs,
-    common::{abort, extract_path_segment, RustType},
+    common::{
+        abort,
+        rust_type::{RustType, TypeKind},
+    },
 };
 
 #[derive(Debug)]
 pub struct ParsedImplBlock {
-    pub ty: (syn::Ident, RustType),
+    pub ty: RustType,
     pub methods: Vec<ParsedFunction>,
 }
 
@@ -18,15 +21,17 @@ impl ParsedImplBlock {
 
         let self_ty = *item_impl.self_ty;
         let impl_type_infos = TypeInfoMap::from(impl_attrs);
-
-        let ty = if let Type::Path(TypePath {
-            qself: _, // Option<QSelf>,
-            path,     // Path,
-        }) = self_ty
-        {
-            extract_path_segment(&path, None)
-        } else {
-            abort!(self_ty, "Unexpected impl type {:#?}", self_ty);
+        let ty = match RustType::from_type(&self_ty, &impl_type_infos) {
+            Some(RustType {
+                kind: TypeKind::Unknown,
+                ..
+            }) => abort!(
+                self_ty,
+                "impl type is unknown {:#?} TODO: rid(types) annotation info",
+                self_ty
+            ),
+            Some(ty) => ty,
+            None => abort!(self_ty, "Unexpected impl type {:#?}", self_ty),
         };
 
         let methods: Vec<ParsedFunction> = item_impl
@@ -45,7 +50,7 @@ impl ParsedImplBlock {
                         Some(ParsedFunction::new(
                             sig,
                             &method_attrs,
-                            Some((&ty.0, &impl_type_infos)),
+                            Some((&ty.ident, &impl_type_infos)),
                         ))
                     } else {
                         None
@@ -61,7 +66,7 @@ impl ParsedImplBlock {
 
         if methods.is_empty() {
             abort!(
-                ty.0,
+                ty.ident,
                 "Has export attribute but none of the contained methods is exported"
             );
         }
