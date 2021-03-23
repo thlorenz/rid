@@ -1,5 +1,6 @@
 use std::fmt::Debug;
 
+use quote::format_ident;
 use syn::{Lifetime, TypeReference};
 
 #[derive(PartialEq)]
@@ -40,6 +41,18 @@ impl From<&TypeReference> for ParsedReference {
         match mutability.is_some() {
             true => ParsedReference::RefMut(lifetime_ident.clone()),
             false => ParsedReference::Ref(lifetime_ident.clone()),
+        }
+    }
+}
+
+impl ParsedReference {
+    pub fn with_lifetime(self, lifetime: syn::Ident) -> Self {
+        match self {
+            ParsedReference::Owned => self,
+            ParsedReference::Ref(_) => ParsedReference::Ref(Some(lifetime)),
+            ParsedReference::RefMut(_) => {
+                ParsedReference::RefMut(Some(lifetime))
+            }
         }
     }
 }

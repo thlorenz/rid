@@ -36,6 +36,15 @@ impl RustType {
             reference: self.reference,
         }
     }
+
+    // let life_time = format_ident!("{}", life_time);
+    pub fn with_lifetime(self, lifetime: Ident) -> Self {
+        RustType {
+            ident: self.ident,
+            kind: self.kind,
+            reference: self.reference.with_lifetime(lifetime),
+        }
+    }
 }
 
 // --------------
