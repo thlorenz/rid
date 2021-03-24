@@ -1,9 +1,8 @@
-use std::fmt::Debug;
+use std::{fmt::Debug, ops::Deref};
 
-use quote::format_ident;
 use syn::{Lifetime, TypeReference};
 
-#[derive(PartialEq)]
+#[derive(Clone, PartialEq)]
 pub enum ParsedReference {
     Owned,
     Ref(Option<syn::Ident>),
@@ -53,6 +52,28 @@ impl ParsedReference {
             ParsedReference::RefMut(_) => {
                 ParsedReference::RefMut(Some(lifetime))
             }
+        }
+    }
+
+    /**
+     * Adds the provided lifetime if this is a Ref or RefMut and has no lifteime already.
+     * Otherwise returns itself unchanged.
+     */
+    pub fn ensured_lifetime(&self, lifetime: syn::Ident) -> Self {
+        match self {
+            ParsedReference::Ref(None) => ParsedReference::Ref(Some(lifetime)),
+            ParsedReference::RefMut(None) => {
+                ParsedReference::RefMut(Some(lifetime))
+            }
+            _ => self.clone(),
+        }
+    }
+
+    pub fn lifetime(&self) -> Option<&syn::Ident> {
+        match self {
+            ParsedReference::Owned => None,
+            ParsedReference::Ref(lifetime) => lifetime.as_ref(),
+            ParsedReference::RefMut(lifetime) => lifetime.as_ref(),
         }
     }
 }

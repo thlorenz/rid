@@ -1,11 +1,17 @@
-use crate::parse::rust_type::{
-    Composite, Primitive, RustType, TypeKind, Value,
+use crate::parse::{
+    rust_type::{Composite, Primitive, RustType, TypeKind, Value},
+    ParsedReference,
 };
 use proc_macro2::TokenStream;
-use quote::quote_spanned;
+use quote::{format_ident, quote, quote_spanned};
 use syn::Ident;
 
-pub fn render_return_type(rust_type: &RustType) -> TokenStream {
+pub struct RenderedReturnType {
+    pub tokens: TokenStream,
+    pub lifetime: Option<Ident>,
+}
+
+pub fn render_return_type(rust_type: &RustType) -> RenderedReturnType {
     use crate::parse::ParsedReference::*;
     use TypeKind as K;
     let RustType {
@@ -13,18 +19,19 @@ pub fn render_return_type(rust_type: &RustType) -> TokenStream {
         kind,
         reference,
     } = rust_type;
+    let mut lifetime: Option<Ident> = None;
 
-    // NOTE: we will need a pointer version of this as well
-    let ref_ident_str = match reference {
-        Owned => "".to_string(),
-        Ref(lifetime) => format!("&{} ", stringify_lifetime(lifetime)),
-        RefMut(lifetime) => format!("&{} mut ", stringify_lifetime(lifetime)),
-    };
-    let type_str = match kind {
-        K::Primitive(prim) => stringify_primitive_return(prim),
-        K::Value(val) => stringify_value_return(val),
+    let ref_tok = reference.render();
+
+    let type_tok = match kind {
+        K::Primitive(prim) => render_primitive_return(prim),
+        K::Value(val) => render_value_return(val, reference),
         K::Composite(Composite::Vec, rust_type) => match rust_type {
-            Some(ty) => stringify_vec_return(ty.as_ref()),
+            Some(ty) => {
+                let (s, lt) = render_vec_return(ty.as_ref());
+                lifetime = lt;
+                s
+            }
             None => {
                 todo!("blow up since a composite should include inner type")
             }
@@ -35,17 +42,17 @@ pub fn render_return_type(rust_type: &RustType) -> TokenStream {
         K::Unit => todo!("unit"),
         K::Unknown => todo!("unknown .. need error"),
     };
-    let ref_ident: TokenStream = ref_ident_str.parse().unwrap();
-    let type_ident: TokenStream = type_str.parse().unwrap();
-    quote_spanned! { ident.span() => #ref_ident #type_ident }
+    let tokens = quote_spanned! { ident.span() => #ref_tok #type_tok };
+
+    RenderedReturnType { tokens, lifetime }
 }
 
 // -----------------
 // Stringify Return Types
 // -----------------
-fn stringify_primitive_return(prim: &Primitive) -> String {
+fn render_primitive_return(prim: &Primitive) -> TokenStream {
     use Primitive::*;
-    match prim {
+    let s = match prim {
         U8 => "u8",
         I8 => "i8",
         U16 => "u16",
@@ -56,26 +63,28 @@ fn stringify_primitive_return(prim: &Primitive) -> String {
         I64 => "i64",
         USize => "usize",
         Bool => "bool",
-    }
-    .to_string()
+    };
+    quote! { #s }
 }
 
-fn stringify_value_return(val: &Value) -> String {
-    use Value::*;
-    match val {
-        CString | String | Str => "*const ::std::os::raw::c_char",
-        Custom(_, _) => todo!("stringify_export_value_type_signature::Custom"),
-    }
-    .to_string()
-}
-
-fn stringify_vec_return(inner_type: &RustType) -> String {
+fn render_vec_return(inner_type: &RustType) -> (TokenStream, Option<Ident>) {
     use TypeKind as K;
     match &inner_type.kind {
         K::Primitive(prim) => {
-            format!("rid::RidVec<{}>", stringify_primitive_return(prim))
+            let inner_return_type = render_primitive_return(prim);
+            let tokens = quote_spanned! { inner_type.ident.span() =>
+                rid::RidVec<#inner_return_type>
+            };
+            (tokens, None)
         }
-        K::Value(_) => todo!("stringify_vec_return::value"),
+        K::Value(val) => {
+            let lifetime = format_ident!("a");
+            let reference =
+                inner_type.reference.ensured_lifetime(lifetime.clone());
+            let val_tokens = render_value_return(val, &reference);
+            let tokens = quote! { Vec<#val_tokens> };
+            (tokens, reference.lifetime().cloned())
+        }
         K::Composite(_, _) => todo!("stringify_vec_return::value"),
         K::Unit => todo!("stringify_vec_return::unit -- should abort"),
         K::Unknown => {
@@ -84,9 +93,20 @@ fn stringify_vec_return(inner_type: &RustType) -> String {
     }
 }
 
-fn stringify_lifetime(lifetime: &Option<Ident>) -> String {
-    match lifetime {
-        Some(lifetime) => format!("'{}", lifetime),
-        None => "".to_string(),
+fn render_value_return(
+    value: &Value,
+    reference: &ParsedReference,
+) -> TokenStream {
+    use Value as V;
+
+    match value {
+        V::CString | V::String | V::Str => {
+            quote! { *const ::std::os::raw::c_char }
+        }
+        Value::Custom(info, name) => {
+            let ref_tok = reference.render();
+            let name_tok: TokenStream = name.parse().unwrap();
+            quote_spanned! { info.key.span() => #ref_tok #name_tok }
+        }
     }
 }

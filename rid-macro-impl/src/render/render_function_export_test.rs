@@ -132,6 +132,23 @@ mod no_args_composite_vec_return_full {
         };
         assert_eq!(res.to_string(), expected.to_string());
     }
+
+    #[test]
+    fn return_vec_struct_ref() {
+        let res = render(quote! {
+            #[rid(types = { MyStruct: Struct })]
+            fn filter_items() -> Vec<&MyStruct> {}
+        });
+
+        let expected = quote! {
+            fn rid_export_filter_items<'a>() -> Vec<&'a MyStruct> {
+                let ret = filter_items();
+                ret = rid::RidVec::from(ret);
+                ret
+            }
+        };
+        assert_eq!(res.to_string(), expected.to_string());
+    }
 }
 
 // -----------------

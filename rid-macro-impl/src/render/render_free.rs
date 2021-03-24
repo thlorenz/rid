@@ -1,4 +1,4 @@
-use super::render_return_type;
+use super::{render_return_type, RenderedReturnType};
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote_spanned};
 use syn::Ident;
@@ -16,7 +16,10 @@ pub fn render_free(
     use TypeKind as K;
 
     let arg_ident = format_ident!("arg");
-    let return_type = render_return_type(rust_type);
+    let RenderedReturnType {
+        tokens: return_type,
+        ..
+    } = render_return_type(rust_type);
 
     let free: Option<TokenStream> = match &rust_type.kind {
         K::Primitive(_) | K::Unit => None,

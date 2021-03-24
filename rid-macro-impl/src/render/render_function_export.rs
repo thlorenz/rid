@@ -4,8 +4,9 @@ use crate::parse::{
 };
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote, quote_spanned};
+use render_return_type::RenderedReturnType;
 use syn::Ident;
-use super::{render_return_type, render_free, render_access_item};
+use super::{render_return_type, render_free, render_access_item, render_lifetime};
 
 pub struct RenderFunctionExportConfig {
     pub include_ffi: bool,
@@ -47,7 +48,6 @@ pub fn render_function_export(
         false => TokenStream::new()
     };
 
-
     let rid_impl_ident_str = match impl_ident {
         Some(ident) => format!("{}_", ident.to_string()),
         None => "".to_string(),
@@ -56,14 +56,21 @@ pub fn render_function_export(
     let rid_fn_ident =
         format_ident!("rid_export_{}{}", rid_impl_ident_str, fn_ident);
 
-    let ret_type = render_return_type(return_arg);
+    let RenderedReturnType {tokens: ret_type, lifetime }  = render_return_type(return_arg);
+    let lifetime_tok = match lifetime {
+        Some(lt) => { 
+            let lt = render_lifetime(Some(&lt));
+            quote! { <#lt> }
+        },
+        None => TokenStream::new(),
+    };
     let ret_to_pointer = render_to_pointer(&return_ident, return_arg);
 
     let fn_call = render_export_call(fn_ident, args);
 
     let fn_export = quote_spanned! { fn_ident.span() =>
         #ffi_prelude
-        fn #rid_fn_ident() -> #ret_type {
+        fn #rid_fn_ident#lifetime_tok() -> #ret_type {
             let #return_ident = #fn_call;
             #ret_to_pointer
             #return_ident

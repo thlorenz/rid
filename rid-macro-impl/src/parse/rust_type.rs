@@ -45,6 +45,14 @@ impl RustType {
             reference: self.reference.with_lifetime(lifetime),
         }
     }
+
+    pub fn ensured_lifetime(self, lifetime: Ident) -> Self {
+        RustType {
+            ident: self.ident,
+            kind: self.kind,
+            reference: self.reference.ensured_lifetime(lifetime),
+        }
+    }
 }
 
 // --------------
