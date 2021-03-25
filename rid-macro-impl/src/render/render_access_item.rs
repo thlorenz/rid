@@ -1,4 +1,4 @@
-use super::{render_return_type, RenderedReturnType};
+use super::{render_lifetime_def, render_return_type, RenderedReturnType};
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote, quote_spanned};
 use syn::Ident;
@@ -55,16 +55,21 @@ fn render_vec_access_item(
     fn_access_ident: &Ident,
 ) -> TokenStream {
     let RenderedReturnType {
-        tokens: item_return_type,
-        ..
-    } = render_return_type(item_type);
-    let RenderedReturnType {
         tokens: vec_arg_type,
-        ..
+        lifetime,
     } = render_return_type(outer_type);
 
+    let RenderedReturnType {
+        tokens: item_return_type,
+        ..
+    } = render_return_type(
+        &item_type.clone().with_lifetime_option(lifetime.clone()),
+    );
+
+    let lifetime_def_tok = render_lifetime_def(lifetime.as_ref());
+
     quote_spanned! { fn_access_ident.span() =>
-        fn #fn_access_ident(vec: #vec_arg_type, idx: usize) -> #item_return_type {
+        fn #fn_access_ident#lifetime_def_tok(vec: #vec_arg_type, idx: usize) -> #item_return_type {
             vec[idx]
         }
     }

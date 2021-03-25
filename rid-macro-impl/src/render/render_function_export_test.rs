@@ -65,7 +65,8 @@ mod no_args_prim_return {
         let expected = quote! {
             fn rid_export_me() -> u8 {
                 let ret = me();
-                ret
+                let ret_ptr = ret;
+                ret_ptr
             }
         };
         assert_eq!(res.to_string(), expected.to_string());
@@ -79,7 +80,8 @@ mod no_args_prim_return {
         let expected = quote! {
             fn rid_export_me() -> i64 {
                 let ret = me();
-                ret
+                let ret_ptr = ret;
+                ret_ptr
             }
         };
         assert_eq!(res.to_string(), expected.to_string());
@@ -101,8 +103,8 @@ mod no_args_composite_vec_return {
         let expected = quote! {
             fn rid_export_me() -> rid::RidVec<u8> {
                 let ret = me();
-                ret = rid::RidVec::from(ret);
-                ret
+                let ret_ptr = rid::RidVec::from(ret);
+                ret_ptr
             }
         };
         assert_eq!(res.to_string(), expected.to_string());
@@ -120,8 +122,8 @@ mod no_args_composite_vec_return_full {
         let expected = quote! {
             fn rid_export_me() -> rid::RidVec<u8> {
                 let ret = me();
-                ret = rid::RidVec::from(ret);
-                ret
+                let ret_ptr = rid::RidVec::from(ret);
+                ret_ptr
             }
             fn rid_free_me(arg: rid::RidVec<u8>) {
                 arg.free();
@@ -135,16 +137,25 @@ mod no_args_composite_vec_return_full {
 
     #[test]
     fn return_vec_struct_ref() {
-        let res = render(quote! {
+        let res = render_full(quote! {
             #[rid(types = { MyStruct: Struct })]
             fn filter_items() -> Vec<&MyStruct> {}
         });
 
         let expected = quote! {
-            fn rid_export_filter_items<'a>() -> Vec<&'a MyStruct> {
+            fn rid_export_filter_items<'a>() -> rid::RidVec<&'a MyStruct> {
                 let ret = filter_items();
-                ret = rid::RidVec::from(ret);
-                ret
+                let ret_ptr = rid::RidVec::from(ret);
+                ret_ptr
+            }
+            fn rid_free_filter_items<'a>(arg: rid::RidVec<&'a MyStruct>) {
+                arg.free();
+            }
+            fn rid_acces_item_filter_items<'a>(
+                vec: rid::RidVec<&'a MyStruct>,
+                idx: usize
+            ) -> &'a MyStruct {
+                vec[idx]
             }
         };
         assert_eq!(res.to_string(), expected.to_string());
@@ -165,8 +176,8 @@ mod no_args_string_return {
         let expected = quote! {
             fn rid_export_me() -> *const ::std::os::raw::c_char {
                 let ret = me();
-                ret = ret.into_raw();
-                ret
+                let ret_ptr = ret.into_raw();
+                ret_ptr
             }
         };
         assert_eq!(res.to_string(), expected.to_string());

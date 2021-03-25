@@ -1,3 +1,4 @@
+use quote::quote;
 use std::{env, process};
 
 use proc_macro::TokenStream;
@@ -5,7 +6,7 @@ use proc_macro::TokenStream;
 use proc_macro_error::proc_macro_error;
 
 use rid_macro_impl::{
-    parse_rid_attrs, rid_ffi_message_impl, rid_ffi_model_impl,
+    parse_rid_attrs, rid_export_impl, rid_ffi_message_impl, rid_ffi_model_impl,
 };
 use syn::{self, parse_macro_input};
 
@@ -45,12 +46,14 @@ pub fn message(input: TokenStream) -> TokenStream {
 
 #[proc_macro_attribute]
 #[proc_macro_error]
-pub fn export(_attrs: TokenStream, input: TokenStream) -> TokenStream {
-    use quote::quote;
+pub fn export(attrs: TokenStream, input: TokenStream) -> TokenStream {
     let item = parse_macro_input!(input as syn::Item);
-    let tokens = quote! {
+    let args = parse_macro_input!(attrs as syn::AttributeArgs);
+    // TODO: is there any way to avoid this clone and/or is cloning the input cheaper?
+    let exports = rid_export_impl(item.clone(), args);
+    let q = quote! {
         #item
-        fn hello() {}
+        #exports
     };
-    tokens.into()
+    q.into()
 }

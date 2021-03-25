@@ -1,4 +1,4 @@
-use super::{render_return_type, RenderedReturnType};
+use super::{render_lifetime_def, render_return_type, RenderedReturnType};
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote_spanned};
 use syn::Ident;
@@ -18,8 +18,9 @@ pub fn render_free(
     let arg_ident = format_ident!("arg");
     let RenderedReturnType {
         tokens: return_type,
-        ..
+        lifetime,
     } = render_return_type(rust_type);
+    let lifetime_def_tok = render_lifetime_def(lifetime.as_ref());
 
     let free: Option<TokenStream> = match &rust_type.kind {
         K::Primitive(_) | K::Unit => None,
@@ -35,7 +36,7 @@ pub fn render_free(
         Some(free_statement) => {
             quote_spanned! {fn_free_ident.span() =>
                 #ffi_prelude
-                fn #fn_free_ident(#arg_ident: #return_type) {
+                fn #fn_free_ident#lifetime_def_tok(#arg_ident: #return_type) {
                     #free_statement
                 }
             }

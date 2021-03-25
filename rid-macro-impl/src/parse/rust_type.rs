@@ -9,7 +9,7 @@ use crate::attrs::{TypeInfo, TypeInfoMap};
 
 use super::ParsedReference;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct RustType {
     pub ident: Ident,
     pub kind: TypeKind,
@@ -37,7 +37,13 @@ impl RustType {
         }
     }
 
-    // let life_time = format_ident!("{}", life_time);
+    pub fn with_lifetime_option(self, lifetime: Option<Ident>) -> Self {
+        match lifetime {
+            Some(lifetime) => self.with_lifetime(lifetime),
+            None => self,
+        }
+    }
+
     pub fn with_lifetime(self, lifetime: Ident) -> Self {
         RustType {
             ident: self.ident,
@@ -58,6 +64,7 @@ impl RustType {
 // --------------
 // TypeKind
 // --------------
+#[derive(Clone)]
 pub enum TypeKind {
     Primitive(Primitive),
     Value(Value),
@@ -111,7 +118,7 @@ impl TypeKind {
 // --------------
 // Primitive
 // --------------
-#[derive(PartialEq)]
+#[derive(Clone, PartialEq)]
 pub enum Primitive {
     U8,
     I8,
@@ -146,7 +153,7 @@ impl Debug for Primitive {
 // --------------
 // Value
 // --------------
-#[derive(PartialEq)]
+#[derive(Clone, PartialEq)]
 pub enum Value {
     CString,
     String,
@@ -181,7 +188,7 @@ impl Value {
 // --------------
 // Composite
 // --------------
-#[derive(PartialEq)]
+#[derive(Clone, PartialEq)]
 pub enum Composite {
     Vec,
     Custom(TypeInfo, String),

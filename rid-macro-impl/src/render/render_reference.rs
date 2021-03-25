@@ -32,3 +32,13 @@ pub fn render_lifetime(lifetime: Option<&syn::Ident>) -> TokenStream {
         None => TokenStream::new(),
     }
 }
+
+pub fn render_lifetime_def(lifetime: Option<&syn::Ident>) -> TokenStream {
+    match lifetime {
+        Some(lt) => {
+            let lt: TokenStream = format!("'{}", lt).parse().unwrap();
+            quote! { <#lt> }
+        }
+        None => TokenStream::new(),
+    }
+}

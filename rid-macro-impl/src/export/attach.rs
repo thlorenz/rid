@@ -1,6 +1,10 @@
-use crate::parse::{ParsedFunction, ParsedImplBlock};
+use crate::{
+    parse::{ParsedFunction, ParsedImplBlock},
+    render::render_function_export,
+};
 
 use crate::{attrs, common::abort};
+use quote::quote;
 
 use proc_macro2::TokenStream;
 
@@ -11,12 +15,19 @@ pub fn rid_export_impl(
     match item {
         syn::Item::Impl(item) => {
             let attrs = attrs::parse_rid_attrs(&item.attrs);
-            if attrs.iter().any(|x| x.is_export()) {
-                let _parsed = ParsedImplBlock::new(item, &attrs);
-                todo!("convert parsed impl block to rendered wrapper")
-            } else {
-                TokenStream::new()
-            }
+            let parsed = ParsedImplBlock::new(item, &attrs);
+            let tokens = &parsed
+                .methods
+                .iter()
+                .map(|x| {
+                    render_function_export(
+                        x,
+                        Some(parsed.ty.ident.clone()),
+                        Default::default(),
+                    )
+                })
+                .collect::<Vec<TokenStream>>();
+            quote! { #(#tokens)* }
         }
         syn::Item::Fn(syn::ItemFn {
             attrs,    // Vec<Attribute>,
@@ -25,12 +36,9 @@ pub fn rid_export_impl(
             block: _, // Box<Block>,
         }) => {
             let attrs = attrs::parse_rid_attrs(&attrs);
-            if attrs.iter().any(|x| x.is_export()) {
-                let _parsed = ParsedFunction::new(sig, &attrs, None);
-                todo!("convert parsed function to rendered wrapper")
-            } else {
-                TokenStream::new()
-            }
+            eprintln!("attrs: {:?}", attrs,);
+            let parsed = ParsedFunction::new(sig, &attrs, None);
+            render_function_export(&parsed, None, Default::default())
         }
 
         syn::Item::Const(_)
@@ -85,6 +93,6 @@ mod tests {
 
         let res = rid_export_impl(item, args);
 
-        eprintln!("{}", res);
+        eprintln!("res: {}", res);
     }
 }

@@ -21,8 +21,6 @@ pub fn render_return_type(rust_type: &RustType) -> RenderedReturnType {
     } = rust_type;
     let mut lifetime: Option<Ident> = None;
 
-    let ref_tok = reference.render();
-
     let type_tok = match kind {
         K::Primitive(prim) => render_primitive_return(prim),
         K::Value(val) => render_value_return(val, reference),
@@ -42,29 +40,25 @@ pub fn render_return_type(rust_type: &RustType) -> RenderedReturnType {
         K::Unit => todo!("unit"),
         K::Unknown => todo!("unknown .. need error"),
     };
-    let tokens = quote_spanned! { ident.span() => #ref_tok #type_tok };
+    let tokens = quote_spanned! { ident.span() => #type_tok };
 
     RenderedReturnType { tokens, lifetime }
 }
 
-// -----------------
-// Stringify Return Types
-// -----------------
 fn render_primitive_return(prim: &Primitive) -> TokenStream {
     use Primitive::*;
-    let s = match prim {
-        U8 => "u8",
-        I8 => "i8",
-        U16 => "u16",
-        I16 => "i16",
-        U32 => "u32",
-        I32 => "i32",
-        U64 => "u64",
-        I64 => "i64",
-        USize => "usize",
-        Bool => "bool",
-    };
-    quote! { #s }
+    match prim {
+        U8 => quote! { u8 },
+        I8 => quote! { i8 },
+        U16 => quote! { u16 },
+        I16 => quote! { i16 },
+        U32 => quote! { u32 },
+        I32 => quote! { i32 },
+        U64 => quote! { u64 },
+        I64 => quote! { i64 },
+        USize => quote! { usize },
+        Bool => quote! { bool },
+    }
 }
 
 fn render_vec_return(inner_type: &RustType) -> (TokenStream, Option<Ident>) {
@@ -82,10 +76,10 @@ fn render_vec_return(inner_type: &RustType) -> (TokenStream, Option<Ident>) {
             let reference =
                 inner_type.reference.ensured_lifetime(lifetime.clone());
             let val_tokens = render_value_return(val, &reference);
-            let tokens = quote! { Vec<#val_tokens> };
+            let tokens = quote! { rid::RidVec<#val_tokens> };
             (tokens, reference.lifetime().cloned())
         }
-        K::Composite(_, _) => todo!("stringify_vec_return::value"),
+        K::Composite(_, _) => todo!("stringify_vec_return::composite"),
         K::Unit => todo!("stringify_vec_return::unit -- should abort"),
         K::Unknown => {
             todo!("stringify_vec_return::unknown -- should abort")
