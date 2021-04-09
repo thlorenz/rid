@@ -9,7 +9,7 @@ pub fn rid_ffi_message_impl(
     input: syn::DeriveInput,
 ) -> proc_macro2::TokenStream {
     let enum_ident = input.ident;
-    let rid_attrs = parse_rid_attrs(&input.attrs);
+    let rid_attrs = parse_rid_attrs(&input.attrs, None);
     let enum_config = EnumConfig::new(&enum_ident, &rid_attrs);
 
     match &input.data {

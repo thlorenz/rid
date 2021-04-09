@@ -113,15 +113,51 @@ impl Parse for RidAttr {
     }
 }
 
-pub fn parse_rid_attrs(all_attrs: &[Attribute]) -> Vec<RidAttr> {
-    all_attrs
+pub fn parse_rid_attrs(
+    all_attrs: &[Attribute],
+    ident: Option<&Ident>,
+) -> Vec<RidAttr> {
+    let is_rid_ident: Vec<&Attribute> = all_attrs
         .iter()
         .filter(|attr| attr.path.is_ident("rid"))
-        .flat_map(|attr| {
-            attr.parse_args_with(
-                syn::punctuated::Punctuated::<RidAttr, syn::Token![,]>::parse_terminated,
-            )
-            .unwrap_or_abort()
-        })
-        .collect()
+        .collect();
+
+    let segmented_rid_ident = all_attrs.iter().filter(|attr| {
+        if is_rid_ident.iter().any(|x| x == attr) {
+            false
+        } else {
+            match &attr.path {
+                syn::Path { segments, .. } => {
+                    segments.first().map_or(false, |s| s.ident == "rid")
+                }
+            }
+        }
+    });
+
+    let punctuated = is_rid_ident.iter().flat_map(|attr| {
+        attr
+                        .parse_args_with(
+                            syn::punctuated::Punctuated::<
+                                RidAttr,
+                                syn::Token![,],
+                            >::parse_terminated,
+                        )
+                        .unwrap_or_abort()
+    });
+
+    let non_punctuated = segmented_rid_ident.flat_map(|x| {
+        let ident = match ident {
+            Some(ident) => ident,
+            None => {
+                let ident = syn::Ident::new(
+                    "<unknown>",
+                    proc_macro2::Span::call_site(),
+                );
+                abort!(ident, "need ident for method exports")
+            }
+        };
+        Some(RidAttr::Export(ident.clone()))
+    });
+
+    punctuated.chain(non_punctuated).collect()
 }

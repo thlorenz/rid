@@ -1,8 +1,8 @@
-use attrs::TypeInfoMap;
+use attrs::{Category, TypeInfo, TypeInfoMap};
 
 use super::{
     parsed_function::ParsedFunction,
-    rust_type::{RustType, TypeKind},
+    rust_type::{RustType, TypeKind, Value},
 };
 use crate::{attrs, common::abort};
 
@@ -24,12 +24,30 @@ impl ParsedImplBlock {
         let ty = match RustType::from_type(&self_ty, &impl_type_infos) {
             Some(RustType {
                 kind: TypeKind::Unknown,
-                ..
-            }) => abort!(
-                self_ty,
-                "impl type is unknown {:#?} TODO: rid(types) annotation info",
-                self_ty
-            ),
+                ident,
+                reference,
+            }) =>
+            // NOTE: At this point we don't require the user to specify the type of the impl owner.
+            // We assume it is a struct. It could be an enum, but most likely all arg types,
+            // specifically pointer conversions will just work.  We may even consider merging the
+            // Struct + Enum categories into one in the future.
+
+            // TODO: handling simple case that is exporting methods on a simple struct here.
+            // Not yet considering composites. We could try to derive those and/or somehow
+            // detect non-trivial types and have the user annotate and/or just not allow impl on
+            // those.
+            {
+                let ident_str = ident.to_string();
+                let type_info = TypeInfo {
+                    key: ident.clone(),
+                    cat: Category::Struct,
+                };
+                RustType {
+                    kind: TypeKind::Value(Value::Custom(type_info, ident_str)),
+                    ident,
+                    reference,
+                }
+            }
             Some(ty) => ty,
             None => abort!(self_ty, "Unexpected impl type {:#?}", self_ty),
         };
@@ -45,7 +63,8 @@ impl ParsedImplBlock {
                     block: _,       // Block,
                     sig,            // Signature
                 }) => {
-                    let method_attrs = attrs::parse_rid_attrs(&attrs);
+                    let method_attrs =
+                        attrs::parse_rid_attrs(&attrs, Some(&sig.ident));
                     if method_attrs.iter().any(|x| x.is_export()) {
                         Some(ParsedFunction::new(
                             sig,

@@ -19,7 +19,7 @@ fn parse(input: proc_macro2::TokenStream) -> ParsedFunction {
             sig,      // Signature,
             block: _, // Box<Block>,
         }) => {
-            let attrs = attrs::parse_rid_attrs(&attrs);
+            let attrs = attrs::parse_rid_attrs(&attrs, None);
             ParsedFunction::new(sig, &attrs, None)
         }
         _ => panic!("Unexpected item, we're trying to parse functions here"),

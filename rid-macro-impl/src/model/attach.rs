@@ -11,7 +11,7 @@ pub fn rid_ffi_model_impl(input: syn::DeriveInput) -> proc_macro2::TokenStream {
         syn::Data::Struct(s) => s,
         _ => return callsite_error("model can only be attached to structs"),
     };
-    let rid_attrs = parse_rid_attrs(&input.attrs);
+    let rid_attrs = parse_rid_attrs(&input.attrs, None);
     let struct_config = StructConfig::new(&rid_attrs);
 
     match model_struct {

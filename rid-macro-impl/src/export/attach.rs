@@ -14,7 +14,7 @@ pub fn rid_export_impl(
 ) -> TokenStream {
     match item {
         syn::Item::Impl(item) => {
-            let attrs = attrs::parse_rid_attrs(&item.attrs);
+            let attrs = attrs::parse_rid_attrs(&item.attrs, None);
             let parsed = ParsedImplBlock::new(item, &attrs);
             let tokens = &parsed
                 .methods
@@ -30,15 +30,26 @@ pub fn rid_export_impl(
             quote! { #(#tokens)* }
         }
         syn::Item::Fn(syn::ItemFn {
-            attrs,    // Vec<Attribute>,
+            attrs: _, // Vec<Attribute>,
             vis: _,   // Visibility,
-            sig,      // Signature,
+            sig: _,   // Signature,
             block: _, // Box<Block>,
         }) => {
-            let attrs = attrs::parse_rid_attrs(&attrs);
-            eprintln!("attrs: {:?}", attrs,);
-            let parsed = ParsedFunction::new(sig, &attrs, None);
-            render_function_export(&parsed, None, Default::default())
+            // TODO: fix this
+            // NOTE: at this point we don't support exports on top level functions, but impl
+            // methods only.
+            // In the future we may allow this again, but might use a different attribute.
+            // The reason is that it is hard to know if a function is part of an impl and thus was
+            // exported already.
+            // An alternative would be to track already exported functions in our state via an id
+            // that is based on function name and possibly content.
+            // Another alternative is to require users to have a separate impl block with only
+            // methods meant to be exported, possibly excluding some via a #[rid::skip] attr.
+
+            // let attrs = attrs::parse_rid_attrs(&attrs);
+            // let parsed = ParsedFunction::new(sig, &attrs, None);
+            // render_function_export(&parsed, None, Default::default())
+            TokenStream::new()
         }
 
         syn::Item::Const(_)

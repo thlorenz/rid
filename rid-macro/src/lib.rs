@@ -23,7 +23,7 @@ pub fn model(input: TokenStream) -> TokenStream {
     }
     if let Ok(_) = env::var(RID_PRINT_MODEL) {
         //    println!("{:#?}", &input);
-        let args = parse_rid_attrs(&input.attrs);
+        let args = parse_rid_attrs(&input.attrs, None);
         println!("{:#?}", &args);
         process::exit(0)
     } else {
