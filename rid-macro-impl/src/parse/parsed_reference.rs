@@ -12,7 +12,7 @@ pub enum ParsedReference {
 impl Debug for ParsedReference {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let r = match self {
-            ParsedReference::Owned => "ParsedReference".to_string(),
+            ParsedReference::Owned => "ParsedReference::Owned".to_string(),
             ParsedReference::Ref(ident) => {
                 format!("ParsedReference::Ref({:?})", ident)
             }

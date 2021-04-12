@@ -1,24 +1,32 @@
+use std::collections::HashMap;
+
 use quote::quote;
 
-use crate::{attrs, parse::ParsedFunction};
+use crate::{
+    attrs::{self, TypeInfo, TypeInfoMap},
+    parse::ParsedFunction,
+};
 
 use super::render_function_export::{
     render_function_export, RenderFunctionExportConfig,
 };
 
-fn parse(input: proc_macro2::TokenStream) -> ParsedFunction {
+fn parse(
+    input: proc_macro2::TokenStream,
+    owner: Option<(&syn::Ident, &TypeInfoMap)>,
+) -> ParsedFunction {
     let item = syn::parse2::<syn::Item>(input).unwrap();
     match item {
         syn::Item::Fn(syn::ItemFn { attrs, sig, .. }) => {
-            let attrs = attrs::parse_rid_attrs(&attrs, None);
-            ParsedFunction::new(sig, &attrs, None)
+            let attrs = attrs::parse_rid_attrs(&attrs, owner.map(|x| x.0));
+            ParsedFunction::new(sig, &attrs, owner)
         }
         _ => panic!("Unexpected item, we're trying to parse functions here"),
     }
 }
 
 fn render(input: proc_macro2::TokenStream) -> proc_macro2::TokenStream {
-    let parsed_function = parse(input);
+    let parsed_function = parse(input, None);
     let config = Some(RenderFunctionExportConfig {
         include_ffi: false,
         include_free: false,
@@ -28,7 +36,7 @@ fn render(input: proc_macro2::TokenStream) -> proc_macro2::TokenStream {
 }
 
 fn render_full(input: proc_macro2::TokenStream) -> proc_macro2::TokenStream {
-    let parsed_function = parse(input);
+    let parsed_function = parse(input, None);
     let config = Some(RenderFunctionExportConfig {
         include_ffi: false,
         include_free: true,
@@ -39,15 +47,24 @@ fn render_full(input: proc_macro2::TokenStream) -> proc_macro2::TokenStream {
 
 fn render_impl(
     input: proc_macro2::TokenStream,
-    impl_ident: Option<syn::Ident>,
+    owner: &str,
 ) -> proc_macro2::TokenStream {
-    let parsed_function = parse(input);
     let config = Some(RenderFunctionExportConfig {
         include_ffi: false,
         include_free: false,
         include_access_item: false,
     });
-    render_function_export(&parsed_function, impl_ident, config)
+    let type_info = TypeInfo::from((owner, attrs::Category::Struct));
+    let mut map = HashMap::new();
+    map.insert(owner.to_string(), type_info.clone());
+    let parsed_function =
+        parse(input, Some((&type_info.key, &TypeInfoMap(map))));
+
+    render_function_export(
+        &parsed_function,
+        Some(type_info.key.clone()),
+        config,
+    )
 }
 
 // -----------------

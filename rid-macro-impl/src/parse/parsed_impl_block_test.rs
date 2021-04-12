@@ -109,7 +109,6 @@ mod method_exports {
             methods,
         } = parse(quote! {
             #[rid(export)]
-            #[rid(types = { MyStruct: Struct })]
             impl MyStruct {
                 #[rid(export)]
                 pub fn new(id: u8) -> Self {
@@ -174,12 +173,13 @@ mod method_exports {
 
         assert_eq!(fn_ident.to_string(), "get_id", "function ident");
         assert_eq!(args.len(), 0, "no arg");
-        assert_eq!(
-            *receiver,
+        assert_matches!(
+            receiver,
             Some(ParsedReceiver {
                 reference: ParsedReference::Ref(None),
+                info: _,
             }),
-            "receiver is ref"
+            "ref receiver"
         );
         assert_eq!(*ret_ty, TypeKind::Primitive(Primitive::U8), "returns u8");
 
@@ -197,12 +197,13 @@ mod method_exports {
             TypeKind::Primitive(Primitive::U8),
             "first arg u8"
         );
-        assert_eq!(
+        assert_matches!(
             receiver,
-            &Some(ParsedReceiver {
+            Some(ParsedReceiver {
                 reference: ParsedReference::RefMut(None),
+                info: _,
             }),
-            "receiver is ref mut"
+            "ref mut receiver"
         );
         assert_eq!(ret_ty, &TypeKind::Unit, "returns ()");
     }

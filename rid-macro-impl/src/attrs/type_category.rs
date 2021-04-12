@@ -61,6 +61,13 @@ impl TypeInfo {
     }
 }
 
+impl From<(&str, Category)> for TypeInfo {
+    fn from((name, cat): (&str, Category)) -> Self {
+        let ident = Ident::new(name, proc_macro2::Span::mixed_site());
+        Self { key: ident, cat }
+    }
+}
+
 #[derive(Debug)]
 pub struct TypeInfoMap(pub HashMap<String, TypeInfo>);
 impl Deref for TypeInfoMap {

@@ -44,7 +44,14 @@ impl ParsedFunction {
         for arg in inputs {
             match arg {
                 FnArg::Receiver(rec) => {
-                    receiver = Some(ParsedReceiver::new(&rec))
+                    let owner_info =
+                        owner.and_then(|x| type_infos.get(&x.0.to_string()));
+                    if let Some(owner_info) = owner_info {
+                        receiver =
+                            Some(ParsedReceiver::new(&rec, owner_info.clone()))
+                    } else {
+                        abort!(ident, "Missing owner info for this function with Self receiver.")
+                    }
                 }
                 FnArg::Typed(PatType {
                     attrs: _,       // Vec<Attribute>,

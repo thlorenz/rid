@@ -1,14 +1,17 @@
 use syn::Lifetime;
 
+use crate::attrs::TypeInfo;
+
 use super::ParsedReference;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct ParsedReceiver {
     pub reference: ParsedReference,
+    pub info: TypeInfo,
 }
 
 impl ParsedReceiver {
-    pub fn new(receiver: &syn::Receiver) -> Self {
+    pub fn new(receiver: &syn::Receiver, info: TypeInfo) -> Self {
         let syn::Receiver {
             attrs: _,      // Vec<Attribute>,
             reference,     // Option<(Token![&], Option<Lifetime>)>,
@@ -31,6 +34,6 @@ impl ParsedReceiver {
                 ParsedReference::Owned
             }
         };
-        ParsedReceiver { reference: r }
+        ParsedReceiver { reference: r, info }
     }
 }

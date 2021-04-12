@@ -150,7 +150,7 @@ pub fn parse_rid_attrs(
             Some(ident) => ident,
             None => {
                 let ident = syn::Ident::new(
-                    "<unknown>",
+                    "UnknownIdent",
                     proc_macro2::Span::call_site(),
                 );
                 abort!(ident, "need ident for method exports")

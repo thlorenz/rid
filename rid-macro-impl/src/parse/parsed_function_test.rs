@@ -6,7 +6,7 @@ use super::{
 };
 use crate::{
     attrs,
-    attrs::{Category, TypeInfo},
+    attrs::{Category, TypeInfo, TypeInfoMap},
 };
 use quote::quote;
 
@@ -191,8 +191,35 @@ mod multiple_args {
     }
 }
 
-mod receveiver {
+mod receiver {
+    use std::collections::HashMap;
+
     use super::*;
+
+    fn parse(input: proc_macro2::TokenStream, owner: &str) -> ParsedFunction {
+        let type_info = TypeInfo::from((owner, attrs::Category::Struct));
+        let mut map = HashMap::new();
+        map.insert(owner.to_string(), type_info.clone());
+        let type_info_map = TypeInfoMap(map);
+        let owner = Some((&type_info.key, &type_info_map));
+
+        let item = syn::parse2::<syn::Item>(input).unwrap();
+        match item {
+            syn::Item::Fn(syn::ItemFn {
+                attrs,    // Vec<Attribute>,
+                vis: _,   // Visibility,
+                sig,      // Signature,
+                block: _, // Box<Block>,
+            }) => {
+                let attrs =
+                    attrs::parse_rid_attrs(&attrs, Some(&type_info.key));
+                ParsedFunction::new(sig, &attrs, owner)
+            }
+            _ => {
+                panic!("Unexpected item, we're trying to parse functions here")
+            }
+        }
+    }
 
     #[test]
     fn void_function_no_args_ref_self() {
@@ -201,17 +228,21 @@ mod receveiver {
             receiver,
             args,
             return_arg: RustType { kind: ret_ty, .. },
-        } = parse(quote! {
-            fn me(&self) {}
-        });
+        } = parse(
+            quote! {
+                fn me(&self) {}
+            },
+            "MyStruct",
+        );
 
         assert_eq!(fn_ident.to_string(), "me", "function name");
-        assert_eq!(
+        assert_matches!(
             receiver,
             Some(ParsedReceiver {
-                reference: ParsedReference::Ref(None)
+                reference: ParsedReference::Ref(None),
+                info: _,
             }),
-            "no receiver"
+            "no ref receiver"
         );
         assert_eq!(args.len(), 0, "empty args");
         assert_eq!(ret_ty, TypeKind::Unit, "returns ()");
@@ -224,17 +255,21 @@ mod receveiver {
             receiver,
             args,
             return_arg: RustType { kind: ret_ty, .. },
-        } = parse(quote! {
-            fn me(&mut self, id: usize) {}
-        });
+        } = parse(
+            quote! {
+                fn me(&mut self, id: usize) {}
+            },
+            "MyStruct",
+        );
 
         assert_eq!(fn_ident.to_string(), "me", "function name");
-        assert_eq!(
+        assert_matches!(
             receiver,
             Some(ParsedReceiver {
-                reference: ParsedReference::RefMut(None)
+                reference: ParsedReference::RefMut(None),
+                info: _,
             }),
-            "no receiver"
+            "ref mut receiver"
         );
         assert_eq!(args.len(), 1, "empty args");
         assert_eq!(
@@ -252,15 +287,19 @@ mod receveiver {
             receiver,
             args,
             return_arg: RustType { kind: ret_ty, .. },
-        } = parse(quote! {
-            fn me(self) {}
-        });
+        } = parse(
+            quote! {
+                fn me(self) {}
+            },
+            "MyStruct",
+        );
 
         assert_eq!(fn_ident.to_string(), "me", "function name");
-        assert_eq!(
+        assert_matches!(
             receiver,
             Some(ParsedReceiver {
-                reference: ParsedReference::Owned
+                reference: ParsedReference::Owned,
+                info: _,
             }),
             "owned receiver"
         );
