@@ -34,9 +34,9 @@ pub fn render_return_type(rust_type: &RustType) -> RenderedReturnType {
                 todo!("blow up since a composite should include inner type")
             }
         },
-        K::Composite(composite, rust_type) => todo!(
-            "render_function_export::stringify_type_return::custom_composite"
-        ),
+        K::Composite(composite, rust_type) => {
+            todo!("render_return_type::custom_composite")
+        }
         K::Unit => todo!("unit"),
         K::Unknown => todo!("unknown .. need error"),
     };
@@ -97,7 +97,7 @@ fn render_value_return(
         V::CString | V::String | V::Str => {
             quote! { *const ::std::os::raw::c_char }
         }
-        Value::Custom(info, name) => {
+        V::Custom(info, name) => {
             let ref_tok = reference.render();
             let name_tok: TokenStream = name.parse().unwrap();
             quote_spanned! { info.key.span() => #ref_tok #name_tok }

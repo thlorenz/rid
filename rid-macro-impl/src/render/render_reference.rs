@@ -24,6 +24,14 @@ impl ParsedReference {
             }
         }
     }
+
+    pub fn render_pointer(&self) -> TokenStream {
+        match self {
+            ParsedReference::Owned => TokenStream::new(),
+            ParsedReference::Ref(_) => quote! { *const },
+            ParsedReference::RefMut(_) => quote! { *mut },
+        }
+    }
 }
 
 pub fn render_lifetime(lifetime: Option<&syn::Ident>) -> TokenStream {
