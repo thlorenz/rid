@@ -37,7 +37,7 @@ pub fn render_return_type(rust_type: &RustType) -> RenderedReturnType {
         K::Composite(composite, rust_type) => {
             todo!("render_return_type::custom_composite")
         }
-        K::Unit => todo!("unit"),
+        K::Unit => quote! { () },
         K::Unknown => todo!("unknown .. need error"),
     };
     let tokens = quote_spanned! { ident.span() => #type_tok };

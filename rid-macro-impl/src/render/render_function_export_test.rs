@@ -203,3 +203,56 @@ mod no_args_string_return {
     // need to alloc a Box for that string and provide a method to free it. Possibly we could
     // convert it into a RidVec<u8>.
 }
+
+// -----------------
+// Impl Method no args
+// -----------------
+mod impl_method {
+    use super::*;
+
+    #[test]
+    fn no_args_non_mut_receiver() {
+        let res = render_impl(
+            quote! {
+                #[rid::export]
+                fn id(&self) -> u32 { self.id }
+            },
+            "Model",
+        );
+        let expected = quote! {
+            fn rid_export_Model_id(ptr: *const Model) -> u32 {
+                let receiver: &Model = unsafe {
+                    assert!(!ptr.is_null());
+                    ptr.as_ref().unwrap()
+                };
+                let ret = Model::id(receiver);
+                let ret_ptr = ret;
+                ret_ptr
+            }
+        };
+        assert_eq!(res.to_string(), expected.to_string());
+    }
+
+    #[test]
+    fn no_args_mut_receiver_return_void() {
+        let res = render_impl(
+            quote! {
+                #[rid::export]
+                fn inc_id(&mut self) { self.id += 1 }
+            },
+            "Model",
+        );
+        let expected = quote! {
+            fn rid_export_Model_inc_id(ptr: *mut Model) -> () {
+                let receiver: &mut Model = unsafe {
+                    assert!(!ptr.is_null());
+                    ptr.as_mut().unwrap()
+                };
+                let ret = Model::inc_id(receiver);
+                let ret_ptr = ret;
+                ret_ptr
+            }
+        };
+        assert_eq!(res.to_string(), expected.to_string());
+    }
+}
