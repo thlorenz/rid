@@ -1,6 +1,9 @@
-use crate::parse::{
-    rust_type::{Composite, Primitive, RustType, TypeKind, Value},
-    ParsedReference,
+use crate::{
+    common::abort,
+    parse::{
+        rust_type::{Composite, Primitive, RustType, TypeKind, Value},
+        ParsedReference,
+    },
 };
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote, quote_spanned};
@@ -79,10 +82,14 @@ fn render_vec_return(inner_type: &RustType) -> (TokenStream, Option<Ident>) {
             let tokens = quote! { rid::RidVec<#val_tokens> };
             (tokens, reference.lifetime().cloned())
         }
-        K::Composite(_, _) => todo!("stringify_vec_return::composite"),
-        K::Unit => todo!("stringify_vec_return::unit -- should abort"),
+        K::Composite(_, _) => {
+            abort!(inner_type.ident, "todo!(stringify_vec_return::composite)")
+        }
+        K::Unit => {
+            abort!(inner_type.ident, "todo!(stringify_vec_return::unit)")
+        }
         K::Unknown => {
-            todo!("stringify_vec_return::unknown -- should abort")
+            abort!(inner_type.ident, "todo!(stringify_vec_return::unknown)")
         }
     }
 }
