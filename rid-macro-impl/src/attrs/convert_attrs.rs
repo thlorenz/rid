@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::{attrs::RidAttr, common::abort};
+use crate::{attrs::RidAttrOld, common::abort};
 
 use super::TypeInfoMap;
 
@@ -13,9 +13,9 @@ pub fn merge_type_infos(tgt: &mut TypeInfoMap, src: &TypeInfoMap) {
     }
 }
 
-impl From<&[RidAttr]> for TypeInfoMap {
-    fn from(attrs: &[RidAttr]) -> Self {
-        use RidAttr::*;
+impl From<&[RidAttrOld]> for TypeInfoMap {
+    fn from(attrs: &[RidAttrOld]) -> Self {
+        use RidAttrOld::*;
         let mut types: TypeInfoMap = TypeInfoMap(HashMap::new());
         for attr in attrs {
             match attr {

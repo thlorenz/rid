@@ -18,7 +18,7 @@ fn parse(
     let item = syn::parse2::<syn::Item>(input).unwrap();
     match item {
         syn::Item::Fn(syn::ItemFn { attrs, sig, .. }) => {
-            let attrs = attrs::parse_rid_attrs(&attrs, owner.map(|x| x.0));
+            let attrs = attrs::parse_rid_attrs_old(&attrs, owner.map(|x| x.0));
             ParsedFunction::new(sig, &attrs, owner)
         }
         _ => panic!("Unexpected item, we're trying to parse functions here"),

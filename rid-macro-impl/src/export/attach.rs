@@ -14,7 +14,7 @@ pub fn rid_export_impl(
 ) -> TokenStream {
     match item {
         syn::Item::Impl(item) => {
-            let attrs = attrs::parse_rid_attrs(&item.attrs, None);
+            let attrs = attrs::parse_rid_attrs_old(&item.attrs, None);
             let parsed = ParsedImplBlock::new(item, &attrs);
             let tokens = &parsed
                 .methods

@@ -1,6 +1,6 @@
 use crate::common::abort;
 
-use super::RidAttr;
+use super::RidAttrOld;
 
 #[derive(Debug)]
 pub struct EnumConfig {
@@ -16,8 +16,8 @@ fn extract_ident(expr: &syn::Expr) -> Option<&syn::Ident> {
 }
 
 impl EnumConfig {
-    pub fn new(enum_ident: &syn::Ident, attrs: &[RidAttr]) -> Self {
-        use RidAttr::*;
+    pub fn new(enum_ident: &syn::Ident, attrs: &[RidAttrOld]) -> Self {
+        use RidAttrOld::*;
         let mut to: Option<String> = None;
         for attr in attrs {
             match attr {

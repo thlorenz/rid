@@ -3,7 +3,7 @@ use super::{
     ParsedReceiver, ParsedReference,
 };
 use crate::{
-    attrs::{merge_type_infos, Category, RidAttr, TypeInfo, TypeInfoMap},
+    attrs::{merge_type_infos, Category, RidAttrOld, TypeInfo, TypeInfoMap},
     common::abort,
 };
 
@@ -18,7 +18,7 @@ pub struct ParsedFunction {
 impl ParsedFunction {
     pub fn new(
         sig: syn::Signature,
-        fn_attrs: &[RidAttr],
+        fn_attrs: &[RidAttrOld],
         owner: Option<(&syn::Ident, &TypeInfoMap)>,
     ) -> ParsedFunction {
         use syn::*;
@@ -104,7 +104,7 @@ impl ParsedFunction {
 }
 
 fn get_type_infos(
-    fn_attrs: &[RidAttr],
+    fn_attrs: &[RidAttrOld],
     owner: Option<(&syn::Ident, &TypeInfoMap)>,
 ) -> TypeInfoMap {
     let mut type_infos: TypeInfoMap = fn_attrs.into();

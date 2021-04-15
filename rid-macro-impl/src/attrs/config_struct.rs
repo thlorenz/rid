@@ -1,6 +1,6 @@
 use crate::common::abort;
 
-use super::RidAttr;
+use super::RidAttrOld;
 
 #[derive(Debug)]
 pub struct StructConfig {
@@ -8,8 +8,8 @@ pub struct StructConfig {
 }
 
 impl StructConfig {
-    pub fn new(attrs: &[RidAttr]) -> Self {
-        use RidAttr::*;
+    pub fn new(attrs: &[RidAttrOld]) -> Self {
+        use RidAttrOld::*;
         let mut debug = false;
         for attr in attrs {
             match attr {

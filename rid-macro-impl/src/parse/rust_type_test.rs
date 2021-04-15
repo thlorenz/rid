@@ -21,7 +21,7 @@ fn parse(input: proc_macro2::TokenStream) -> Option<RustType> {
             sig,      // Signature,
             block: _, // Box<Block>,
         }) => {
-            let attrs = attrs::parse_rid_attrs(&attrs, None);
+            let attrs = attrs::parse_rid_attrs_old(&attrs, None);
             let type_infos = TypeInfoMap::from(attrs.as_slice());
             let arg = sig.inputs.iter().next().unwrap();
 

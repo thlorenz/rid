@@ -1,5 +1,5 @@
 use crate::{
-    attrs::{RidAttr, TypeInfoMap},
+    attrs::{RidAttrOld, TypeInfoMap},
     common::abort,
 };
 
@@ -8,8 +8,8 @@ pub struct FieldConfig {
     pub types: TypeInfoMap,
 }
 
-fn validate_attrs(attrs: &[RidAttr]) {
-    use RidAttr::*;
+fn validate_attrs(attrs: &[RidAttrOld]) {
+    use RidAttrOld::*;
 
     for attr in attrs {
         match attr {
@@ -30,7 +30,7 @@ fn validate_attrs(attrs: &[RidAttr]) {
 }
 
 impl FieldConfig {
-    pub fn new(attrs: &[RidAttr]) -> Self {
+    pub fn new(attrs: &[RidAttrOld]) -> Self {
         validate_attrs(attrs);
         Self {
             types: attrs.into(),

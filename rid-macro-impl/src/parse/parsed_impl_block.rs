@@ -15,7 +15,7 @@ pub struct ParsedImplBlock {
 impl ParsedImplBlock {
     pub fn new(
         item_impl: syn::ItemImpl,
-        impl_attrs: &[attrs::RidAttr],
+        impl_attrs: &[attrs::RidAttrOld],
     ) -> Self {
         use syn::*;
 
@@ -64,7 +64,7 @@ impl ParsedImplBlock {
                     sig,            // Signature
                 }) => {
                     let method_attrs =
-                        attrs::parse_rid_attrs(&attrs, Some(&sig.ident));
+                        attrs::parse_rid_attrs_old(&attrs, Some(&sig.ident));
                     if method_attrs.iter().any(|x| x.is_export()) {
                         Some(ParsedFunction::new(
                             sig,

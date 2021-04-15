@@ -10,7 +10,7 @@ fn parse(input: proc_macro2::TokenStream) -> ParsedImplBlock {
     let item = syn::parse2::<syn::Item>(input).unwrap();
     match item {
         syn::Item::Impl(item) => {
-            let attrs = attrs::parse_rid_attrs(&item.attrs, None);
+            let attrs = attrs::parse_rid_attrs_old(&item.attrs, None);
             ParsedImplBlock::new(item, &attrs)
         }
         _ => panic!("Unexpected item, we're trying to parse functions here"),

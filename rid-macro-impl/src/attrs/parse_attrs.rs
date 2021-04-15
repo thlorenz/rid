@@ -10,7 +10,7 @@ use crate::common::abort;
 use proc_macro_error::ResultExt;
 
 #[derive(Debug)]
-pub enum RidAttr {
+pub enum RidAttrOld {
     // single-identifier attributes
     Debug(syn::Ident),
 
@@ -36,18 +36,18 @@ pub enum RidAttr {
     Wip,
 }
 
-impl RidAttr {
+impl RidAttrOld {
     pub fn is_export(&self) -> bool {
         match self {
-            RidAttr::Export(_) => true,
+            RidAttrOld::Export(_) => true,
             _ => false,
         }
     }
 }
 
-impl Parse for RidAttr {
+impl Parse for RidAttrOld {
     fn parse(input: ParseStream) -> syn::Result<Self> {
-        use self::RidAttr::*;
+        use self::RidAttrOld::*;
 
         let name: Ident = input.parse()?;
         let name_str = name.to_string();
@@ -77,7 +77,7 @@ impl Parse for RidAttr {
             } else {
                 match &*name_str {
                     "types" => match input.parse::<ExprTuple>() {
-                        Ok(_tpl) => Ok(RidAttr::Wip),
+                        Ok(_tpl) => Ok(RidAttrOld::Wip),
                         Err(_) => {
                             abort!(name, "key: {} needs to be tuple", name_str)
                         }
@@ -113,10 +113,10 @@ impl Parse for RidAttr {
     }
 }
 
-pub fn parse_rid_attrs(
+pub fn parse_rid_attrs_old(
     all_attrs: &[Attribute],
     ident: Option<&Ident>,
-) -> Vec<RidAttr> {
+) -> Vec<RidAttrOld> {
     let is_rid_ident: Vec<&Attribute> = all_attrs
         .iter()
         .filter(|attr| attr.path.is_ident("rid"))
@@ -138,7 +138,7 @@ pub fn parse_rid_attrs(
         attr
                         .parse_args_with(
                             syn::punctuated::Punctuated::<
-                                RidAttr,
+                                RidAttrOld,
                                 syn::Token![,],
                             >::parse_terminated,
                         )
@@ -156,7 +156,7 @@ pub fn parse_rid_attrs(
                 abort!(ident, "need ident for method exports")
             }
         };
-        Some(RidAttr::Export(ident.clone()))
+        Some(RidAttrOld::Export(ident.clone()))
     });
 
     punctuated.chain(non_punctuated).collect()
