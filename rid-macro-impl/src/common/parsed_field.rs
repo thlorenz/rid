@@ -1,6 +1,6 @@
 use syn::Field;
 
-use crate::attrs::{parse_rid_attrs_old, FieldConfig};
+use crate::attrs::{parse_rid_attrs_old, TypeInfoMap};
 
 use super::{DartType, RustType};
 
@@ -14,15 +14,12 @@ pub struct ParsedField {
 }
 
 impl ParsedField {
-    pub fn new(f: Field, method_prefix: &str) -> Self {
-        let ident = f.ident.unwrap();
+    pub fn new(f: &Field, method_prefix: &str, types: &TypeInfoMap) -> Self {
+        let ident = f.ident.as_ref().unwrap().clone();
         let method_ident = method_ident_from_field(method_prefix, &ident);
-        let ty = f.ty;
+        let ty = f.ty.clone();
 
-        let field_attrs = parse_rid_attrs_old(&f.attrs, None);
-        let config = FieldConfig::new(&field_attrs);
-
-        let rust_res = RustType::try_from(&ty, &config.types);
+        let rust_res = RustType::try_from(&ty, types);
         let dart_ty = match &rust_res {
             Ok((ident, ref rust_ty)) => DartType::try_from(rust_ty, ident),
             Err(_) => {

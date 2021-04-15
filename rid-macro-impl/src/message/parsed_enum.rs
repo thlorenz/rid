@@ -1,6 +1,6 @@
 use super::parsed_variant::ParsedVariant;
 use crate::{
-    attrs::{self, EnumConfig},
+    attrs::{self, EnumConfig, TypeInfoMap},
     common::{
         errors::derive_error,
         resolvers::{instance_ident, resolve_ptr, resolve_string_ptr},
@@ -9,6 +9,7 @@ use crate::{
 };
 use quote::{format_ident, quote_spanned};
 use rid_common::{DART_FFI, FFI_GEN_BIND, RID_FFI, STRING_TO_NATIVE_INT8};
+use std::collections::HashMap;
 use syn::{punctuated::Punctuated, token::Comma, Variant};
 
 type Tokens = proc_macro2::TokenStream;
@@ -33,7 +34,10 @@ impl ParsedEnum {
         let ident_lower = ident_str.to_lowercase();
         let method_prefix = format!("rid_{}", ident_lower);
         let module_ident = format_ident!("__rid_{}_ffi", ident_lower);
-        let parsed_variants = parse_variants(variants, &method_prefix);
+
+        // TODO: get types from rid::structs/rid::enums attrs
+        let types = TypeInfoMap(HashMap::new());
+        let parsed_variants = parse_variants(variants, &method_prefix, &types);
         let struct_ident = format_ident!("{}", config.to);
         Self {
             ident,
@@ -311,10 +315,11 @@ impl ParsedEnum {
 fn parse_variants(
     variants: Punctuated<Variant, Comma>,
     method_prefix: &str,
+    types: &TypeInfoMap,
 ) -> Vec<ParsedVariant> {
     variants
         .into_iter()
-        .map(|v| ParsedVariant::new(v, &method_prefix))
+        .map(|v| ParsedVariant::new(v, &method_prefix, types))
         .collect()
 }
 

@@ -1,6 +1,6 @@
 use super::dart::GetterBody;
 use crate::{
-    attrs::{self, StructConfig},
+    attrs::{self, StructConfig, TypeInfoMap},
     common::{
         errors::type_error,
         parsed_field::ParsedField,
@@ -31,12 +31,13 @@ pub struct ParsedStruct {
 impl ParsedStruct {
     pub fn new(
         ident: syn::Ident,
-        fields: Punctuated<Field, Comma>,
+        fields: &Punctuated<Field, Comma>,
         config: StructConfig,
     ) -> Self {
         let method_prefix =
             format!("rid_{}", ident.to_string().to_lowercase()).to_string();
-        let parsed_fields = parse_fields(fields, &method_prefix);
+        let parsed_fields =
+            parse_fields(fields, &method_prefix, &config.type_infos);
 
         Self {
             ident,
@@ -441,11 +442,12 @@ impl ParsedStruct {
 }
 
 fn parse_fields(
-    fields: Punctuated<Field, Comma>,
+    fields: &Punctuated<Field, Comma>,
     method_prefix: &str,
+    types: &TypeInfoMap,
 ) -> Vec<ParsedField> {
     fields
         .into_iter()
-        .map(|f| ParsedField::new(f, &method_prefix))
+        .map(|f| ParsedField::new(f, &method_prefix, types))
         .collect()
 }

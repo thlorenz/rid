@@ -1,32 +1,57 @@
+use std::collections::HashMap;
+
+use syn::Ident;
+
 use crate::common::abort;
 
-use super::RidAttrOld;
+use super::{Category, RidAttr, TypeInfo, TypeInfoMap};
 
 #[derive(Debug)]
 pub struct StructConfig {
     pub debug: bool,
+    pub type_infos: TypeInfoMap,
+}
+
+fn add_idents(type_infos: &mut TypeInfoMap, cat: Category, idents: &[Ident]) {
+    for ident in idents {
+        type_infos.insert(
+            ident.to_string(),
+            TypeInfo {
+                key: ident.clone(),
+                cat: cat.clone(),
+            },
+        );
+    }
 }
 
 impl StructConfig {
-    pub fn new(attrs: &[RidAttrOld]) -> Self {
-        use RidAttrOld::*;
-        let mut debug = false;
+    pub fn new(attrs: &[RidAttr]) -> Self {
+        let debug = false;
+        let mut type_infos: TypeInfoMap = TypeInfoMap(HashMap::new());
+
         for attr in attrs {
             match attr {
-                Debug(_) => debug = true,
-                Model(ident, _) => {
-                    abort!(ident, "model can only be set on the message enum")
+                // TODO: detect #[derive(Debug)]
+                RidAttr::Structs(attr_ident, idents) => {
+                    add_idents(&mut type_infos, Category::Struct, idents)
                 }
-                Types(ident, _) => {
-                    abort!(ident, "types can only be set on fields")
+                RidAttr::Enums(attr_ident, idents) => {
+                    add_idents(&mut type_infos, Category::Enum, idents)
                 }
-                Export(ident) => abort!(
-                    ident,
-                    "export can only be applied to functions and struct impl blocks"
-                ),
-                Wip => {}
+                RidAttr::Message(attr_ident, _) => {
+                    abort!(
+                        attr_ident,
+                        "cannot have rid::message attribute on structs"
+                    );
+                }
+                RidAttr::Export(attr_ident) => {
+                    abort!(
+                        attr_ident,
+                        "cannot have rid::export attribute on structs"
+                    );
+                }
             }
         }
-        Self { debug }
+        Self { debug, type_infos }
     }
 }

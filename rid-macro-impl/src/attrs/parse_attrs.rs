@@ -1,7 +1,11 @@
 use proc_macro2::Ident;
+use quote::ToTokens;
 use syn::{
+    parenthesized,
     parse::{Parse, ParseStream},
-    Attribute, Expr, ExprTuple, LitStr, Token,
+    punctuated::Punctuated,
+    token, Attribute, Expr, ExprTuple, LitStr, Meta, MetaList, NestedMeta,
+    Path, PathSegment, Token, Type,
 };
 
 use super::{type_category::ExprTypeInfo, TypeInfoMap};
@@ -160,4 +164,114 @@ pub fn parse_rid_attrs_old(
     });
 
     punctuated.chain(non_punctuated).collect()
+}
+
+#[derive(Debug)]
+pub enum RidAttr {
+    Structs(Ident, Vec<syn::Ident>),
+    Enums(Ident, Vec<syn::Ident>),
+    Message(Ident, syn::Ident),
+    Export(Ident),
+}
+
+#[derive(Debug)]
+struct AttrTuple {
+    paren_token: token::Paren,
+    fields: Punctuated<Type, Token![,]>,
+}
+
+impl Parse for AttrTuple {
+    fn parse(input: ParseStream) -> syn::Result<Self> {
+        let content;
+        Ok(AttrTuple {
+            paren_token: parenthesized!(content in input),
+            fields: content.parse_terminated(Type::parse)?,
+        })
+    }
+}
+
+pub fn parse_rid_attrs(all_attrs: &[Attribute]) -> Vec<RidAttr> {
+    all_attrs.iter().flat_map(parse_rid_attr).collect()
+}
+
+fn validate_non_empty(attr_ident: &Ident, idents: &[Ident], error_msg: &str) {
+    if idents.is_empty() {
+        abort!(attr_ident.span(), error_msg)
+    }
+}
+
+fn validate_single(attr_ident: &Ident, idents: &[Ident], error_msg: &str) {
+    if idents.len() != 1 {
+        abort!(attr_ident.span(), error_msg)
+    }
+}
+
+fn validate_empty(attr_ident: &Ident, idents: &[Ident], error_msg: &str) {
+    if !idents.is_empty() {
+        abort!(attr_ident.span(), error_msg)
+    }
+}
+
+fn parse_segments(
+    segments: &Punctuated<PathSegment, Token![::]>,
+    nested: Option<&Punctuated<NestedMeta, Token![,]>>,
+) -> Option<RidAttr> {
+    if segments.len() >= 2 {
+        let (
+            syn::PathSegment { ident: first, .. },
+            syn::PathSegment { ident: second, .. },
+        ) = (&segments[0], &segments[1]);
+        if first.to_string() != "rid" {
+            None
+        } else {
+            let idents: Vec<Ident> = match nested {
+                Some(nested) => nested
+                    .into_iter()
+                    .flat_map(|meta| match meta {
+                        NestedMeta::Meta(m) => {
+                            m.path().get_ident().map(|x| x.clone())
+                        }
+                        NestedMeta::Lit(_) => None,
+                    })
+                    .collect(),
+                None => Vec::new(),
+            };
+            match second.to_string().as_str() {
+                "structs" => {
+                    validate_non_empty(&second, &idents, "rid::structs attributes need at least one type, i.e. #[rid::structs(MyStruct)]");
+                    Some(RidAttr::Structs(second.clone(), idents))
+                }
+                "enums" => {
+                    validate_non_empty(&second, &idents, "rid::enums attributes need at least one type, i.e. #[rid::enums(MyEnum)]");
+                    Some(RidAttr::Enums(second.clone(), idents))
+                }
+                "message" => {
+                    validate_single(&second, &idents, "rid::message attributes need to specify one recipient struct, i.e. #[rid::message(Model)]");
+                    Some(RidAttr::Message(second.clone(), idents[0].clone()))
+                }
+                "export" => {
+                    validate_empty(&second, &idents, "rid::export attributes don't support arguments and should always be just #[rid::export]");
+                    Some(RidAttr::Export(second.clone()))
+                }
+                _ => None,
+            }
+        }
+    } else {
+        None
+    }
+}
+
+fn parse_rid_attr(attr: &Attribute) -> Option<RidAttr> {
+    match attr.parse_meta() {
+        Ok(Meta::List(MetaList {
+            path: Path { segments, .. },
+            nested,
+            ..
+        })) => parse_segments(&segments, Some(&nested)),
+        Ok(Meta::Path(Path { segments, .. })) => {
+            parse_segments(&segments, None)
+        }
+
+        _ => None,
+    }
 }

@@ -1,7 +1,7 @@
 use syn::Field;
 
 use crate::{
-    attrs::FieldConfig,
+    attrs::TypeInfoMap,
     common::{DartType, RustType},
 };
 
@@ -17,13 +17,12 @@ impl VariantField {
     pub fn new(
         f: Field,
         slot: usize,
-        config: &FieldConfig,
+        types: &TypeInfoMap,
     ) -> Result<Self, String> {
         let ty = f.ty;
-        let rust_ty =
-            RustType::try_from(&ty, &config.types).map_err(|err| {
-                format!("Encountered invalid rust type {:#?}\n{}", ty, err)
-            })?;
+        let rust_ty = RustType::try_from(&ty, types).map_err(|err| {
+            format!("Encountered invalid rust type {:#?}\n{}", ty, err)
+        })?;
 
         let dart_ty = match &rust_ty {
             (ident, ref rust_ty) => DartType::try_from(rust_ty, ident)

@@ -1,5 +1,4 @@
 use rid::RidVec;
-use rid_common::resolve_ptr;
 
 #[macro_use]
 extern crate log;
@@ -71,19 +70,31 @@ impl Model {
                 let mut enumerated = self.todos.iter().enumerate();
                 let idx = match enumerated.find(|(_, todo)| todo.id == id) {
                     Some((idx, _)) => idx,
-                    None => return warn!("Could not find Todo with id '{}'", id),
+                    None => {
+                        return warn!("Could not find Todo with id '{}'", id)
+                    }
                 };
                 self.todos.swap_remove(idx);
             }
 
             RemoveCompleted => self.todos.retain(|todo| !todo.completed),
 
-            CompleteTodo(id) => self.update_todo(id, |todo| todo.completed = true),
-            RestartTodo(id) => self.update_todo(id, |todo| todo.completed = false),
-            ToggleTodo(id) => self.update_todo(id, |todo| todo.completed = !todo.completed),
+            CompleteTodo(id) => {
+                self.update_todo(id, |todo| todo.completed = true)
+            }
+            RestartTodo(id) => {
+                self.update_todo(id, |todo| todo.completed = false)
+            }
+            ToggleTodo(id) => {
+                self.update_todo(id, |todo| todo.completed = !todo.completed)
+            }
 
-            CompleteAll => self.todos.iter_mut().for_each(|x| x.completed = true),
-            RestartAll => self.todos.iter_mut().for_each(|x| x.completed = false),
+            CompleteAll => {
+                self.todos.iter_mut().for_each(|x| x.completed = true)
+            }
+            RestartAll => {
+                self.todos.iter_mut().for_each(|x| x.completed = false)
+            }
 
             SetFilter(filter) => self.filter = filter,
         };
@@ -98,29 +109,22 @@ impl Model {
 
     fn filtered_todos(&self) -> Vec<&Todo> {
         let mut vec: Vec<&Todo> = match self.filter {
-            Filter::Completed => self.todos.iter().filter(|x| x.completed).collect(),
-            Filter::Pending => self.todos.iter().filter(|x| !x.completed).collect(),
+            Filter::Completed => {
+                self.todos.iter().filter(|x| x.completed).collect()
+            }
+            Filter::Pending => {
+                self.todos.iter().filter(|x| !x.completed).collect()
+            }
             Filter::All => self.todos.iter().collect(),
         };
         vec.sort();
         vec
     }
-}
 
-#[no_mangle]
-pub extern "C" fn filtered_todos<'a>(ptr: *mut Model) -> RidVec<&'a Todo> {
-    let model = resolve_ptr(ptr);
-    model.filtered_todos().into()
-}
-
-#[no_mangle]
-pub extern "C" fn todos_get_idx<'a>(todos: RidVec<&'a Todo>, idx: usize) -> &'a Todo {
-    todos[idx]
-}
-
-#[no_mangle]
-pub extern "C" fn todos_free<'a>(todos: RidVec<&'a Todo>) {
-    todos.free()
+    #[rid::export]
+    fn filtered_ids(&self) -> Vec<u32> {
+        self.filtered_todos().iter().map(|x| x.id).collect()
+    }
 }
 
 #[no_mangle]

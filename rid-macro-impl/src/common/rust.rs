@@ -136,8 +136,11 @@ pub fn extract_path_segment(
                     None => abort!(
                         ident,
                         // TODO: Include info regarding which custom types are viable, link to URL?
-                        "[rid] Missing info for custom type {0}. \
-                    Specify via '#[rid(types = {{ {0}: Enum }})]' or similar.",
+                        "\
+                    [rid] Missing info for type {0}.\n\
+                    Specify it via #[rid::structs({0})], #[rid::enums({0})], etc.\n\
+                    on top of #[rid::model] structs or $[rid::export] functions.\
+                    ",
                         ident_str
                     ),
                 }

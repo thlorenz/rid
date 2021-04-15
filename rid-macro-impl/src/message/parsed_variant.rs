@@ -1,7 +1,7 @@
 use syn::Variant;
 
 use super::variant_field::VariantField;
-use crate::attrs::{parse_rid_attrs_old, FieldConfig};
+use crate::attrs::{parse_rid_attrs_old, TypeInfoMap};
 
 pub struct ParsedVariant {
     pub ident: syn::Ident,
@@ -11,10 +11,10 @@ pub struct ParsedVariant {
 }
 
 impl ParsedVariant {
-    pub fn new(v: Variant, method_prefix: &str) -> Self {
+    pub fn new(v: Variant, method_prefix: &str, types: &TypeInfoMap) -> Self {
         let ident = v.ident.clone();
         let method_ident = method_ident_from_variant(method_prefix, &ident);
-        let (errors, fields) = extract_fields(v);
+        let (errors, fields) = extract_fields(v, types);
         Self {
             ident,
             method_ident,
@@ -28,14 +28,16 @@ impl ParsedVariant {
     }
 }
 
-fn extract_fields(v: Variant) -> (Vec<String>, Vec<VariantField>) {
+fn extract_fields(
+    v: Variant,
+    types: &TypeInfoMap,
+) -> (Vec<String>, Vec<VariantField>) {
     let variant_attrs = parse_rid_attrs_old(&v.attrs, None);
-    let config = FieldConfig::new(&variant_attrs);
 
     v.fields
         .into_iter()
         .enumerate()
-        .map(|(idx, f)| VariantField::new(f, idx, &config))
+        .map(|(idx, f)| VariantField::new(f, idx, types))
         .fold(
             (vec![], vec![]),
             |(mut errors, mut fields): (Vec<String>, Vec<VariantField>),
