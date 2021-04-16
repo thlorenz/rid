@@ -13,29 +13,36 @@ use syn::{self, parse_macro_input};
 const RID_PRINT_MODEL: &str = "RID_PRINT_MODEL";
 const RID_PRINT_MESSAGE: &str = "RID_PRINT_MESSAGE";
 
-#[proc_macro_derive(Message, attributes(rid))]
-#[proc_macro_error]
-pub fn message(input: TokenStream) -> TokenStream {
-    let input = parse_macro_input!(input as syn::DeriveInput);
-    if let Ok(_) = env::var(RID_PRINT_MESSAGE) {
-        // println!("input: {:#?}", &input);
-        rid_ffi_message_impl(input);
-        process::exit(0)
-    } else {
-        rid_ffi_message_impl(input).into()
-    }
-}
-
 #[proc_macro_attribute]
 #[proc_macro_error]
 pub fn model(_attrs: TokenStream, input: TokenStream) -> TokenStream {
     let item = parse_macro_input!(input as syn::Item);
     if let Ok(_) = env::var(RID_PRINT_MODEL) {
-        println!("input: {:#?}", &item);
+        eprintln!("input: {:#?}", &item);
         rid_ffi_model_impl(&item);
         process::exit(0)
     } else {
         let exports = rid_ffi_model_impl(&item);
+        let q = quote! {
+            #item
+            #exports
+        };
+        q.into()
+    }
+}
+
+#[proc_macro_attribute]
+#[proc_macro_error]
+pub fn message(attrs: TokenStream, input: TokenStream) -> TokenStream {
+    let item = parse_macro_input!(input as syn::Item);
+    let args = parse_macro_input!(attrs as syn::AttributeArgs);
+    if let Ok(_) = env::var(RID_PRINT_MESSAGE) {
+        eprintln!("input: {:#?}", &item);
+        eprintln!("args: {:#?}", &args);
+        rid_ffi_message_impl(&item, &args);
+        process::exit(0)
+    } else {
+        let exports = rid_ffi_message_impl(&item, &args);
         let q = quote! {
             #item
             #exports

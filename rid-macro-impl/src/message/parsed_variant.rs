@@ -1,7 +1,7 @@
 use syn::Variant;
 
 use super::variant_field::VariantField;
-use crate::attrs::{parse_rid_attrs_old, TypeInfoMap};
+use crate::attrs::TypeInfoMap;
 
 pub struct ParsedVariant {
     pub ident: syn::Ident,
@@ -32,8 +32,6 @@ fn extract_fields(
     v: Variant,
     types: &TypeInfoMap,
 ) -> (Vec<String>, Vec<VariantField>) {
-    let variant_attrs = parse_rid_attrs_old(&v.attrs, None);
-
     v.fields
         .into_iter()
         .enumerate()

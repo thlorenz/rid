@@ -19,6 +19,22 @@ pub enum Category {
     Prim,
 }
 
+pub fn add_idents_to_type_map(
+    type_infos: &mut TypeInfoMap,
+    cat: Category,
+    idents: &[Ident],
+) {
+    for ident in idents {
+        type_infos.insert(
+            ident.to_string(),
+            TypeInfo {
+                key: ident.clone(),
+                cat: cat.clone(),
+            },
+        );
+    }
+}
+
 impl Debug for Category {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {

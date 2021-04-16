@@ -96,7 +96,6 @@ pub fn extract_path_segment(
         ident, arguments, ..
     } = path.segments.last().unwrap();
     let ident_str = ident.to_string();
-    // TODO: consider  path.type_id() for built in types here instead
     let rust_ty = match ident_str.as_str() {
         "CString" => Value(CString),
         "String" => Value(RString),
@@ -129,18 +128,20 @@ pub fn extract_path_segment(
         // the access methods will be missing, so at least that we need to consider somwehow.
         _ => {
             if let Some(types) = types {
-                // TODO: We don't currently verify that all types are being used. That would require
-                // recording this across all variant fields.
                 match types.get(&ident_str) {
                     Some(ty) => Value(RCustom(ty.clone(), ident_str)),
                     None => abort!(
                         ident,
-                        // TODO: Include info regarding which custom types are viable, link to URL?
                         "\
-                    [rid] Missing info for type {0}.\n\
-                    Specify it via #[rid::structs({0})], #[rid::enums({0})], etc.\n\
-                    on top of #[rid::model] structs or $[rid::export] functions.\
-                    ",
+                   \x20[rid] Missing info for type {0}. Specify it via on of:\n\
+                   \x20  #[rid::structs({0})]\n\
+                   \x20  #[rid::enums({0})]\n\
+                   \x20on top of one of the following:\n\
+                   \x20  #[rid::model] structs \n\
+                   \x20  #[rid::message(_)] enums\n\
+                   \x20  #[rid::export] impl blocks\n\
+                   \x20  #[rid::export] functions.\
+                   \x20",
                         ident_str
                     ),
                 }

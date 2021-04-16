@@ -4,8 +4,8 @@ use syn::{
     parenthesized,
     parse::{Parse, ParseStream},
     punctuated::Punctuated,
-    token, Attribute, Expr, ExprTuple, LitStr, Meta, MetaList, NestedMeta,
-    Path, PathSegment, Token, Type,
+    token, Attribute, Expr, ExprTuple, Item, LitStr, Meta, MetaList,
+    NestedMeta, Path, PathSegment, Token, Type,
 };
 
 use super::{type_category::ExprTypeInfo, TypeInfoMap};
@@ -157,7 +157,7 @@ pub fn parse_rid_attrs_old(
                     "UnknownIdent",
                     proc_macro2::Span::call_site(),
                 );
-                abort!(ident, "need ident for method exports")
+                abort!(ident, "OLD need ident for method exports")
             }
         };
         Some(RidAttrOld::Export(ident.clone()))
@@ -192,6 +192,18 @@ impl Parse for AttrTuple {
 
 pub fn parse_rid_attrs(all_attrs: &[Attribute]) -> Vec<RidAttr> {
     all_attrs.iter().flat_map(parse_rid_attr).collect()
+}
+
+pub fn parse_rid_args(all_args: &[NestedMeta]) -> Vec<Ident> {
+    all_args.iter().flat_map(parse_rid_arg).collect()
+}
+
+fn parse_rid_arg(arg: &NestedMeta) -> Option<Ident> {
+    match arg {
+        // NOTE: for now only supporting args with one segment, otherwise get_ident won't work
+        NestedMeta::Meta(m) => m.path().get_ident().map(|x| x.clone()),
+        NestedMeta::Lit(_) => None,
+    }
 }
 
 fn validate_non_empty(attr_ident: &Ident, idents: &[Ident], error_msg: &str) {

@@ -10,7 +10,7 @@ use crate::{
 use quote::{format_ident, quote_spanned};
 use rid_common::{DART_FFI, FFI_GEN_BIND, RID_FFI, STRING_TO_NATIVE_INT8};
 use std::collections::HashMap;
-use syn::{punctuated::Punctuated, token::Comma, Variant};
+use syn::{punctuated::Punctuated, token::Comma, Ident, Variant};
 
 type Tokens = proc_macro2::TokenStream;
 
@@ -25,7 +25,7 @@ pub struct ParsedEnum {
 
 impl ParsedEnum {
     pub fn new(
-        ident: syn::Ident,
+        ident: &Ident,
         variants: Punctuated<Variant, Comma>,
         config: EnumConfig,
     ) -> Self {
@@ -35,12 +35,11 @@ impl ParsedEnum {
         let method_prefix = format!("rid_{}", ident_lower);
         let module_ident = format_ident!("__rid_{}_ffi", ident_lower);
 
-        // TODO: get types from rid::structs/rid::enums attrs
-        let types = TypeInfoMap(HashMap::new());
-        let parsed_variants = parse_variants(variants, &method_prefix, &types);
+        let parsed_variants =
+            parse_variants(variants, &method_prefix, &config.type_infos);
         let struct_ident = format_ident!("{}", config.to);
         Self {
-            ident,
+            ident: ident.clone(),
             parsed_variants,
             method_prefix,
             struct_ident,

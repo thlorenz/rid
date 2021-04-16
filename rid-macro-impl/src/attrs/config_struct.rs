@@ -4,24 +4,12 @@ use syn::Ident;
 
 use crate::common::abort;
 
-use super::{Category, RidAttr, TypeInfo, TypeInfoMap};
+use super::{add_idents_to_type_map, Category, RidAttr, TypeInfo, TypeInfoMap};
 
 #[derive(Debug)]
 pub struct StructConfig {
     pub debug: bool,
     pub type_infos: TypeInfoMap,
-}
-
-fn add_idents(type_infos: &mut TypeInfoMap, cat: Category, idents: &[Ident]) {
-    for ident in idents {
-        type_infos.insert(
-            ident.to_string(),
-            TypeInfo {
-                key: ident.clone(),
-                cat: cat.clone(),
-            },
-        );
-    }
 }
 
 impl StructConfig {
@@ -32,12 +20,16 @@ impl StructConfig {
         for attr in attrs {
             match attr {
                 // TODO: detect #[derive(Debug)]
-                RidAttr::Structs(attr_ident, idents) => {
-                    add_idents(&mut type_infos, Category::Struct, idents)
-                }
-                RidAttr::Enums(attr_ident, idents) => {
-                    add_idents(&mut type_infos, Category::Enum, idents)
-                }
+                RidAttr::Structs(attr_ident, idents) => add_idents_to_type_map(
+                    &mut type_infos,
+                    Category::Struct,
+                    idents,
+                ),
+                RidAttr::Enums(attr_ident, idents) => add_idents_to_type_map(
+                    &mut type_infos,
+                    Category::Enum,
+                    idents,
+                ),
                 RidAttr::Message(attr_ident, _) => {
                     abort!(
                         attr_ident,

@@ -1,10 +1,14 @@
-use crate::common::abort;
+use syn::Ident;
 
-use super::RidAttrOld;
+use crate::common::abort;
+use std::collections::HashMap;
+
+use super::{add_idents_to_type_map, Category, RidAttr, TypeInfo, TypeInfoMap};
 
 #[derive(Debug)]
 pub struct EnumConfig {
-    pub to: String,
+    pub type_infos: TypeInfoMap,
+    pub to: Ident,
 }
 
 fn extract_ident(expr: &syn::Expr) -> Option<&syn::Ident> {
@@ -16,41 +20,43 @@ fn extract_ident(expr: &syn::Expr) -> Option<&syn::Ident> {
 }
 
 impl EnumConfig {
-    pub fn new(enum_ident: &syn::Ident, attrs: &[RidAttrOld]) -> Self {
-        use RidAttrOld::*;
-        let mut to: Option<String> = None;
+    pub fn new(
+        enum_ident: &syn::Ident,
+        attrs: &[RidAttr],
+        model_ident: &Ident,
+    ) -> Self {
+        // TODO: very much duplicated from ./config_struct.rs
+        let mut type_infos: TypeInfoMap = TypeInfoMap(HashMap::new());
         for attr in attrs {
             match attr {
-                Debug(ident) => {
-                    abort!(ident, "debug can only be exposed for model structs")
-                }
-                Model(_, model) => {
-                    let ident = extract_ident(model);
-                    match ident {
-                        Some(ident) => to = Some(ident.to_string()),
-                        None => abort!(
-                            ident,
-                            "Arg 'to' is assigned incorrectly, use #[rid(to = Model)] instead."
-                        ),
-                    };
-                }
-                Types(ident, _) => {
-                    abort!(ident, "types can only be set on fields")
-                }
-                Export(ident) => abort!(
-                    ident,
-                    "export can only be applied to functions and struct impl blocks"
+                // TODO: detect #[derive(Debug)]
+                RidAttr::Structs(attr_ident, idents) => add_idents_to_type_map(
+                    &mut type_infos,
+                    Category::Struct,
+                    idents,
                 ),
-                Wip => {}
+                RidAttr::Enums(attr_ident, idents) => add_idents_to_type_map(
+                    &mut type_infos,
+                    Category::Enum,
+                    idents,
+                ),
+                RidAttr::Message(attr_ident, _) => {
+                    abort!(
+                        attr_ident,
+                        "cannot have rid::message attribute on structs"
+                    );
+                }
+                RidAttr::Export(attr_ident) => {
+                    abort!(
+                        attr_ident,
+                        "cannot have rid::export attribute on structs"
+                    );
+                }
             }
         }
-
-        match to {
-            Some(to) => Self { to },
-            None => abort!(
-                enum_ident,
-                "Arg 'to' is required on Messages, i.e. #[rid(to = Model)]."
-            ),
+        Self {
+            type_infos,
+            to: model_ident.clone(),
         }
     }
 }
