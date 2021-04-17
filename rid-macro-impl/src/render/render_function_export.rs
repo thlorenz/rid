@@ -71,7 +71,7 @@ pub fn render_function_export(
     } = render_return_type(return_arg);
     let lifetime_def_tok = render_lifetime_def(lifetime.as_ref());
     let ret_to_pointer =
-        render_to_pointer(&return_ident, &&return_pointer_ident, return_arg);
+        render_to_pointer(&return_ident, &return_pointer_ident, return_arg);
 
     let receiver_arg = receiver.as_ref().map(render_receiver_arg);
     let (arg_pass, arg_resolve, receiver_ident) = match receiver_arg {
@@ -134,7 +134,7 @@ fn render_to_pointer(
     match &rust_type.kind {
         K::Primitive(_) | K::Unit => quote_spanned! { res_ident.span() => let #res_pointer = #res_ident; } ,
         K::Value(val) => render_value_to_pointer(res_ident, res_pointer, val),
-        K::Composite(Composite::Vec, rust_type) => { 
+        K::Composite(Composite::Vec, rust_type) => {
             quote_spanned! { res_ident.span() => let #res_pointer = rid::RidVec::from(#res_ident); }
         },
         K::Composite(_, _) =>  todo!("render_pointer::Composite"),

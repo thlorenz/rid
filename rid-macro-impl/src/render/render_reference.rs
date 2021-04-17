@@ -32,6 +32,14 @@ impl ParsedReference {
             ParsedReference::RefMut(_) => quote! { *mut },
         }
     }
+
+    pub fn render_deref(&self) -> TokenStream {
+        match self {
+            ParsedReference::Owned => TokenStream::new(),
+            ParsedReference::Ref(_) => quote! { .as_ref() },
+            ParsedReference::RefMut(_) => quote! { .as_mut() },
+        }
+    }
 }
 
 pub fn render_lifetime(lifetime: Option<&syn::Ident>) -> TokenStream {

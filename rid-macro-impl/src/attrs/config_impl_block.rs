@@ -6,21 +6,21 @@ use std::collections::HashMap;
 use super::{add_idents_to_type_map, Category, RidAttr, TypeInfo, TypeInfoMap};
 
 #[derive(Debug)]
-pub struct EnumConfig {
-    // TODO: does not yet generate any ffi code for this yet since enums are only used for messages
-    // for now which aren't printed in Dart
-    pub debug: bool,
+pub struct ImplBlockConfig {
     pub type_infos: TypeInfoMap,
-    pub to: Ident,
+    pub is_exported: bool,
 }
 
-impl EnumConfig {
-    pub fn new(attrs: &[RidAttr], model_ident: &Ident) -> Self {
-        // TODO: very much duplicated from ./config_struct.rs
-        let mut debug = false;
+impl ImplBlockConfig {
+    pub fn new(attrs: &[RidAttr]) -> Self {
+        // TODO: exactly duplicated from ./config_enum.rs
+        // We may do a TypeInfoMap::From(&[RidAttr]), but then we still should validate + warn
+        // for invalid attrs on a specific type
         let mut type_infos: TypeInfoMap = TypeInfoMap(HashMap::new());
+        let mut is_exported = false;
         for attr in attrs {
             match attr {
+                // TODO: detect #[derive(Debug)]
                 RidAttr::Structs(attr_ident, idents) => add_idents_to_type_map(
                     &mut type_infos,
                     Category::Struct,
@@ -34,22 +34,17 @@ impl EnumConfig {
                 RidAttr::Message(attr_ident, _) => {
                     abort!(
                         attr_ident,
-                        "cannot have rid::message attribute on enums"
+                        "cannot have rid::message attribute on impl blocks"
                     );
                 }
-                RidAttr::Export(attr_ident) => {
-                    abort!(
-                        attr_ident,
-                        "cannot have rid::export attribute on enums"
-                    );
-                }
-                RidAttr::DeriveDebug(_) => debug = true,
+                RidAttr::Export(attr_ident) => is_exported = true,
+                // The below are invalid on an impl block but already checked by Rust itself
+                RidAttr::DeriveDebug(_) => {}
             }
         }
         Self {
-            debug,
             type_infos,
-            to: model_ident.clone(),
+            is_exported,
         }
     }
 }

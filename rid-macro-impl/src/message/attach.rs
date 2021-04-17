@@ -3,7 +3,7 @@ use syn::{Item, NestedMeta};
 
 use super::parsed_enum::ParsedEnum;
 use crate::{
-    attrs::{self, parse_rid_args, parse_rid_attrs_old, EnumConfig},
+    attrs::{self, parse_rid_args, EnumConfig},
     common::{abort, callsite_error},
 };
 
@@ -14,8 +14,7 @@ pub fn rid_ffi_message_impl(item: &Item, args: &[NestedMeta]) -> TokenStream {
             let rid_attrs = attrs::parse_rid_attrs(&item.attrs);
             let rid_args = parse_rid_args(args);
             if rid_args.len() == 1 {
-                let enum_config =
-                    EnumConfig::new(&item.ident, &rid_attrs, &rid_args[0]);
+                let enum_config = EnumConfig::new(&rid_attrs, &rid_args[0]);
                 let parsed_enum = ParsedEnum::new(
                     &item.ident,
                     item.variants.clone(),

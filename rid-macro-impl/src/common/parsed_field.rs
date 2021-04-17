@@ -1,6 +1,6 @@
 use syn::Field;
 
-use crate::attrs::{parse_rid_attrs_old, TypeInfoMap};
+use crate::attrs::TypeInfoMap;
 
 use super::{DartType, RustType};
 

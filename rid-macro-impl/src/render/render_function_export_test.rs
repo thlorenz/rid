@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use attrs::FunctionConfig;
 use quote::quote;
 
 use crate::{
@@ -18,8 +19,9 @@ fn parse(
     let item = syn::parse2::<syn::Item>(input).unwrap();
     match item {
         syn::Item::Fn(syn::ItemFn { attrs, sig, .. }) => {
-            let attrs = attrs::parse_rid_attrs_old(&attrs, owner.map(|x| x.0));
-            ParsedFunction::new(sig, &attrs, owner)
+            let rid_attrs = attrs::parse_rid_attrs(&attrs);
+            let config = FunctionConfig::new(&rid_attrs, owner);
+            ParsedFunction::new(sig, &config, owner)
         }
         _ => panic!("Unexpected item, we're trying to parse functions here"),
     }
@@ -155,7 +157,7 @@ mod no_args_composite_vec_return_full {
     #[test]
     fn return_vec_struct_ref() {
         let res = render_full(quote! {
-            #[rid(types = { MyStruct: Struct })]
+            #[rid::structs(MyStruct)]
             fn filter_items() -> Vec<&MyStruct> {}
         });
 
@@ -254,5 +256,19 @@ mod impl_method {
             }
         };
         assert_eq!(res.to_string(), expected.to_string());
+    }
+
+    // TODO: need to support custom types #[test]
+    fn no_args_non_mut_receiver_return_struct() {
+        let res = render_impl(
+            quote! {
+                #[rid::export]
+                #[rid::structs(Item)]
+                fn first(&self) -> Item { self.id }
+            },
+            "Model",
+        );
+        eprintln!("res: {}", res.to_string());
+        // assert_eq!(res.to_string(), expected.to_string());
     }
 }

@@ -74,10 +74,11 @@ fn render_arg_resolve(
     rust_type: &RustType,
 ) -> TokenStream {
     let arg_type_toks = render_return_type(rust_type).tokens;
+    let as_ident = rust_type.reference.render_deref();
     quote_spanned! { type_info.key.span() =>
         let #arg_ident: #arg_type_toks = unsafe {
             assert!(!#ptr_ident.is_null());
-            #ptr_ident.as_ref().unwrap()
+            #ptr_ident#as_ident.unwrap()
         };
     }
 }

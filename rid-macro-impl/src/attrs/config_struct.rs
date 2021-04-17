@@ -14,12 +14,11 @@ pub struct StructConfig {
 
 impl StructConfig {
     pub fn new(attrs: &[RidAttr]) -> Self {
-        let debug = false;
+        let mut debug = false;
         let mut type_infos: TypeInfoMap = TypeInfoMap(HashMap::new());
 
         for attr in attrs {
             match attr {
-                // TODO: detect #[derive(Debug)]
                 RidAttr::Structs(attr_ident, idents) => add_idents_to_type_map(
                     &mut type_infos,
                     Category::Struct,
@@ -42,6 +41,7 @@ impl StructConfig {
                         "cannot have rid::export attribute on structs"
                     );
                 }
+                RidAttr::DeriveDebug(_) => debug = true,
             }
         }
         Self { debug, type_infos }

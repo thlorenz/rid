@@ -1,7 +1,7 @@
 use super::rust_type::{Primitive, RustType, TypeKind, Value};
 use crate::attrs;
 use assert_matches::assert_matches;
-use attrs::{Category, TypeInfo};
+use attrs::{parse_rid_attrs, Category, TypeInfo};
 
 use super::*;
 use quote::quote;
@@ -10,8 +10,8 @@ fn parse(input: proc_macro2::TokenStream) -> ParsedImplBlock {
     let item = syn::parse2::<syn::Item>(input).unwrap();
     match item {
         syn::Item::Impl(item) => {
-            let attrs = attrs::parse_rid_attrs_old(&item.attrs, None);
-            ParsedImplBlock::new(item, &attrs)
+            let rid_attrs = parse_rid_attrs(&item.attrs);
+            ParsedImplBlock::new(item, &rid_attrs)
         }
         _ => panic!("Unexpected item, we're trying to parse functions here"),
     }
@@ -32,10 +32,10 @@ mod self_aliasing {
                 },
             methods,
         } = parse(quote! {
-            #[rid(export)]
-            #[rid(types = { MyStruct: Struct })]
+            #[rid::export]
+            #[rid::structs(MyStruct)]
             impl MyStruct {
-                #[rid(export)]
+                #[rid::export]
                 pub fn new(id: u8) -> Self {
                     Self { id }
                 }
@@ -108,17 +108,17 @@ mod method_exports {
                 },
             methods,
         } = parse(quote! {
-            #[rid(export)]
+            #[rid::export]
             impl MyStruct {
-                #[rid(export)]
+                #[rid::export]
                 pub fn new(id: u8) -> Self {
                     Self { id }
                 }
-                #[rid(export)]
+                #[rid::export]
                 pub fn get_id(&self) -> u8 {
                     self.id
                 }
-                #[rid(export)]
+                #[rid::export]
                 pub fn set_id(&mut self, id: u8) {
                     self.id = id;
                 }

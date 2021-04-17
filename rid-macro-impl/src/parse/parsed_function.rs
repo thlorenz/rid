@@ -3,7 +3,7 @@ use super::{
     ParsedReceiver, ParsedReference,
 };
 use crate::{
-    attrs::{merge_type_infos, Category, RidAttrOld, TypeInfo, TypeInfoMap},
+    attrs::{Category, FunctionConfig, RidAttr, TypeInfo, TypeInfoMap},
     common::abort,
 };
 
@@ -18,7 +18,7 @@ pub struct ParsedFunction {
 impl ParsedFunction {
     pub fn new(
         sig: syn::Signature,
-        fn_attrs: &[RidAttrOld],
+        config: &FunctionConfig,
         owner: Option<(&syn::Ident, &TypeInfoMap)>,
     ) -> ParsedFunction {
         use syn::*;
@@ -37,15 +37,13 @@ impl ParsedFunction {
             output,         // ReturnType,
         } = sig;
 
-        let type_infos = get_type_infos(fn_attrs, owner);
-
         let mut receiver = None;
         let mut args: Vec<RustType> = vec![];
         for arg in inputs {
             match arg {
                 FnArg::Receiver(rec) => {
-                    let owner_info =
-                        owner.and_then(|x| type_infos.get(&x.0.to_string()));
+                    let owner_info = owner
+                        .and_then(|x| config.type_infos.get(&x.0.to_string()));
                     if let Some(owner_info) = owner_info {
                         receiver =
                             Some(ParsedReceiver::new(&rec, owner_info.clone()))
@@ -59,7 +57,10 @@ impl ParsedFunction {
                     colon_token: _, // Token![:],
                     ty,             // Box<Type>,
                 }) => {
-                    match RustType::from_boxed_type(ty.clone(), &type_infos) {
+                    match RustType::from_boxed_type(
+                        ty.clone(),
+                        &config.type_infos,
+                    ) {
                         Some(rust_type) => args.push(rust_type),
                         None => abort!(
                         ty,
@@ -78,7 +79,8 @@ impl ParsedFunction {
                 ParsedReference::Owned,
             ),
             ReturnType::Type(_, ty) => {
-                match RustType::from_boxed_type(ty.clone(), &type_infos) {
+                match RustType::from_boxed_type(ty.clone(), &config.type_infos)
+                {
                     Some(rust_type) => rust_type,
                     None => abort!(
                         ty,
@@ -101,33 +103,4 @@ impl ParsedFunction {
             return_arg,
         }
     }
-}
-
-fn get_type_infos(
-    fn_attrs: &[RidAttrOld],
-    owner: Option<(&syn::Ident, &TypeInfoMap)>,
-) -> TypeInfoMap {
-    let mut type_infos: TypeInfoMap = fn_attrs.into();
-
-    if let Some((ident, owner_type_infos)) = owner {
-        merge_type_infos(&mut type_infos, &owner_type_infos);
-        // NOTE: assuming that the owner is a Struct unless otherwise specified
-        let key = ident.to_string();
-        if !owner_type_infos.contains_key(&key) {
-            type_infos.insert(
-                key.clone(),
-                TypeInfo {
-                    key: ident.clone(),
-                    cat: Category::Struct,
-                },
-            );
-        }
-        // Other parts of the type resolution process, i.e. RustType shouldn't need to
-        // know about the special case of 'Self' therefore we alias it to the owner type here
-        if let Some(type_info) = type_infos.get(&key) {
-            let type_info = type_info.clone();
-            type_infos.insert("Self".to_string(), type_info);
-        }
-    };
-    type_infos
 }

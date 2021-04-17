@@ -1,4 +1,5 @@
 use assert_matches::assert_matches;
+use attrs::{parse_rid_attrs, FunctionConfig};
 
 use super::{
     rust_type::{Composite, Primitive, RustType, TypeKind, Value},
@@ -19,8 +20,9 @@ fn parse(input: proc_macro2::TokenStream) -> ParsedFunction {
             sig,      // Signature,
             block: _, // Box<Block>,
         }) => {
-            let attrs = attrs::parse_rid_attrs_old(&attrs, None);
-            ParsedFunction::new(sig, &attrs, None)
+            let rid_attrs = parse_rid_attrs(&attrs);
+            let config = FunctionConfig::new(&rid_attrs, None);
+            ParsedFunction::new(sig, &config, None)
         }
         _ => panic!("Unexpected item, we're trying to parse functions here"),
     }
@@ -79,7 +81,7 @@ mod return_arg {
                     ..
                 },
         } = parse(quote! {
-            #[rid(types = { Todo: Struct })]
+            #[rid::structs(Todo)]
             fn get_todo() -> &Todo {}
         });
 
@@ -126,7 +128,7 @@ mod return_arg {
                 },
             ..
         } = parse(quote! {
-            #[rid(types = { Todo: Struct })]
+            #[rid::structs(Todo)]
             fn filtered_todos() -> Vec<&Todo> {}
         });
 
@@ -211,9 +213,10 @@ mod receiver {
                 sig,      // Signature,
                 block: _, // Box<Block>,
             }) => {
-                let attrs =
-                    attrs::parse_rid_attrs_old(&attrs, Some(&type_info.key));
-                ParsedFunction::new(sig, &attrs, owner)
+                let rid_attrs = parse_rid_attrs(&attrs);
+                let owner = Some((&type_info.key, &type_info_map));
+                let config = FunctionConfig::new(&rid_attrs, owner);
+                ParsedFunction::new(sig, &config, owner)
             }
             _ => {
                 panic!("Unexpected item, we're trying to parse functions here")

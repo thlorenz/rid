@@ -1,4 +1,7 @@
-use attrs::{Category, TypeInfo, TypeInfoMap};
+use attrs::{
+    parse_rid_attrs, Category, FunctionConfig, ImplBlockConfig, TypeInfo,
+    TypeInfoMap,
+};
 
 use super::{
     parsed_function::ParsedFunction,
@@ -15,13 +18,13 @@ pub struct ParsedImplBlock {
 impl ParsedImplBlock {
     pub fn new(
         item_impl: syn::ItemImpl,
-        impl_attrs: &[attrs::RidAttrOld],
+        impl_attrs: &[attrs::RidAttr],
     ) -> Self {
         use syn::*;
 
         let self_ty = *item_impl.self_ty;
-        let impl_type_infos = TypeInfoMap::from(impl_attrs);
-        let ty = match RustType::from_type(&self_ty, &impl_type_infos) {
+        let impl_config = ImplBlockConfig::new(impl_attrs);
+        let ty = match RustType::from_type(&self_ty, &impl_config.type_infos) {
             Some(RustType {
                 kind: TypeKind::Unknown,
                 ident,
@@ -52,6 +55,7 @@ impl ParsedImplBlock {
             None => abort!(self_ty, "Unexpected impl type {:#?}", self_ty),
         };
 
+        let owner = Some((&ty.ident, &impl_config.type_infos));
         let methods: Vec<ParsedFunction> = item_impl
             .items
             .into_iter()
@@ -63,14 +67,10 @@ impl ParsedImplBlock {
                     block: _,       // Block,
                     sig,            // Signature
                 }) => {
-                    let method_attrs =
-                        attrs::parse_rid_attrs_old(&attrs, Some(&sig.ident));
-                    if method_attrs.iter().any(|x| x.is_export()) {
-                        Some(ParsedFunction::new(
-                            sig,
-                            &method_attrs,
-                            Some((&ty.ident, &impl_type_infos)),
-                        ))
+                    let rid_attrs = parse_rid_attrs(&attrs);
+                    let fn_config = FunctionConfig::new(&rid_attrs, owner);
+                    if fn_config.is_exported {
+                        Some(ParsedFunction::new(sig, &fn_config, owner))
                     } else {
                         None
                     }

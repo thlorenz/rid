@@ -3,7 +3,7 @@ use crate::{
     render::render_function_export,
 };
 
-use crate::{attrs, common::abort};
+use crate::{attrs::parse_rid_attrs, common::abort};
 use quote::quote;
 
 use proc_macro2::TokenStream;
@@ -14,7 +14,7 @@ pub fn rid_export_impl(
 ) -> TokenStream {
     match item {
         syn::Item::Impl(item) => {
-            let attrs = attrs::parse_rid_attrs_old(&item.attrs, None);
+            let attrs = parse_rid_attrs(&item.attrs);
             let parsed = ParsedImplBlock::new(item, &attrs);
             let tokens = &parsed
                 .methods

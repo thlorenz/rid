@@ -136,11 +136,11 @@ pub fn extract_path_segment(
                    \x20[rid] Missing info for type {0}. Specify it via on of:\n\
                    \x20  #[rid::structs({0})]\n\
                    \x20  #[rid::enums({0})]\n\
-                   \x20on top of one of the following:\n\
-                   \x20  #[rid::model] structs \n\
-                   \x20  #[rid::message(_)] enums\n\
-                   \x20  #[rid::export] impl blocks\n\
-                   \x20  #[rid::export] functions.\
+                   \x20below of one of the following:\n\
+                   \x20  #[rid::model] for structs \n\
+                   \x20  #[rid::message(_)] for enums\n\
+                   \x20  #[rid::export] for impl blocks\n\
+                   \x20  #[rid::export] for functions.\
                    \x20",
                         ident_str
                     ),

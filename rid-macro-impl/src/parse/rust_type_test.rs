@@ -1,10 +1,6 @@
 use assert_matches::assert_matches;
-use attrs::TypeInfoMap;
 
-use crate::{
-    attrs,
-    attrs::{Category, TypeInfo},
-};
+use crate::attrs::{parse_rid_attrs, Category, FunctionConfig, TypeInfo};
 use quote::quote;
 
 use super::{
@@ -21,13 +17,13 @@ fn parse(input: proc_macro2::TokenStream) -> Option<RustType> {
             sig,      // Signature,
             block: _, // Box<Block>,
         }) => {
-            let attrs = attrs::parse_rid_attrs_old(&attrs, None);
-            let type_infos = TypeInfoMap::from(attrs.as_slice());
+            let rid_attrs = parse_rid_attrs(&attrs);
+            let config = FunctionConfig::new(&rid_attrs, None);
             let arg = sig.inputs.iter().next().unwrap();
 
             match arg {
                 syn::FnArg::Typed(syn::PatType { ty, .. }) => {
-                    RustType::from_boxed_type(ty.clone(), &type_infos)
+                    RustType::from_boxed_type(ty.clone(), &config.type_infos)
                 }
                 _ => panic!("Unexpected item, we're trying to parse simple function args here"),
             }
@@ -160,7 +156,7 @@ mod custom {
     fn model() {
         let model_str = "Model".to_string();
         let res = parse(quote! {
-            #[rid(types = { Model: Struct })]
+            #[rid::structs(Model)]
             fn f(x: Model) {}
         });
         let RustType {
@@ -201,7 +197,7 @@ mod custom {
     fn ref_model() {
         let model_str = "Model".to_string();
         let res = parse(quote! {
-            #[rid(types = { Model: Struct })]
+            #[rid::structs(Model)]
             fn f(x: &Model) {}
         });
         let RustType {
@@ -294,7 +290,7 @@ mod vec {
     #[test]
     fn ref_mut_vec_ref_todo() {
         let res = parse(quote! {
-            #[rid(types = { Todo: Struct })]
+            #[rid::structs(Todo)]
             fn f(x: &mut Vec<&Todo>) {}
         });
         let RustType {
@@ -375,7 +371,7 @@ mod custom_composites {
     fn ref_cont_u8() {
         let cont_str = "Cont".to_string();
         let res = parse(quote! {
-            #[rid(types = { Cont: Struct })]
+            #[rid::structs(Cont)]
             fn f(x: &Cont<u8>) {}
         });
         let RustType {
