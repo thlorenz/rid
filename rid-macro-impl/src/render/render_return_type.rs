@@ -53,7 +53,7 @@ pub fn render_rust_type(
             todo!("render_return_type::custom_composite")
         }
         K::Unit => quote! { () },
-        K::Unknown => todo!("unknown .. need error"),
+        K::Unknown => todo!("unknown .. need better error .. also gets triggered when exporting custom type without info "),
     };
     let tokens = quote_spanned! { ident.span() => #type_tok };
 

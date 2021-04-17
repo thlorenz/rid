@@ -24,7 +24,9 @@ pub fn render_free(
 
     let free: Option<TokenStream> = match &rust_type.kind {
         K::Primitive(_) | K::Unit => None,
-        K::Value(val) => todo!("render_free::Value"),
+        // TODO: in general we shouldn't free refs, but only owned values since the refs
+        // are most likely to a model property which is still alive
+        K::Value(val) => None,
         K::Composite(Composite::Vec, rust_type) => {
             Some(quote_spanned! { arg_ident.span() =>  #arg_ident.free(); })
         }

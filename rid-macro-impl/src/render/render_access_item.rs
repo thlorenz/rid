@@ -23,7 +23,8 @@ pub fn render_access_item(
 
     let access_fn: Option<TokenStream> = match &rust_type.kind {
         K::Primitive(_) | K::Unit => None,
-        K::Value(val) => todo!("render_free::Value"),
+        // TODO: do we need special access code here?
+        K::Value(val) => None,
         K::Composite(Composite::Vec, inner_type) => match inner_type {
             Some(ty) => Some(render_vec_access_item(
                 &rust_type,
