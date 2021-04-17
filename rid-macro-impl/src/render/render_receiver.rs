@@ -9,7 +9,7 @@ use crate::{
     },
 };
 
-use super::{render_pointer_type, render_return_type};
+use super::{render_pointer_type, render_rust_type};
 
 /*
     #[no_mangle]
@@ -73,7 +73,7 @@ fn render_arg_resolve(
     type_info: &TypeInfo,
     rust_type: &RustType,
 ) -> TokenStream {
-    let arg_type_toks = render_return_type(rust_type).tokens;
+    let arg_type_toks = render_rust_type(rust_type, false).tokens;
     let as_ident = rust_type.reference.render_deref();
     quote_spanned! { type_info.key.span() =>
         let #arg_ident: #arg_type_toks = unsafe {

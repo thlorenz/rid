@@ -9,12 +9,15 @@ use proc_macro2::TokenStream;
 use quote::{format_ident, quote, quote_spanned};
 use syn::Ident;
 
-pub struct RenderedReturnType {
+pub struct RenderedRustType {
     pub tokens: TokenStream,
     pub lifetime: Option<Ident>,
 }
 
-pub fn render_return_type(rust_type: &RustType) -> RenderedReturnType {
+pub fn render_rust_type(
+    rust_type: &RustType,
+    is_in_return_type_position: bool,
+) -> RenderedRustType {
     use crate::parse::ParsedReference::*;
     use TypeKind as K;
     let RustType {
@@ -26,7 +29,16 @@ pub fn render_return_type(rust_type: &RustType) -> RenderedReturnType {
 
     let type_tok = match kind {
         K::Primitive(prim) => render_primitive_return(prim),
-        K::Value(val) => render_value_return(val, reference),
+        K::Value(val) => {
+            let reference =
+                if !is_in_return_type_position || reference.is_owned() {
+                    reference.clone()
+                } else {
+                    reference.ensured_lifetime(format_ident!("a"))
+                };
+            lifetime = reference.lifetime().cloned();
+            render_value_return(val, &reference)
+        }
         K::Composite(Composite::Vec, rust_type) => match rust_type {
             Some(ty) => {
                 let (s, lt) = render_vec_return(ty.as_ref());
@@ -45,7 +57,7 @@ pub fn render_return_type(rust_type: &RustType) -> RenderedReturnType {
     };
     let tokens = quote_spanned! { ident.span() => #type_tok };
 
-    RenderedReturnType { tokens, lifetime }
+    RenderedRustType { tokens, lifetime }
 }
 
 fn render_primitive_return(prim: &Primitive) -> TokenStream {

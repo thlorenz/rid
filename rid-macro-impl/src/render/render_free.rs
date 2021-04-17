@@ -1,4 +1,4 @@
-use super::{render_lifetime_def, render_return_type, RenderedReturnType};
+use super::{render_lifetime_def, render_rust_type, RenderedRustType};
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote_spanned};
 use syn::Ident;
@@ -16,10 +16,10 @@ pub fn render_free(
     use TypeKind as K;
 
     let arg_ident = format_ident!("arg");
-    let RenderedReturnType {
+    let RenderedRustType {
         tokens: return_type,
         lifetime,
-    } = render_return_type(rust_type);
+    } = render_rust_type(rust_type, false);
     let lifetime_def_tok = render_lifetime_def(lifetime.as_ref());
 
     let free: Option<TokenStream> = match &rust_type.kind {

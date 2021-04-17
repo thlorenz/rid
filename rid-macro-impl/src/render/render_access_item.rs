@@ -1,4 +1,4 @@
-use super::{render_lifetime_def, render_return_type, RenderedReturnType};
+use super::{render_lifetime_def, render_rust_type, RenderedRustType};
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote, quote_spanned};
 use syn::Ident;
@@ -16,10 +16,10 @@ pub fn render_access_item(
     use TypeKind as K;
 
     let arg_ident = format_ident!("arg");
-    let RenderedReturnType {
+    let RenderedRustType {
         tokens: return_type,
         ..
-    } = render_return_type(rust_type);
+    } = render_rust_type(rust_type, false);
 
     let access_fn: Option<TokenStream> = match &rust_type.kind {
         K::Primitive(_) | K::Unit => None,
@@ -54,16 +54,17 @@ fn render_vec_access_item(
     item_type: &RustType,
     fn_access_ident: &Ident,
 ) -> TokenStream {
-    let RenderedReturnType {
+    let RenderedRustType {
         tokens: vec_arg_type,
         lifetime,
-    } = render_return_type(outer_type);
+    } = render_rust_type(outer_type, false);
 
-    let RenderedReturnType {
+    let RenderedRustType {
         tokens: item_return_type,
         ..
-    } = render_return_type(
+    } = render_rust_type(
         &item_type.clone().with_lifetime_option(lifetime.clone()),
+        false,
     );
 
     let lifetime_def_tok = render_lifetime_def(lifetime.as_ref());

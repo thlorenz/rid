@@ -258,17 +258,36 @@ mod impl_method {
         assert_eq!(res.to_string(), expected.to_string());
     }
 
-    // TODO: need to support custom types #[test]
-    fn no_args_non_mut_receiver_return_struct() {
+    struct Item;
+    struct Model {
+        id: Item,
+    }
+    impl Model {
+        fn first(&self) -> &Item {
+            &self.id
+        }
+    }
+    #[test]
+    fn no_args_non_mut_receiver_return_struct_ref() {
         let res = render_impl(
             quote! {
                 #[rid::export]
                 #[rid::structs(Item)]
-                fn first(&self) -> Item { self.id }
+                fn first(&self) -> &Item { &self.id }
             },
             "Model",
         );
-        eprintln!("res: {}", res.to_string());
-        // assert_eq!(res.to_string(), expected.to_string());
+        let expected = quote! {
+            fn rid_export_Model_first<'a>(ptr: *const Model) -> &'a Item {
+                let receiver: &Model = unsafe {
+                    assert!(!ptr.is_null());
+                    ptr.as_ref().unwrap()
+                };
+                let ret = Model::first(receiver);
+                let ret_ptr = ret;
+                ret_ptr
+            }
+        };
+        assert_eq!(res.to_string(), expected.to_string());
     }
 }

@@ -40,6 +40,13 @@ impl ParsedReference {
             ParsedReference::RefMut(_) => quote! { .as_mut() },
         }
     }
+
+    pub fn is_owned(&self) -> bool {
+        match self {
+            ParsedReference::Owned => true,
+            ParsedReference::Ref(_) | ParsedReference::RefMut(_) => false,
+        }
+    }
 }
 
 pub fn render_lifetime(lifetime: Option<&syn::Ident>) -> TokenStream {
