@@ -38,23 +38,26 @@ pub struct ReceiverArg {
     pub receiver_ident: syn::Ident,
 }
 
-pub fn render_receiver_arg(receiver: &ParsedReceiver) -> ReceiverArg {
-    let ptr_ident: syn::Ident = format_ident!("ptr");
-    let receiver_ident: syn::Ident = format_ident!("receiver");
-    let ParsedReceiver {
-        ref info,
-        reference,
-    } = receiver;
-    let kind =
-        TypeKind::Value(Value::Custom(info.clone(), info.key.to_string()));
-    let rust_type = RustType::new(info.key.clone(), kind, reference.clone());
-    let arg_pass = render_args_pass(&ptr_ident, info, &rust_type);
-    let arg_resolve =
-        render_arg_resolve(&ptr_ident, &&receiver_ident, info, &rust_type);
-    ReceiverArg {
-        arg_pass,
-        arg_resolve,
-        receiver_ident,
+impl ParsedReceiver {
+    pub fn render_receiver_arg(&self) -> ReceiverArg {
+        let ptr_ident: syn::Ident = format_ident!("ptr");
+        let receiver_ident: syn::Ident = format_ident!("receiver");
+        let ParsedReceiver {
+            ref info,
+            reference,
+        } = self;
+        let kind =
+            TypeKind::Value(Value::Custom(info.clone(), info.key.to_string()));
+        let rust_type =
+            RustType::new(info.key.clone(), kind, reference.clone());
+        let arg_pass = render_args_pass(&ptr_ident, info, &rust_type);
+        let arg_resolve =
+            render_arg_resolve(&ptr_ident, &&receiver_ident, info, &rust_type);
+        ReceiverArg {
+            arg_pass,
+            arg_resolve,
+            receiver_ident,
+        }
     }
 }
 

@@ -73,9 +73,10 @@ pub fn render_function_export(
     } = render_rust_type(return_arg, true);
     let lifetime_def_tok = render_lifetime_def(lifetime.as_ref());
     let ret_to_pointer =
-        render_to_return(&return_ident, &return_pointer_ident, return_arg);
+        return_arg.render_to_return(&return_ident, &return_pointer_ident);
 
-    let receiver_arg = receiver.as_ref().map(render_receiver_arg);
+    let receiver_arg =
+        receiver.as_ref().map(ParsedReceiver::render_receiver_arg);
     let (arg_pass, arg_resolve, receiver_ident) = match receiver_arg {
         Some(ReceiverArg {
             arg_pass,
@@ -120,59 +121,6 @@ pub fn render_function_export(
         #fn_export
         #fn_free
         #fn_access
-    }
-}
-
-// -----------------
-// Render To Return Conversion
-// -----------------
-fn render_to_return(
-    res_ident: &Ident,
-    res_pointer: &Ident,
-    rust_type: &RustType,
-) -> TokenStream {
-    use TypeKind as K;
-    // TODO: consider ref
-    match &rust_type.kind {
-        K::Primitive(_) | K::Unit => quote_spanned! { res_ident.span() => let #res_pointer = #res_ident; } ,
-        K::Value(val) => render_value_return(res_ident, res_pointer, val, &rust_type.reference),
-        K::Composite(Composite::Vec, rust_type) => {
-            quote_spanned! { res_ident.span() => let #res_pointer = rid::RidVec::from(#res_ident); }
-        },
-        K::Composite(_, _) =>  todo!("render_pointer::Composite"),
-        K::Unknown => todo!("render_pointer::Unknown - should error here or possibly that validation should happen before hand"),
-    }
-}
-
-fn render_value_return(
-    res_ident: &Ident,
-    res_pointer: &Ident,
-    val: &Value,
-    reference: &ParsedReference,
-) -> TokenStream {
-    use Category as C;
-    use Value::*;
-    match val {
-        CString => {
-            quote_spanned! { res_ident.span() => let #res_pointer = #res_ident.into_raw(); }
-        }
-        String => todo!("render_to_pointer::String"),
-        Str => todo!("render_to_pointer::Str"),
-        Custom(type_info, type_name) => match type_info.cat {
-            C::Enum => {
-                quote_spanned! { res_ident.span() =>
-                    let #res_pointer = #res_ident.clone() as i32;
-                }
-            }
-            C::Struct => {
-                quote_spanned! { res_ident.span() =>
-                    let #res_pointer = #res_ident;
-                }
-            }
-            C::Prim => {
-                quote_spanned! { res_ident.span() => let #res_pointer = #res_ident; }
-            }
-        },
     }
 }
 
