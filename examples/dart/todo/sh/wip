@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+
+RUST_LOG=info DART_LOG=info \
+  dart                          \
+    --enable-asserts            \
+    --packages=.packages        \
+    package:dart_todo/wip.dart 
+
