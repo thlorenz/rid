@@ -5,8 +5,8 @@ mod export;
 mod message;
 mod model;
 mod parse;
-mod render;
-mod templates;
+mod render_dart;
+mod render_rust;
 
 pub use attrs::parse_rid_attrs;
 pub use export::rid_export_impl;

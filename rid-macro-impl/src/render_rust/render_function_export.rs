@@ -1,6 +1,6 @@
 use super::{
     render_access_item, render_free, render_lifetime, render_lifetime_def,
-    render_receiver_arg, render_rust_type, ReceiverArg, RenderedRustType,
+    render_rust_type, ReceiverArg, RenderedRustType,
 };
 use crate::{
     attrs::Category,

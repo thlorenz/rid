@@ -11,7 +11,7 @@ use crate::{
         state::get_state,
         DartType, RustType,
     },
-    templates::vec,
+    render_dart::vec,
 };
 use rid_common::{DART_FFI, FFI_GEN_BIND, RID_FFI};
 
@@ -376,8 +376,8 @@ impl ParsedStruct {
                 format!("{}_debug_pretty", self.method_prefix);
             getters.push(format!(
                 r###"
-                /// String debug([bool pretty = false]) {{ 
-                ///   final ptr = pretty 
+                /// String debug([bool pretty = false]) {{
+                ///   final ptr = pretty
                 ///     ? {rid_ffi}.{ffi_debug_pretty_method}(this)
                 ///     : {rid_ffi}.{ffi_debug_method}(this);
                 ///   final s = ptr.toDartString();

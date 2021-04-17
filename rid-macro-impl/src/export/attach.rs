@@ -1,6 +1,6 @@
 use crate::{
     parse::{ParsedFunction, ParsedImplBlock},
-    render::render_function_export,
+    render_rust::render_function_export,
 };
 
 use crate::{attrs::parse_rid_attrs, common::abort};
