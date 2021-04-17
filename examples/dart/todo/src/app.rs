@@ -1,57 +1,21 @@
-use rid::RidVec;
-
+#![allow(dead_code)]
 #[macro_use]
 extern crate log;
 
-#[derive(Debug, rid::Model)]
-#[rid(debug)]
+// -----------------
+// Main Model
+// -----------------
+#[rid::model]
+#[rid::structs(Todo)]
+#[rid::enums(Filter)]
+#[derive(Debug)]
 pub struct Model {
     last_added_id: u32,
-    #[rid(types = { Todo: Struct })]
     todos: Vec<Todo>,
-    #[rid(types = { Filter: Enum })]
     filter: Filter,
 }
 
-#[derive(Debug, PartialEq, Eq, PartialOrd, rid::Model)]
-#[rid(debug)]
-pub struct Todo {
-    id: u32,
-    title: String,
-    completed: bool,
-}
-
-impl Ord for Todo {
-    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        self.id.cmp(&other.id)
-    }
-}
-
-#[derive(Debug, Clone)]
-#[repr(C)]
-pub enum Filter {
-    Completed,
-    Pending,
-    All,
-}
-
-#[derive(Debug, rid::Message)]
-#[rid(to = Model)]
-pub enum Msg {
-    AddTodo(String),
-    RemoveTodo(u32),
-    RemoveCompleted,
-
-    CompleteTodo(u32),
-    RestartTodo(u32),
-    ToggleTodo(u32),
-    CompleteAll,
-    RestartAll,
-
-    #[rid(types = { Filter: Enum })]
-    SetFilter(Filter),
-}
-
+#[rid::export]
 impl Model {
     fn update(&mut self, msg: Msg) {
         info!("Msg: {:?}", msg);
@@ -107,6 +71,9 @@ impl Model {
         };
     }
 
+    // TODO: make this work
+    // #[rid::export]
+    // #[rid::structs(Todo)]
     fn filtered_todos(&self) -> Vec<&Todo> {
         let mut vec: Vec<&Todo> = match self.filter {
             Filter::Completed => {
@@ -127,6 +94,57 @@ impl Model {
     }
 }
 
+// -----------------
+// Todo Model
+// -----------------
+#[rid::model]
+#[derive(Debug, PartialEq, Eq, PartialOrd)]
+pub struct Todo {
+    id: u32,
+    title: String,
+    completed: bool,
+}
+
+impl Ord for Todo {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.id.cmp(&other.id)
+    }
+}
+
+// -----------------
+// Filter
+// -----------------
+#[derive(Clone, Debug)]
+pub enum Filter {
+    Completed,
+    Pending,
+    All,
+}
+
+// -----------------
+// Msg
+// -----------------
+#[rid::message(Model)]
+#[rid::enums(Filter)]
+#[derive(Debug)]
+pub enum Msg {
+    AddTodo(String),
+    RemoveTodo(u32),
+    RemoveCompleted,
+
+    CompleteTodo(u32),
+    RestartTodo(u32),
+    ToggleTodo(u32),
+    CompleteAll,
+    RestartAll,
+
+    SetFilter(Filter),
+}
+
+// -----------------
+// Model initialization
+// -----------------
+// TODO: replace this with a Model::new export or similar
 #[no_mangle]
 pub extern "C" fn init_model_ptr() -> *const Model {
     env_logger::init();
