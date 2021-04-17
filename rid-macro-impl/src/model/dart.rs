@@ -58,14 +58,16 @@ impl DartType {
                 ffigen_bind = FFI_GEN_BIND,
                 ty = inner
             ),
-            DartType::Custom(info, _ty) => {
+            DartType::Custom(info, ty) => {
                 use attrs::Category::*;
                 match info.cat {
                     // TODO: we are assuming each enum is #[repr(C)]
                     Enum => "int".to_string(),
                     Struct => format!(
-                        "{dart_ffi}.Pointer<{dart_ffi}.Int32>",
-                        dart_ffi = DART_FFI
+                        "{dart_ffi}.Pointer<{ffigen_bind}.{ty}>",
+                        dart_ffi = DART_FFI,
+                        ffigen_bind = FFI_GEN_BIND,
+                        ty = ty
                     ),
                     Prim => todo!("dart::return_type Prim"),
                 }
