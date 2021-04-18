@@ -1,4 +1,5 @@
-use super::render_function_export;
+use super::{render_function_export, vec::*};
+
 use proc_macro2::TokenStream;
 use quote::quote_spanned;
 use rid_common::{DART_FFI, FFI_GEN_BIND, RID_FFI};

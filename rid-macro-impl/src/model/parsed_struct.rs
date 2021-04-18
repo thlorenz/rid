@@ -145,8 +145,8 @@ impl ParsedStruct {
         }
     }
 
-    fn rust_field_methods(&self) -> (Tokens, Vec<vec::ImplementVec>) {
-        let mut implemented_vecs: Vec<vec::ImplementVec> = vec![];
+    fn rust_field_methods(&self) -> (Tokens, Vec<vec::ImplementVecOld>) {
+        let mut implemented_vecs: Vec<vec::ImplementVecOld> = vec![];
         let field_method_tokens: Tokens = self
             .parsed_fields
             .iter()
@@ -162,13 +162,13 @@ impl ParsedStruct {
     fn rust_field_method(
         &self,
         field: &ParsedField,
-    ) -> (Tokens, Vec<vec::ImplementVec>) {
+    ) -> (Tokens, Vec<vec::ImplementVecOld>) {
         let field_ident = &field.ident;
         let fn_ident = &field.method_ident;
         let ty = &field.ty;
         let struct_ident = &self.ident;
         let struct_instance_ident = instance_ident(&struct_ident);
-        let mut implemented_vecs: Vec<vec::ImplementVec> = vec![];
+        let mut implemented_vecs: Vec<vec::ImplementVecOld> = vec![];
 
         let resolve_struct_ptr = resolve_ptr(struct_ident);
 
@@ -267,7 +267,7 @@ impl ParsedStruct {
                 let dart_item_type = DartType::try_from(&rust_type, &item_ty)
                     .expect("vec item type should be a valid dart type");
                 let vec_impl = if get_state().needs_implementation(&vec_type) {
-                    implemented_vecs.push(vec::ImplementVec {
+                    implemented_vecs.push(vec::ImplementVecOld {
                         vec_type,
                         dart_item_type,
                         fn_len_ident: fn_len_ident.to_string(),

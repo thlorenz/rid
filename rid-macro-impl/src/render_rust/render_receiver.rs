@@ -1,5 +1,7 @@
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote_spanned};
+use render_pointer_type::RenderedPointerType;
+use syn::Ident;
 
 use crate::{
     attrs::TypeInfo,
@@ -9,7 +11,7 @@ use crate::{
     },
 };
 
-use super::{render_pointer_type, render_rust_type};
+use super::{render_pointer_type, render_to_return_type, TypeAlias};
 
 /*
     #[no_mangle]
@@ -33,7 +35,7 @@ use super::{render_pointer_type, render_rust_type};
 
 // NOTE: for now assuming that all receivers are custom structs
 pub struct ReceiverArg {
-    pub arg_pass: TokenStream,
+    pub arg_pass: RenderedArgsPass,
     pub arg_resolve: TokenStream,
     pub receiver_ident: syn::Ident,
 }
@@ -61,13 +63,33 @@ impl ParsedReceiver {
     }
 }
 
+pub struct RenderedArgsPass {
+    pub tokens: TokenStream,
+    pub type_alias: Option<TypeAlias>,
+}
+
+impl RenderedArgsPass {
+    pub fn empty() -> Self {
+        Self {
+            tokens: TokenStream::new(),
+            type_alias: None,
+        }
+    }
+}
+
 fn render_args_pass(
     ptr_ident: &syn::Ident,
     type_info: &TypeInfo,
     rust_type: &RustType,
-) -> TokenStream {
-    let ptr_type_toks = render_pointer_type(rust_type).tokens;
-    quote_spanned! { type_info.key.span() => #ptr_ident: #ptr_type_toks }
+) -> RenderedArgsPass {
+    let RenderedPointerType {
+        alias,
+        tokens: ptr_type_toks,
+    } = rust_type.render_pointer_type();
+    RenderedArgsPass {
+        type_alias: alias,
+        tokens: quote_spanned! { type_info.key.span() => #ptr_ident: #ptr_type_toks },
+    }
 }
 
 fn render_arg_resolve(
@@ -76,7 +98,7 @@ fn render_arg_resolve(
     type_info: &TypeInfo,
     rust_type: &RustType,
 ) -> TokenStream {
-    let arg_type_toks = render_rust_type(rust_type, false).tokens;
+    let arg_type_toks = rust_type.render_rust_type().tokens;
     let as_ident = rust_type.reference.render_deref();
     quote_spanned! { type_info.key.span() =>
         let #arg_ident: #arg_type_toks = unsafe {

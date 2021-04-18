@@ -1,4 +1,6 @@
-use super::{render_lifetime_def, render_rust_type, RenderedRustType};
+use super::{
+    render_lifetime_def, render_return_type, RenderedReturnType, TypeAlias,
+};
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote_spanned};
 use syn::Ident;
@@ -8,19 +10,23 @@ use crate::parse::{
     ParsedFunction,
 };
 
+pub struct RenderedFree {
+    pub tokens: TokenStream,
+    pub type_alias: Option<TypeAlias>,
+}
+
 pub fn render_free(
     rust_type: &RustType,
     fn_free_ident: &Ident,
     ffi_prelude: &TokenStream,
-) -> TokenStream {
+) -> RenderedFree {
     use TypeKind as K;
 
     let arg_ident = format_ident!("arg");
-    let RenderedRustType {
+    let RenderedReturnType {
         tokens: return_type,
-        lifetime,
-    } = render_rust_type(rust_type, false);
-    let lifetime_def_tok = render_lifetime_def(lifetime.as_ref());
+        type_alias,
+    } = render_return_type(rust_type, false);
 
     let free: Option<TokenStream> = match &rust_type.kind {
         K::Primitive(_) | K::Unit => None,
@@ -36,13 +42,17 @@ pub fn render_free(
 
     match free {
         Some(free_statement) => {
-            quote_spanned! {fn_free_ident.span() =>
+            let tokens = quote_spanned! {fn_free_ident.span() =>
                 #ffi_prelude
-                fn #fn_free_ident#lifetime_def_tok(#arg_ident: #return_type) {
+                fn #fn_free_ident(#arg_ident: #return_type) {
                     #free_statement
                 }
-            }
+            };
+            RenderedFree { type_alias, tokens }
         }
-        None => TokenStream::new(),
+        None => RenderedFree {
+            type_alias: None,
+            tokens: TokenStream::new(),
+        },
     }
 }

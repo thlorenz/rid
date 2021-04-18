@@ -44,6 +44,7 @@ pub fn message(attrs: TokenStream, input: TokenStream) -> TokenStream {
     } else {
         let exports = rid_ffi_message_impl(&item, &args);
         let q = quote! {
+            #[repr(C)]
             #item
             #exports
         };

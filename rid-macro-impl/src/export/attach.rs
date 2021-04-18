@@ -1,13 +1,19 @@
+use std::collections::HashMap;
+
 use crate::{
+    common::state::get_state,
     parse::{ParsedFunction, ParsedImplBlock},
-    render_dart, render_rust,
+    render_common::{render_vec_accesses, VecAccess},
+    render_dart,
+    render_rust::{self, TypeAlias},
 };
 
 use crate::{attrs::parse_rid_attrs, common::abort};
-use quote::quote;
+use quote::{format_ident, quote};
 
 use proc_macro2::TokenStream;
 use render_dart::render_instance_method_extension;
+use syn::Ident;
 
 pub fn rid_export_impl(
     item: syn::Item,
@@ -17,15 +23,29 @@ pub fn rid_export_impl(
         syn::Item::Impl(item) => {
             let attrs = parse_rid_attrs(&item.attrs);
             let parsed = ParsedImplBlock::new(item, &attrs);
+            let mut needed_type_aliases = HashMap::<Ident, TokenStream>::new();
+            let mut vec_accesses = HashMap::<Ident, VecAccess>::new();
             let rust_fn_tokens = &parsed
                 .methods
                 .iter()
                 .map(|x| {
-                    render_rust::render_function_export(
+                    let render_rust::RenderedFunctionExport {
+                        tokens,
+                        type_aliases,
+                        vec_access,
+                    } = render_rust::render_function_export(
                         x,
                         Some(parsed.ty.ident.clone()),
                         Default::default(),
-                    )
+                    );
+                    for TypeAlias { alias, typedef } in type_aliases {
+                        needed_type_aliases.insert(alias, typedef);
+                    }
+                    vec_access.map(|x| {
+                        vec_accesses.insert(x.vec_type.ident.clone(), x)
+                    });
+
+                    tokens
                 })
                 .collect::<Vec<TokenStream>>();
 
@@ -33,9 +53,28 @@ pub fn rid_export_impl(
             let dart_extension_tokens =
                 render_instance_method_extension(&parsed, None);
 
+            let typedef_tokens: Vec<&TokenStream> =
+                needed_type_aliases.values().collect();
+
+            // Make sure we name the module differently for structs that have multiple impl blocks
+            let module_ident = get_state()
+                .unique_ident(format_ident!("__rid_{}_impl", parsed.ty.ident));
+
+            let needed_vec_accesses =
+                get_state().need_implemtation(vec_accesses);
+
+            let vec_access_tokens =
+                render_vec_accesses(&needed_vec_accesses, "///");
+
             quote! {
-                #dart_extension_tokens
-                #(#rust_fn_tokens)*
+                #[allow(non_snake_case)]
+                mod #module_ident {
+                    use super::*;
+                    #(#typedef_tokens)*
+                    #dart_extension_tokens
+                    #(#rust_fn_tokens)*
+                    #(#vec_access_tokens)*
+                }
             }
         }
         syn::Item::Fn(syn::ItemFn {

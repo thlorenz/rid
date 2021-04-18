@@ -1,14 +1,59 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, panic::panic_any};
 
+use proc_macro2::TokenStream;
 use quote::quote;
 
 use crate::{
     attrs::{self, FunctionConfig, TypeInfo, TypeInfoMap},
     parse::ParsedFunction,
-    render_common::RenderFunctionExportConfig,
+    render_common::{
+        render_vec_accesses, RenderFunctionExportConfig, VecAccess,
+    },
 };
 
-use super::render_function_export::render_function_export;
+use super::{
+    render_function_export::render_function_export, RenderedFunctionExport,
+    TypeAlias,
+};
+
+fn stringify_type_aliases(type_aliases: &[TypeAlias]) -> String {
+    let mut names: Vec<String> =
+        type_aliases.iter().map(|x| x.alias.to_string()).collect();
+    names.dedup();
+    names.sort();
+    names.join(", ")
+}
+
+fn render_vec_access(vec_access: Option<VecAccess>) -> (TokenStream, String) {
+    match vec_access {
+        Some(access) => {
+            let rust = access.render_rust().tokens;
+            let dart = access.render_dart("");
+            (rust, dart)
+        }
+        None => (TokenStream::new(), "".to_string()),
+    }
+}
+
+fn compare_strings_by_line(s1: &str, s2: &str) {
+    let lines1: Vec<&str> = s1.lines().collect();
+    let lines2: Vec<&str> = s2.lines().collect();
+    assert_eq!(
+        lines1.len(),
+        lines2.len(),
+        "strints should have same amount of lines"
+    );
+
+    for (idx, l1) in lines1.into_iter().enumerate() {
+        let l1 = l1.trim();
+        let l2 = lines2[idx].trim();
+        let error =
+            format!("\nlines differ:\n    \"{}\"\n    \"{}\"\n", l1, l2);
+        if l1 != l2 {
+            panic_any(error);
+        }
+    }
+}
 
 fn parse(
     input: proc_macro2::TokenStream,
@@ -25,26 +70,44 @@ fn parse(
     }
 }
 
-fn render(input: proc_macro2::TokenStream) -> proc_macro2::TokenStream {
+fn render(input: proc_macro2::TokenStream) -> RenderedFunctionExport {
     let parsed_function = parse(input, None);
     let config = Some(RenderFunctionExportConfig::bare());
     render_function_export(&parsed_function, None, config)
 }
 
-fn render_full(input: proc_macro2::TokenStream) -> proc_macro2::TokenStream {
+fn render_full(
+    input: proc_macro2::TokenStream,
+) -> RenderedFunctionExportSimplified {
     let parsed_function = parse(input, None);
-    let config = Some(RenderFunctionExportConfig {
-        include_free: true,
-        include_access_item: true,
-        ..RenderFunctionExportConfig::bare()
-    });
-    render_function_export(&parsed_function, None, config)
+    let config = Some(RenderFunctionExportConfig::bare());
+    let RenderedFunctionExport {
+        tokens,
+        type_aliases,
+        vec_access,
+    } = render_function_export(&parsed_function, None, config);
+    let (rust_vec_access, dart_vec_access) = render_vec_access(vec_access);
+    let tokens = quote! {
+        #tokens
+        #rust_vec_access
+    };
+    RenderedFunctionExportSimplified {
+        tokens,
+        dart_vec_access,
+        type_aliases: stringify_type_aliases(&type_aliases),
+    }
+}
+
+struct RenderedFunctionExportSimplified {
+    tokens: TokenStream,
+    dart_vec_access: String,
+    type_aliases: String,
 }
 
 fn render_impl(
     input: proc_macro2::TokenStream,
     owner: &str,
-) -> proc_macro2::TokenStream {
+) -> RenderedFunctionExportSimplified {
     let config = Some(RenderFunctionExportConfig::bare());
     let type_info = TypeInfo::from((owner, attrs::Category::Struct));
     let mut map = HashMap::new();
@@ -52,11 +115,25 @@ fn render_impl(
     let parsed_function =
         parse(input, Some((&type_info.key, &TypeInfoMap(map))));
 
-    render_function_export(
+    let RenderedFunctionExport {
+        tokens,
+        type_aliases,
+        vec_access,
+    } = render_function_export(
         &parsed_function,
         Some(type_info.key.clone()),
         config,
-    )
+    );
+    let (rust_vec_access, dart_vec_access) = render_vec_access(vec_access);
+    let tokens = quote! {
+        #tokens
+        #rust_vec_access
+    };
+    RenderedFunctionExportSimplified {
+        tokens,
+        dart_vec_access,
+        type_aliases: stringify_type_aliases(&type_aliases),
+    }
 }
 
 // -----------------
@@ -78,7 +155,7 @@ mod no_args_prim_return {
                 ret_ptr
             }
         };
-        assert_eq!(res.to_string(), expected.to_string());
+        assert_eq!(res.tokens.to_string(), expected.to_string());
     }
     #[test]
     fn return_i64() {
@@ -93,7 +170,7 @@ mod no_args_prim_return {
                 ret_ptr
             }
         };
-        assert_eq!(res.to_string(), expected.to_string());
+        assert_eq!(res.tokens.to_string(), expected.to_string());
     }
 }
 
@@ -103,7 +180,6 @@ mod no_args_prim_return {
 mod no_args_composite_vec_return {
     use super::*;
 
-    // fn filtered_todos(&self) -> Vec<&Todo> {
     #[test]
     fn return_vec_u8() {
         let res = render(quote! {
@@ -116,7 +192,7 @@ mod no_args_composite_vec_return {
                 ret_ptr
             }
         };
-        assert_eq!(res.to_string(), expected.to_string());
+        assert_eq!(res.tokens.to_string(), expected.to_string());
     }
 }
 
@@ -134,14 +210,23 @@ mod no_args_composite_vec_return_full {
                 let ret_ptr = rid::RidVec::from(ret);
                 ret_ptr
             }
-            fn rid_free_me(arg: rid::RidVec<u8>) {
+            fn rid_free_Vec(arg: rid::RidVec<u8>) {
                 arg.free();
             }
-            fn rid_acces_item_me(vec: rid::RidVec<u8>, idx: usize) -> u8 {
+            fn rid_get_item_Vec(vec: rid::RidVec<u8>, idx: usize) -> u8 {
                 vec[idx]
             }
         };
-        assert_eq!(res.to_string(), expected.to_string());
+        assert_eq!(res.tokens.to_string(), expected.to_string());
+        assert_eq!(res.type_aliases, "");
+
+        /* TODO: rendering dart access functions for Vec<primitive> is not properly
+         * implemented yet. Mainly vec return type is wrong.
+            let expected_dart = include_str!(
+                "./fixtures/function_export.return_vec_u8.dart.snapshot"
+            );
+            compare_strings_by_line(&res.dart_vec_access, expected_dart);
+        */
     }
 
     #[test]
@@ -152,22 +237,30 @@ mod no_args_composite_vec_return_full {
         });
 
         let expected = quote! {
-            fn rid_export_filter_items<'a>() -> rid::RidVec<&'a MyStruct> {
+            fn rid_export_filter_items() -> rid::RidVec<Pointer_MyStruct> {
                 let ret = filter_items();
-                let ret_ptr = rid::RidVec::from(ret);
+                let vec_with_pointers: Vec<Pointer_MyStruct> =
+                    ret.into_iter().map(|x| &*x as Pointer_MyStruct).collect();
+                let ret_ptr = rid::RidVec::from(vec_with_pointers);
                 ret_ptr
             }
-            fn rid_free_filter_items<'a>(arg: rid::RidVec<&'a MyStruct>) {
+            fn rid_free_Pointer_MyStruct(arg: rid::RidVec<Pointer_MyStruct>) {
                 arg.free();
             }
-            fn rid_acces_item_filter_items<'a>(
-                vec: rid::RidVec<&'a MyStruct>,
+            fn rid_get_item_Pointer_MyStruct(
+                vec: rid::RidVec<Pointer_MyStruct>,
                 idx: usize
-            ) -> &'a MyStruct {
+            ) -> Pointer_MyStruct {
                 vec[idx]
             }
         };
-        assert_eq!(res.to_string(), expected.to_string());
+        assert_eq!(res.tokens.to_string(), expected.to_string());
+        assert_eq!(res.type_aliases, "Pointer_MyStruct");
+
+        let expected_dart = include_str!(
+            "./fixtures/function_export.return_vec_struct_ref.dart.snapshot"
+        );
+        compare_strings_by_line(&res.dart_vec_access, expected_dart);
     }
 }
 
@@ -189,7 +282,7 @@ mod no_args_string_return {
                 ret_ptr
             }
         };
-        assert_eq!(res.to_string(), expected.to_string());
+        assert_eq!(res.tokens.to_string(), expected.to_string());
     }
     // TODO: other string types (String, str), at this point even the above is incorrect as we'd
     // need to alloc a Box for that string and provide a method to free it. Possibly we could
@@ -212,7 +305,7 @@ mod impl_method {
             "Model",
         );
         let expected = quote! {
-            fn rid_export_Model_id(ptr: *const Model) -> u32 {
+            fn rid_export_Model_id(ptr: Pointer_Model) -> u32 {
                 let receiver: &Model = unsafe {
                     assert!(!ptr.is_null());
                     ptr.as_ref().unwrap()
@@ -222,9 +315,11 @@ mod impl_method {
                 ret_ptr
             }
         };
-        assert_eq!(res.to_string(), expected.to_string());
+        assert_eq!(res.tokens.to_string(), expected.to_string());
+        assert_eq!(res.type_aliases, "Pointer_Model");
     }
 
+    /* TODO: Should not export Rust method that returns nothing (at least for now)
     #[test]
     fn no_args_mut_receiver_return_void() {
         let res = render_impl(
@@ -235,7 +330,7 @@ mod impl_method {
             "Model",
         );
         let expected = quote! {
-            fn rid_export_Model_inc_id(ptr: *mut Model) -> () {
+            fn rid_export_Model_inc_id(ptr: PointerMut_Model) -> () {
                 let receiver: &mut Model = unsafe {
                     assert!(!ptr.is_null());
                     ptr.as_mut().unwrap()
@@ -245,18 +340,11 @@ mod impl_method {
                 ret_ptr
             }
         };
-        assert_eq!(res.to_string(), expected.to_string());
+        assert_eq!(res.tokens.to_string(), expected.to_string());
+        assert_eq!(res.type_aliases, "PointerMut_Model");
     }
+     */
 
-    struct Item;
-    struct Model {
-        id: Item,
-    }
-    impl Model {
-        fn first(&self) -> &Item {
-            &self.id
-        }
-    }
     #[test]
     fn no_args_non_mut_receiver_return_struct_ref() {
         let res = render_impl(
@@ -268,7 +356,7 @@ mod impl_method {
             "Model",
         );
         let expected = quote! {
-            fn rid_export_Model_first<'a>(ptr: *const Model) -> &'a Item {
+            fn rid_export_Model_first(ptr: Pointer_Model) -> Pointer_Item {
                 let receiver: &Model = unsafe {
                     assert!(!ptr.is_null());
                     ptr.as_ref().unwrap()
@@ -278,6 +366,7 @@ mod impl_method {
                 ret_ptr
             }
         };
-        assert_eq!(res.to_string(), expected.to_string());
+        assert_eq!(res.tokens.to_string(), expected.to_string());
+        assert_eq!(res.type_aliases, "Pointer_Item, Pointer_Model");
     }
 }

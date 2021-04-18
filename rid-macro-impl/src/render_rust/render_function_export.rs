@@ -1,6 +1,6 @@
 use super::{
     render_access_item, render_free, render_lifetime, render_lifetime_def,
-    render_rust_type, ReceiverArg, RenderedRustType,
+    render_return_type, ReceiverArg, RenderedReturnType,
 };
 use crate::{
     attrs::Category,
@@ -9,19 +9,29 @@ use crate::{
         ParsedFunction, ParsedReceiver, ParsedReference,
     },
     render_common::{
-        fn_ident_and_impl_ident_string, RenderFunctionExportConfig,
+        fn_ident_and_impl_ident_string, RenderFunctionExportConfig, VecAccess,
     },
+    render_rust::{RenderedArgsPass, TypeAlias},
 };
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote, quote_spanned};
+use render_access_item::RenderedAccessItem;
+use render_free::RenderedFree;
 use syn::Ident;
+
+pub struct RenderedFunctionExport {
+    pub tokens: TokenStream,
+    pub type_aliases: Vec<TypeAlias>,
+    pub vec_access: Option<VecAccess>,
+}
 
 pub fn render_function_export(
     parsed_function: &ParsedFunction,
     impl_ident: Option<Ident>,
     config: Option<RenderFunctionExportConfig>,
-) -> TokenStream {
+) -> RenderedFunctionExport {
     let config = config.unwrap_or(Default::default());
+    let mut type_aliases = Vec::<TypeAlias>::new();
 
     let ParsedFunction {
         fn_ident,
@@ -49,11 +59,12 @@ pub fn render_function_export(
         None => TokenStream::new(),
     };
 
-    let RenderedRustType {
+    let RenderedReturnType {
         tokens: ret_type,
-        lifetime,
-    } = render_rust_type(return_arg, true);
-    let lifetime_def_tok = render_lifetime_def(lifetime.as_ref());
+        type_alias: ret_alias,
+    } = render_return_type(return_arg, true);
+    ret_alias.clone().map(|x| type_aliases.push(x));
+
     let ret_to_pointer =
         return_arg.render_to_return(&return_ident, &return_pointer_ident);
 
@@ -65,44 +76,58 @@ pub fn render_function_export(
             arg_resolve,
             receiver_ident,
         }) => (arg_pass, arg_resolve, Some(receiver_ident)),
-        None => (TokenStream::new(), TokenStream::new(), None),
+        None => (RenderedArgsPass::empty(), TokenStream::new(), None),
     };
     let fn_call = render_export_call(fn_ident, receiver_ident, args);
 
+    let RenderedArgsPass {
+        tokens: arg_pass,
+        type_alias,
+    } = arg_pass;
+    type_alias.map(|x| type_aliases.push(x));
+
     let fn_export = quote_spanned! { fn_ident.span() =>
         #ffi_prelude
-        fn #rid_fn_ident#lifetime_def_tok(#arg_pass) -> #ret_type {
+        fn #rid_fn_ident(#arg_pass) -> #ret_type {
             #arg_resolve
             let #return_ident = #static_impl_call_tok#fn_call;
             #ret_to_pointer
             #return_pointer_ident
         }
     };
-    let fn_free = match config.include_free {
-        true => {
-            let fn_free_ident =
-                format_ident!("rid_free_{}{}", rid_impl_ident_str, fn_ident);
-            render_free(return_arg, &fn_free_ident, &ffi_prelude)
-        }
-        false => TokenStream::new(),
+
+    let vec_access = if return_arg.is_vec() {
+        // TODO: does this work when type is not aliased?
+        let ret_ident = match &ret_alias {
+            Some(TypeAlias { alias, .. }) => alias,
+            Option::None => &return_arg.ident,
+        };
+
+        let fn_len_ident = format_ident!("rid_len_{}", ret_ident);
+        let fn_free_ident = format_ident!("rid_free_{}", ret_ident);
+        let fn_get_ident = format_ident!("rid_get_item_{}", ret_ident);
+
+        let item_type = return_arg
+            .inner_composite_type()
+            .expect("Vec should have inner type");
+
+        Some(VecAccess {
+            vec_type: return_arg.clone(),
+            vec_type_dart: format!("RidVec_{}", ret_ident),
+            item_type,
+            rust_ffi_prelude: ffi_prelude,
+            fn_len_ident,
+            fn_free_ident,
+            fn_get_ident,
+        })
+    } else {
+        None
     };
 
-    let fn_access = match config.include_access_item {
-        true => {
-            let fn_access_ident = format_ident!(
-                "rid_acces_item_{}{}",
-                rid_impl_ident_str,
-                fn_ident
-            );
-            render_access_item(&return_arg, &fn_access_ident, &ffi_prelude)
-        }
-        false => TokenStream::new(),
-    };
-
-    quote! {
-        #fn_export
-        #fn_free
-        #fn_access
+    RenderedFunctionExport {
+        tokens: fn_export,
+        type_aliases,
+        vec_access,
     }
 }
 

@@ -1,4 +1,6 @@
-use super::{render_lifetime_def, render_rust_type, RenderedRustType};
+use super::{
+    render_lifetime_def, render_return_type, RenderedReturnType, TypeAlias,
+};
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote, quote_spanned};
 use syn::Ident;
@@ -8,29 +10,35 @@ use crate::parse::{
     ParsedFunction, ParsedReference,
 };
 
+pub struct RenderedAccessItem {
+    pub tokens: TokenStream,
+    pub type_alias: Option<TypeAlias>,
+}
+
 pub fn render_access_item(
     rust_type: &RustType,
     fn_access_ident: &Ident,
     ffi_prelude: &TokenStream,
-) -> TokenStream {
+) -> RenderedAccessItem {
     use TypeKind as K;
 
-    let arg_ident = format_ident!("arg");
-    let RenderedRustType {
-        tokens: return_type,
-        ..
-    } = render_rust_type(rust_type, false);
+    let mut type_alias = None;
 
+    let arg_ident = format_ident!("arg");
     let access_fn: Option<TokenStream> = match &rust_type.kind {
         K::Primitive(_) | K::Unit => None,
         // TODO: do we need special access code here?
         K::Value(val) => None,
         K::Composite(Composite::Vec, inner_type) => match inner_type {
-            Some(ty) => Some(render_vec_access_item(
-                &rust_type,
-                ty.as_ref(),
-                fn_access_ident,
-            )),
+            Some(ty) => {
+                let (alias, tokens) = render_vec_access_item(
+                    &rust_type,
+                    ty.as_ref(),
+                    fn_access_ident,
+                );
+                type_alias = alias;
+                Some(tokens)
+            }
             None => {
                 todo!("render_access_item: blow up since a composite should include inner type")
             }
@@ -39,7 +47,7 @@ pub fn render_access_item(
         K::Unknown => None,
     };
 
-    match access_fn {
+    let tokens = match access_fn {
         Some(access_fn) => {
             quote! {
                 #ffi_prelude
@@ -47,32 +55,31 @@ pub fn render_access_item(
             }
         }
         None => TokenStream::new(),
-    }
+    };
+
+    RenderedAccessItem { tokens, type_alias }
 }
 
 fn render_vec_access_item(
     outer_type: &RustType,
     item_type: &RustType,
     fn_access_ident: &Ident,
-) -> TokenStream {
-    let RenderedRustType {
+) -> (Option<TypeAlias>, TokenStream) {
+    let RenderedReturnType {
         tokens: vec_arg_type,
-        lifetime,
-    } = render_rust_type(outer_type, false);
-
-    let RenderedRustType {
-        tokens: item_return_type,
         ..
-    } = render_rust_type(
-        &item_type.clone().with_lifetime_option(lifetime.clone()),
-        false,
-    );
+    } = render_return_type(outer_type, false);
 
-    let lifetime_def_tok = render_lifetime_def(lifetime.as_ref());
+    let RenderedReturnType {
+        tokens: item_return_type,
+        type_alias,
+        ..
+    } = render_return_type(&item_type, false);
 
-    quote_spanned! { fn_access_ident.span() =>
-        fn #fn_access_ident#lifetime_def_tok(vec: #vec_arg_type, idx: usize) -> #item_return_type {
+    let tokens = quote_spanned! { fn_access_ident.span() =>
+        fn #fn_access_ident(vec: #vec_arg_type, idx: usize) -> #item_return_type {
             vec[idx]
         }
-    }
+    };
+    (type_alias, tokens)
 }

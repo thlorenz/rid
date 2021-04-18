@@ -9,15 +9,17 @@ use proc_macro2::TokenStream;
 use quote::{format_ident, quote, quote_spanned};
 use syn::Ident;
 
-pub struct RenderedRustType {
+use super::TypeAlias;
+
+pub struct RenderedReturnType {
     pub tokens: TokenStream,
-    pub lifetime: Option<Ident>,
+    pub type_alias: Option<TypeAlias>,
 }
 
-pub fn render_rust_type(
+pub fn render_return_type(
     rust_type: &RustType,
     is_in_return_type_position: bool,
-) -> RenderedRustType {
+) -> RenderedReturnType {
     use crate::parse::ParsedReference::*;
     use TypeKind as K;
     let RustType {
@@ -25,7 +27,8 @@ pub fn render_rust_type(
         kind,
         reference,
     } = rust_type;
-    let mut lifetime: Option<Ident> = None;
+
+    let mut type_alias: Option<TypeAlias> = None;
 
     let type_tok = match kind {
         K::Primitive(prim) => render_primitive_return(prim),
@@ -36,14 +39,15 @@ pub fn render_rust_type(
                 } else {
                     reference.ensured_lifetime(format_ident!("a"))
                 };
-            lifetime = reference.lifetime().cloned();
-            render_value_return(val, &reference)
+            let (alias, tokens ) = render_value_return(val, &reference);
+            type_alias = alias;
+            tokens
         }
         K::Composite(Composite::Vec, rust_type) => match rust_type {
             Some(ty) => {
-                let (s, lt) = render_vec_return(ty.as_ref());
-                lifetime = lt;
-                s
+                let (alias, tokens) = render_vec_return(ty.as_ref());
+                type_alias = alias;
+                tokens
             }
             None => {
                 todo!("blow up since a composite should include inner type")
@@ -57,7 +61,7 @@ pub fn render_rust_type(
     };
     let tokens = quote_spanned! { ident.span() => #type_tok };
 
-    RenderedRustType { tokens, lifetime }
+    RenderedReturnType { tokens, type_alias }
 }
 
 fn render_primitive_return(prim: &Primitive) -> TokenStream {
@@ -76,7 +80,9 @@ fn render_primitive_return(prim: &Primitive) -> TokenStream {
     }
 }
 
-fn render_vec_return(inner_type: &RustType) -> (TokenStream, Option<Ident>) {
+fn render_vec_return(
+    inner_type: &RustType,
+) -> (Option<TypeAlias>, TokenStream) {
     use TypeKind as K;
     match &inner_type.kind {
         K::Primitive(prim) => {
@@ -84,15 +90,13 @@ fn render_vec_return(inner_type: &RustType) -> (TokenStream, Option<Ident>) {
             let tokens = quote_spanned! { inner_type.ident.span() =>
                 rid::RidVec<#inner_return_type>
             };
-            (tokens, None)
+            (None, tokens)
         }
         K::Value(val) => {
-            let lifetime = format_ident!("a");
-            let reference =
-                inner_type.reference.ensured_lifetime(lifetime.clone());
-            let val_tokens = render_value_return(val, &reference);
+            let (alias, val_tokens) =
+                render_value_return(val, &inner_type.reference);
             let tokens = quote! { rid::RidVec<#val_tokens> };
-            (tokens, reference.lifetime().cloned())
+            (alias, tokens)
         }
         K::Composite(_, _) => {
             abort!(inner_type.ident, "todo!(stringify_vec_return::composite)")
@@ -109,17 +113,16 @@ fn render_vec_return(inner_type: &RustType) -> (TokenStream, Option<Ident>) {
 fn render_value_return(
     value: &Value,
     reference: &ParsedReference,
-) -> TokenStream {
+) -> (Option<TypeAlias>, TokenStream) {
     use Value as V;
 
     match value {
         V::CString | V::String | V::Str => {
-            quote! { *const ::std::os::raw::c_char }
+            (None, quote! { *const ::std::os::raw::c_char })
         }
         V::Custom(info, name) => {
-            let ref_tok = reference.render();
-            let name_tok: TokenStream = name.parse().unwrap();
-            quote_spanned! { info.key.span() => #ref_tok #name_tok }
+            let (alias, ref_tok) = reference.render_pointer(name);
+            (alias, quote_spanned! { info.key.span() => #ref_tok })
         }
     }
 }

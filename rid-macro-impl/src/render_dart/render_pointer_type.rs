@@ -1,9 +1,10 @@
-use proc_macro_error::abort;
-use quote::quote_spanned;
+use quote::{format_ident, quote_spanned};
 use rid_common::{DART_FFI, FFI_GEN_BIND, RID_FFI};
 
+use super::vec::*;
 use crate::{
     attrs::Category,
+    common::{abort, state::get_state},
     parse::{
         rust_type::{Composite, RustType, TypeKind, Value},
         ParsedReference,
@@ -11,37 +12,56 @@ use crate::{
 };
 
 impl RustType {
-    pub fn render_pointer_type(&self) -> String {
+    pub fn render_dart_pointer_type(&self) -> String {
         use TypeKind as K;
         match &self.kind {
-            K::Primitive(_) => {
-                todo!("RustType::render_pointer_type K:Primitive")
-            }
+            K::Primitive(_) => self.render_dart_type(false),
             K::Unit => abort!(
                 self.ident,
                 "Should not export rust method that returns nothing"
             ),
 
-            K::Value(val) => val.render_pointer_type(),
-            K::Composite(Composite::Vec, rust_type) => {
-                todo!("RustType::render_pointer_type K::Composite::Vec")
-            }
+            K::Value(val) => val.render_dart_pointer_type(),
+            K::Composite(Composite::Vec, inner_type) => match inner_type {
+                Some(ty) => {
+                    let item_type = ty.ident.to_string();
+
+                    let pointer = format!(
+                        "{ffigen_bind}.RidVec_Pointer_{ty}",
+                        ffigen_bind = FFI_GEN_BIND,
+                        ty = &item_type
+                    );
+                    pointer
+                }
+                None => {
+                    abort!(
+                        self.ident,
+                        "Rust composite should include inner type"
+                    )
+                }
+            },
             K::Composite(_, _) => {
-                todo!("RustType::render_pointer_type K::Composite")
+                abort!(
+                    self.ident,
+                    "TODO: RustType::render_dart_pointer_type K::Composite"
+                )
             }
-            K::Unknown => todo!("RustType::render_pointer_type K::Unknown"),
+            K::Unknown => abort!(
+                self.ident,
+                "TODO: RustType::render_dart_pointer_type K::Unknown"
+            ),
         }
     }
 }
 
 impl Value {
-    fn render_pointer_type(&self) -> String {
+    fn render_dart_pointer_type(&self) -> String {
         use Category as C;
         use Value::*;
         match self {
-            CString => todo!("Value::render_pointer_type::CString"),
-            String => todo!("Value::render_pointer_type::String"),
-            Str => todo!("Value::render_pointer_type::Str"),
+            CString => todo!("Value::render_dart_pointer_type ::CString"),
+            String => todo!("Value::render_dart_pointer_type ::String"),
+            Str => todo!("Value::render_dart_pointer_type ::Str"),
             Custom(type_info, type_name) => match type_info.cat {
                 C::Enum => format!(
                     "{dart_ffi}.Pointer<{dart_ffi}.Int32>",

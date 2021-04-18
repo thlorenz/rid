@@ -59,6 +59,40 @@ impl RustType {
             reference: self.reference.ensured_lifetime(lifetime),
         }
     }
+
+    pub fn is_primitive(&self) -> bool {
+        match self.kind {
+            TypeKind::Primitive(_) => true,
+            TypeKind::Value(_) => false,
+            TypeKind::Composite(_, _) => false,
+            TypeKind::Unit => true,
+            TypeKind::Unknown => false,
+        }
+    }
+
+    pub fn is_vec(&self) -> bool {
+        match self.kind {
+            TypeKind::Primitive(_) => false,
+            TypeKind::Value(_) => false,
+            TypeKind::Composite(Composite::Vec, _) => true,
+            TypeKind::Composite(_, _) => false,
+            TypeKind::Unit => true,
+            TypeKind::Unknown => false,
+        }
+    }
+
+    pub fn inner_composite_type(&self) -> Option<RustType> {
+        match &self.kind {
+            TypeKind::Primitive(_) => None,
+            TypeKind::Value(_) => None,
+            TypeKind::Composite(Composite::Vec, inner) => {
+                inner.as_ref().map(|x| (*x.clone()))
+            }
+            TypeKind::Composite(_, _) => None,
+            TypeKind::Unit => None,
+            TypeKind::Unknown => None,
+        }
+    }
 }
 
 // --------------
