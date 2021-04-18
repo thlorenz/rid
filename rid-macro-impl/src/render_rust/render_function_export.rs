@@ -8,26 +8,13 @@ use crate::{
         rust_type::{Composite, Primitive, RustType, TypeKind, Value},
         ParsedFunction, ParsedReceiver, ParsedReference,
     },
+    render_common::{
+        fn_ident_and_impl_ident_string, RenderFunctionExportConfig,
+    },
 };
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote, quote_spanned};
 use syn::Ident;
-
-pub struct RenderFunctionExportConfig {
-    pub include_ffi: bool,
-    pub include_free: bool,
-    pub include_access_item: bool,
-}
-
-impl Default for RenderFunctionExportConfig {
-    fn default() -> Self {
-        Self {
-            include_ffi: true,
-            include_free: true,
-            include_access_item: true,
-        }
-    }
-}
 
 pub fn render_function_export(
     parsed_function: &ParsedFunction,
@@ -54,13 +41,8 @@ pub fn render_function_export(
         false => TokenStream::new(),
     };
 
-    let rid_impl_ident_str = match &impl_ident {
-        Some(ident) => format!("{}_", ident.to_string()),
-        None => "".to_string(),
-    };
-
-    let rid_fn_ident =
-        format_ident!("rid_export_{}{}", rid_impl_ident_str, fn_ident);
+    let (rid_fn_ident, rid_impl_ident_str) =
+        fn_ident_and_impl_ident_string(&fn_ident, &impl_ident);
 
     let static_impl_call_tok = match &impl_ident {
         Some(ident) => quote! { #ident:: },

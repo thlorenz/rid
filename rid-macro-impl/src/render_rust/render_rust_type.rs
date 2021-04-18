@@ -38,7 +38,7 @@ impl RustType {
 }
 
 impl Value {
-    pub fn render_to_return(
+    fn render_to_return(
         &self,
         res_ident: &Ident,
         res_pointer: &Ident,

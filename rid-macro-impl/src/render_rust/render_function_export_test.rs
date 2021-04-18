@@ -1,16 +1,14 @@
 use std::collections::HashMap;
 
-use attrs::FunctionConfig;
 use quote::quote;
 
 use crate::{
-    attrs::{self, TypeInfo, TypeInfoMap},
+    attrs::{self, FunctionConfig, TypeInfo, TypeInfoMap},
     parse::ParsedFunction,
+    render_common::RenderFunctionExportConfig,
 };
 
-use super::render_function_export::{
-    render_function_export, RenderFunctionExportConfig,
-};
+use super::render_function_export::render_function_export;
 
 fn parse(
     input: proc_macro2::TokenStream,
@@ -29,20 +27,16 @@ fn parse(
 
 fn render(input: proc_macro2::TokenStream) -> proc_macro2::TokenStream {
     let parsed_function = parse(input, None);
-    let config = Some(RenderFunctionExportConfig {
-        include_ffi: false,
-        include_free: false,
-        include_access_item: false,
-    });
+    let config = Some(RenderFunctionExportConfig::bare());
     render_function_export(&parsed_function, None, config)
 }
 
 fn render_full(input: proc_macro2::TokenStream) -> proc_macro2::TokenStream {
     let parsed_function = parse(input, None);
     let config = Some(RenderFunctionExportConfig {
-        include_ffi: false,
         include_free: true,
         include_access_item: true,
+        ..RenderFunctionExportConfig::bare()
     });
     render_function_export(&parsed_function, None, config)
 }
@@ -51,11 +45,7 @@ fn render_impl(
     input: proc_macro2::TokenStream,
     owner: &str,
 ) -> proc_macro2::TokenStream {
-    let config = Some(RenderFunctionExportConfig {
-        include_ffi: false,
-        include_free: false,
-        include_access_item: false,
-    });
+    let config = Some(RenderFunctionExportConfig::bare());
     let type_info = TypeInfo::from((owner, attrs::Category::Struct));
     let mut map = HashMap::new();
     map.insert(owner.to_string(), type_info.clone());

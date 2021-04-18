@@ -5,6 +5,7 @@ mod export;
 mod message;
 mod model;
 mod parse;
+mod render_common;
 mod render_dart;
 mod render_rust;
 
