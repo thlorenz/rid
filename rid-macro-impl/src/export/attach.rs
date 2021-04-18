@@ -1,12 +1,13 @@
 use crate::{
     parse::{ParsedFunction, ParsedImplBlock},
-    render_rust::render_function_export,
+    render_dart, render_rust,
 };
 
 use crate::{attrs::parse_rid_attrs, common::abort};
 use quote::quote;
 
 use proc_macro2::TokenStream;
+use render_dart::render_instance_method_extension;
 
 pub fn rid_export_impl(
     item: syn::Item,
@@ -16,18 +17,26 @@ pub fn rid_export_impl(
         syn::Item::Impl(item) => {
             let attrs = parse_rid_attrs(&item.attrs);
             let parsed = ParsedImplBlock::new(item, &attrs);
-            let tokens = &parsed
+            let rust_fn_tokens = &parsed
                 .methods
                 .iter()
                 .map(|x| {
-                    render_function_export(
+                    render_rust::render_function_export(
                         x,
                         Some(parsed.ty.ident.clone()),
                         Default::default(),
                     )
                 })
                 .collect::<Vec<TokenStream>>();
-            quote! { #(#tokens)* }
+
+            // TODO: non-instance method strings
+            let dart_extension_tokens =
+                render_instance_method_extension(&parsed, None);
+
+            quote! {
+                #dart_extension_tokens
+                #(#rust_fn_tokens)*
+            }
         }
         syn::Item::Fn(syn::ItemFn {
             attrs: _, // Vec<Attribute>,
