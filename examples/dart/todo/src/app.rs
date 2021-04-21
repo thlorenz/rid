@@ -71,9 +71,8 @@ impl Model {
         };
     }
 
-    // TODO: make this work
-    // #[rid::export]
-    // #[rid::structs(Todo)]
+    #[rid::export]
+    #[rid::structs(Todo)]
     fn filtered_todos(&self) -> Vec<&Todo> {
         let mut vec: Vec<&Todo> = match self.filter {
             Filter::Completed => {
@@ -86,11 +85,6 @@ impl Model {
         };
         vec.sort();
         vec
-    }
-
-    #[rid::export]
-    fn filtered_ids(&self) -> Vec<u32> {
-        self.filtered_todos().iter().map(|x| x.id).collect()
     }
 }
 
@@ -115,6 +109,7 @@ impl Ord for Todo {
 // Filter
 // -----------------
 #[derive(Clone, Debug)]
+#[repr(u8)]
 pub enum Filter {
     Completed,
     Pending,

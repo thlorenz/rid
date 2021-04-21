@@ -1,40 +1,50 @@
-#[derive(Debug, rid::Model)]
-#[rid(debug)]
+#[rid::model]
+#[rid::structs(Todo)]
+#[derive(Debug)]
 pub struct Model {
-    id: u8,
-    #[rid(types = {Filter: Enum})]
-    filter: Filter,
+    todos: Vec<Todo>,
 }
+#[rid::model]
+#[derive(Debug)]
+pub struct Todo {
+    id: u32,
+    title: String,
+}
+
+#[rid::export]
 impl Model {
-    fn update(&mut self, msg: Msg) {
-        match msg {
-            Msg::SetFilter(filter) => {
-                println!("Applying filter {:?}", filter);
-            }
-        };
+    #[rid::export]
+    #[rid::structs(Todo)]
+    fn filter_todos(&self) -> Vec<&Todo> {
+        self.todos.iter().filter(|x| x.id > 0).collect()
     }
-}
-
-#[repr(C)]
-#[derive(Debug, Clone)]
-pub enum Filter {
-    Completed,
-    Pending,
-    All,
-}
-
-#[derive(rid::Message)]
-#[rid(to = Model)]
-pub enum Msg {
-    #[rid(types = {Filter: Enum})]
-    SetFilter(Filter),
 }
 
 #[no_mangle]
 pub extern "C" fn init_model_ptr() -> *const Model {
+    env_logger::init();
     let model = Model {
-        id: 1,
-        filter: Filter::All,
+        todos: vec![
+            Todo {
+                id: 0,
+                title: "first todo".to_string(),
+            },
+            Todo {
+                id: 1,
+                title: "second todo".to_string(),
+            },
+        ],
     };
     Box::into_raw(Box::new(model))
+}
+
+#[no_mangle]
+pub extern "C" fn free_model_ptr(ptr: *mut Model) {
+    let model = unsafe {
+        assert!(!ptr.is_null());
+        let ptr: *mut Model = &mut *ptr;
+        let ptr = ptr.as_mut().unwrap();
+        Box::from_raw(ptr)
+    };
+    drop(model);
 }

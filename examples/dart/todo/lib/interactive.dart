@@ -12,17 +12,6 @@ onError(Object error, StackTrace stack) {
 // via an extension
 enum DartFilter { Completed, Pending, All }
 
-// TODO: extract that list and free in generated code
-List<Pointer<Todo>> filteredTodos(Pointer<Model> model) {
-  final matching = rid_ffi.filtered_todos(model);
-  final List<Pointer<Todo>> list = [];
-  for (int i = 0; i < matching.len; i++) {
-    final todo = rid_ffi.todos_get_idx(matching, i);
-    list.add(todo);
-  }
-  return list;
-}
-
 // TODO: this could be .display()
 String prettyStringTodo(Pointer<Todo> todo) {
   final status = todo.completed ? "✓" : " ";
@@ -33,14 +22,15 @@ printStatus(Pointer<Model> model) {
   final todos = model.todos;
   final total = todos.length;
   final filter = DartFilter.values[model.filter].toString().substring(11);
-  final matchingTodos = filteredTodos(model);
+  final matchingTodos = model.filtered_todos();
 
   print("Total Todos:     $total");
   print("Filter:          $filter");
   print("\nMatching Todos:");
-  for (final todo in matchingTodos) {
+  for (final todo in matchingTodos.iter()) {
     print("    ${prettyStringTodo(todo)}");
   }
+  matchingTodos.dispose();
 }
 
 bool handleCommand(Pointer<Model> model, String line) {
@@ -113,10 +103,10 @@ printCommands() {
 interactive() {
   final model = rid_ffi.init_model_ptr();
   {
-    model.msgAddTodo("Complete this Todo via:    cmp 1");
-    model.msgAddTodo("Delete this Todo via:      del 2");
-    model.msgAddTodo("Toggle this Todo via:      tog 3");
-    model.msgAddTodo("Restart the first Tod via: rst 1");
+    model.msgAddTodo("Complete this Todo via:     cmp 1");
+    model.msgAddTodo("Delete this Todo via:       del 2");
+    model.msgAddTodo("Toggle this Todo via:       tog 3");
+    model.msgAddTodo("Restart the first Todo via: rst 1");
 
     String? input;
     bool ok = true;
@@ -137,6 +127,7 @@ interactive() {
       }
     }
   }
+  // TODO: expose via model.dispose()
   rid_ffi.free_model_ptr(model);
 }
 

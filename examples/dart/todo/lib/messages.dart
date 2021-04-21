@@ -30,14 +30,14 @@ messages() {
   model.msgSetFilter(Filter.Completed);
   log.v(model.debug(LOG_VERBOSE));
 
-  final filteredTodos = rid_ffi.filtered_todos(model);
-  log.i("len: ${filteredTodos.len}, cap: ${filteredTodos.capacity}");
+  final filteredTodos = model.filtered_todos();
+  log.i("len: ${filteredTodos.length}, cap: ${filteredTodos.capacity}");
 
-  final firstFiltered = rid_ffi.todos_get_idx(filteredTodos, 0);
+  final firstFiltered = filteredTodos[0];
   log.v(firstFiltered.debug(LOG_VERBOSE));
-  final secondFiltered = rid_ffi.todos_get_idx(filteredTodos, 1);
+  final secondFiltered = filteredTodos[1];
   log.v(secondFiltered.debug(LOG_VERBOSE));
-  rid_ffi.todos_free(filteredTodos);
+  filteredTodos.dispose();
 
   model.msgRemoveCompleted();
   log.v(model.debug(LOG_VERBOSE));
