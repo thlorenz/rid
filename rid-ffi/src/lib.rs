@@ -18,7 +18,7 @@ pub type ManDropVec<T> = mem::ManuallyDrop<Vec<T>>;
 #[repr(C)]
 pub struct RidVec<T> {
     pub ptr: *mut T,
-    pub len: usize,
+    pub length: usize,
     pub capacity: usize,
 }
 
@@ -29,7 +29,7 @@ pub fn code_rid_vec() -> String {
         #[repr(C)]
         pub struct RidVec<T> {
             pub ptr: *mut T,
-            pub len: usize,
+            pub length: usize,
             pub capacity: usize,
         }
     }
@@ -39,17 +39,22 @@ pub fn code_rid_vec() -> String {
 
 impl<T> From<Vec<T>> for RidVec<T> {
     fn from(v: Vec<T>) -> Self {
-        let len = v.len();
+        let length = v.len();
         let capacity = v.capacity();
         let mut ptr = mem::ManuallyDrop::new(v);
         let ptr = ptr.as_mut_ptr();
-        RidVec { ptr, len, capacity }
+        RidVec {
+            ptr,
+            length,
+            capacity,
+        }
     }
 }
 
 impl<T> From<&RidVec<T>> for ManDropVec<T> {
     fn from(rv: &RidVec<T>) -> Self {
-        let vec = unsafe { Vec::from_raw_parts(rv.ptr, rv.len, rv.capacity) };
+        let vec =
+            unsafe { Vec::from_raw_parts(rv.ptr, rv.length, rv.capacity) };
         mem::ManuallyDrop::new(vec)
     }
 }
@@ -66,8 +71,9 @@ impl<T> Index<usize> for RidVec<T> {
 
 impl<T> RidVec<T> {
     pub fn free(self) {
-        let _ =
-            unsafe { Vec::from_raw_parts(self.ptr, self.len, self.capacity) };
+        let _ = unsafe {
+            Vec::from_raw_parts(self.ptr, self.length, self.capacity)
+        };
     }
 }
 
@@ -93,7 +99,7 @@ mod tests {
         };
 
         {
-            assert_eq!(get_len(&rvec), rvec.len, "len");
+            assert_eq!(get_len(&rvec), rvec.length, "len");
             assert_eq!(get_capacity(&rvec), rvec.capacity, "capacity");
 
             assert_eq!(rvec[0], 1, "get item 1");
@@ -115,7 +121,7 @@ mod tests {
         };
 
         {
-            assert_eq!(get_len(&rvec), rvec.len, "len");
+            assert_eq!(get_len(&rvec), rvec.length, "len");
             assert_eq!(get_capacity(&rvec), rvec.capacity, "capacity");
 
             assert_eq!(rvec[0], "hello", "get item 1");
@@ -164,7 +170,7 @@ mod tests {
         };
 
         {
-            assert_eq!(get_len(&rvec), rvec.len, "len");
+            assert_eq!(get_len(&rvec), rvec.length, "len");
             assert_eq!(get_capacity(&rvec), rvec.capacity, "capacity");
 
             let item1 = &rvec[0];
@@ -219,7 +225,7 @@ mod tests {
         };
 
         {
-            assert_eq!(get_len(&rvec), rvec.len, "len");
+            assert_eq!(get_len(&rvec), rvec.length, "len");
             assert_eq!(get_capacity(&rvec), rvec.capacity, "capacity");
 
             let item1 = rvec[0];

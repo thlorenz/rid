@@ -20,7 +20,7 @@ fn vec_u8() {
     };
 
     {
-        assert_eq!(get_len(&rvec), rvec.len, "len");
+        assert_eq!(get_len(&rvec), rvec.length, "len");
         assert_eq!(get_capacity(&rvec), rvec.capacity, "capacity");
 
         assert_eq!(rvec[0], 1, "get item 1");
@@ -41,7 +41,7 @@ fn vec_string() {
     };
 
     {
-        assert_eq!(get_len(&rvec), rvec.len, "len");
+        assert_eq!(get_len(&rvec), rvec.length, "len");
         assert_eq!(get_capacity(&rvec), rvec.capacity, "capacity");
 
         assert_eq!(rvec[0], "hello", "get item 1");
@@ -79,7 +79,7 @@ fn vec_struct() {
     };
 
     {
-        assert_eq!(get_len(&rvec), rvec.len, "len");
+        assert_eq!(get_len(&rvec), rvec.length, "len");
         assert_eq!(get_capacity(&rvec), rvec.capacity, "capacity");
 
         let item1 = &rvec[0];
@@ -133,7 +133,7 @@ fn vec_struct_refs() {
     };
 
     {
-        assert_eq!(get_len(&rvec), rvec.len, "len");
+        assert_eq!(get_len(&rvec), rvec.length, "len");
         assert_eq!(get_capacity(&rvec), rvec.capacity, "capacity");
 
         let item1 = rvec[0];
