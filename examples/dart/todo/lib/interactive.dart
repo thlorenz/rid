@@ -101,7 +101,7 @@ printCommands() {
 }
 
 interactive() {
-  final model = rid_ffi.init_model_ptr();
+  final model = rid_ffi.rid_export_Model_new();
   {
     model.msgAddTodo("Complete this Todo via:     cmp 1");
     model.msgAddTodo("Delete this Todo via:       del 2");
@@ -128,7 +128,7 @@ interactive() {
     }
   }
   // TODO: expose via model.dispose()
-  rid_ffi.free_model_ptr(model);
+  rid_ffi.rid_free_Model(model);
 }
 
 void main(List<String> args) {

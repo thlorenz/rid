@@ -13,9 +13,9 @@ printFiltered(Pointer<Model> model) {
 }
 
 main() {
-  final model = rid_ffi.init_model_ptr();
+  final model = rid_ffi.rid_export_Model_new();
   log.i("\n${model.debug(true)}");
   printFiltered(model);
   printFiltered(model);
-  rid_ffi.free_model_ptr(model);
+  rid_ffi.rid_free_Model(model);
 }

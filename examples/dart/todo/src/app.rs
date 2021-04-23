@@ -17,6 +17,17 @@ pub struct Model {
 
 #[rid::export]
 impl Model {
+    // TODO: allow specifying under which name (at least on the dart side) this gets exposed
+    // #[rid::export("desired_name")]?
+    #[rid::export]
+    fn new() -> Self {
+        Self {
+            last_added_id: 0,
+            todos: vec![],
+            filter: Filter::All,
+        }
+    }
+
     fn update(&mut self, msg: Msg) {
         info!("Msg: {:?}", msg);
         use Msg::*;
@@ -134,31 +145,4 @@ pub enum Msg {
     RestartAll,
 
     SetFilter(Filter),
-}
-
-// -----------------
-// Model initialization
-// -----------------
-// TODO: replace this with a Model::new export or similar
-#[no_mangle]
-pub extern "C" fn init_model_ptr() -> *const Model {
-    env_logger::init();
-    let model = Model {
-        last_added_id: 0,
-        todos: vec![],
-        filter: Filter::All,
-    };
-    Box::into_raw(Box::new(model))
-}
-
-#[no_mangle]
-pub extern "C" fn free_model_ptr(ptr: *mut Model) {
-    let model = unsafe {
-        assert!(!ptr.is_null());
-        let ptr: *mut Model = &mut *ptr;
-        let ptr = ptr.as_mut().unwrap();
-        Box::from_raw(ptr)
-    };
-    info!("Freeing model: {:#?}", model);
-    drop(model);
 }

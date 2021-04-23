@@ -1,12 +1,11 @@
 import 'generated/ffigen_binding.dart';
 import 'generated/rid_generated.dart';
-import 'dart:io';
 import 'dart:async';
 
 import 'log.dart';
 
 messages() {
-  final model = rid_ffi.init_model_ptr();
+  final model = rid_ffi.rid_export_Model_new();
   model.msgAddTodo("Hello");
   model.msgAddTodo("World");
   model.msgAddTodo("Hola");
@@ -51,15 +50,7 @@ messages() {
   log.d("restarting non-existent todo");
   model.msgRestartTodo(5);
 
-  rid_ffi.free_model_ptr(model);
-}
-
-interactive() {
-  final model = rid_ffi.init_model_ptr();
-  for (int i = 0; i < 100; i++) {
-    stdin.readLineSync;
-    model.msgAddTodo("todo_$i");
-  }
+  rid_ffi.rid_free_Model(model);
 }
 
 onError(Object error, StackTrace stack) {
