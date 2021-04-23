@@ -1,3 +1,5 @@
+use crate::common::state::ImplementationType;
+
 use super::state::get_state;
 use quote::{format_ident, quote_spanned};
 use rid_common::CSTRING_FREE;
@@ -44,7 +46,8 @@ pub fn resolve_string_ptr(arg: &syn::Ident, reassign: bool) -> Tokens {
 
 pub fn cstring_free() -> Tokens {
     let cstring_free_ident = format_ident!("{}", CSTRING_FREE);
-    if get_state().needs_implementation(CSTRING_FREE) {
+    if get_state().needs_implementation(&ImplementationType::Free, CSTRING_FREE)
+    {
         quote_spanned! {
             proc_macro2::Span::call_site() =>
             #[no_mangle]

@@ -75,11 +75,19 @@ impl Value {
                         let #res_pointer = #res_ident.clone() as i32;
                     }
                 }
-                C::Struct => {
-                    quote_spanned! { res_ident.span() =>
-                        let #res_pointer = #res_ident;
+                C::Struct => match reference {
+                    ParsedReference::Owned => {
+                        quote_spanned! { res_ident.span() =>
+                            let #res_pointer =
+                                std::boxed::Box::into_raw(std::boxed::Box::new(#res_ident));
+                        }
                     }
-                }
+                    ParsedReference::Ref(_) | ParsedReference::RefMut(_) => {
+                        quote_spanned! { res_ident.span() =>
+                            let #res_pointer = #res_ident;
+                        }
+                    }
+                },
                 C::Prim => {
                     quote_spanned! { res_ident.span() => let #res_pointer = #res_ident; }
                 }

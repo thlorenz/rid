@@ -8,7 +8,7 @@ use crate::{
             cstring_free, instance_ident, resolve_ptr, resolve_vec_ptr,
         },
         rust::ValueType,
-        state::get_state,
+        state::{get_state, ImplementationType},
         DartType, RustType,
     },
     render_dart::vec,
@@ -266,7 +266,10 @@ impl ParsedStruct {
                 let vec_type = format!("Vec_{}", item_ty);
                 let dart_item_type = DartType::try_from(&rust_type, &item_ty)
                     .expect("vec item type should be a valid dart type");
-                let vec_impl = if get_state().needs_implementation(&vec_type) {
+                let vec_impl = if get_state().needs_implementation(
+                    &ImplementationType::VecAccess,
+                    &vec_type,
+                ) {
                     implemented_vecs.push(vec::ImplementVecOld {
                         vec_type,
                         dart_item_type,

@@ -33,12 +33,6 @@ pub fn render_return_type(
     let type_tok = match kind {
         K::Primitive(prim) => render_primitive_return(prim),
         K::Value(val) => {
-            let reference =
-                if !is_in_return_type_position || reference.is_owned() {
-                    reference.clone()
-                } else {
-                    reference.ensured_lifetime(format_ident!("a"))
-                };
             let (alias, tokens ) = render_value_return(val, &reference);
             type_alias = alias;
             tokens
@@ -121,7 +115,7 @@ fn render_value_return(
             (None, quote! { *const ::std::os::raw::c_char })
         }
         V::Custom(info, name) => {
-            let (alias, ref_tok) = reference.render_pointer(name);
+            let (alias, ref_tok) = reference.render_pointer(name, false);
             (alias, quote_spanned! { info.key.span() => #ref_tok })
         }
     }

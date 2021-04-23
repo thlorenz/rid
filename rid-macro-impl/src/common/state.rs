@@ -1,6 +1,6 @@
 use std::{
     collections::{HashMap, HashSet},
-    fmt::Display,
+    fmt,
 };
 
 use quote::format_ident;
@@ -12,6 +12,24 @@ pub struct ExpandState {
     emitted_idents: Option<HashMap<Ident, u8>>,
 }
 
+pub enum ImplementationType {
+    VecAccess,
+    Free,
+}
+
+impl fmt::Display for ImplementationType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            ImplementationType::VecAccess => {
+                write!(f, "VecAccess")
+            }
+            ImplementationType::Free => {
+                write!(f, "Free")
+            }
+        }
+    }
+}
+
 impl ExpandState {
     fn init(&mut self) {
         if !self.initialized {
@@ -21,21 +39,23 @@ impl ExpandState {
         }
     }
 
-    pub fn needs_implementation(&mut self, implementation: &str) -> bool {
+    pub fn needs_implementation(
+        &mut self,
+        impl_type: &ImplementationType,
+        implementation: &str,
+    ) -> bool {
+        let key = format!("{} {}", impl_type, implementation);
         // We can just unwrap here since the only way anyone accesses the private STATE is via
         // get_state which ensures that the state is initialized
         if self
             .emitted_implementations
             .as_ref()
             .unwrap()
-            .contains(implementation)
+            .contains(&key)
         {
             false
         } else {
-            self.emitted_implementations
-                .as_mut()
-                .unwrap()
-                .insert(implementation.to_string());
+            self.emitted_implementations.as_mut().unwrap().insert(key);
             true
         }
     }
@@ -48,13 +68,14 @@ impl ExpandState {
         id
     }
 
-    pub fn need_implemtation<K: Display, V>(
+    pub fn need_implemtation<K: fmt::Display, V>(
         &mut self,
+        impl_type: &ImplementationType,
         all: HashMap<K, V>,
     ) -> Vec<V> {
         all.into_iter()
             .filter_map(|(k, v)| {
-                if self.needs_implementation(&k.to_string()) {
+                if self.needs_implementation(impl_type, &k.to_string()) {
                     Some(v)
                 } else {
                     None

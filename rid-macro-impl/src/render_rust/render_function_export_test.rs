@@ -35,6 +35,18 @@ fn render_vec_access(vec_access: Option<VecAccess>) -> (TokenStream, String) {
     }
 }
 
+fn render_frees(type_aliases: &[TypeAlias]) -> Vec<(TokenStream, String)> {
+    type_aliases
+        .iter()
+        .filter(|alias| alias.needs_free)
+        .map(|alias| {
+            let rust = alias.render_free(TokenStream::new());
+            let dart = "".to_string(); // TODO: alias.render_dart("");
+            (rust, dart)
+        })
+        .collect()
+}
+
 fn compare_strings_by_line(s1: &str, s2: &str) {
     let lines1: Vec<&str> = s1.lines().collect();
     let lines2: Vec<&str> = s2.lines().collect();
@@ -47,8 +59,12 @@ fn compare_strings_by_line(s1: &str, s2: &str) {
     for (idx, l1) in lines1.into_iter().enumerate() {
         let l1 = l1.trim();
         let l2 = lines2[idx].trim();
-        let error =
-            format!("\nlines differ:\n    \"{}\"\n    \"{}\"\n", l1, l2);
+        let error = format!(
+            "\nlines differ:\n    \"{line}: {l1}\"\n    \"{line}: {l2}\"\n",
+            line = idx + 1,
+            l1 = l1,
+            l2 = l2
+        );
         if l1 != l2 {
             panic_any(error);
         }
@@ -87,9 +103,14 @@ fn render_full(
         vec_access,
     } = render_function_export(&parsed_function, None, config);
     let (rust_vec_access, dart_vec_access) = render_vec_access(vec_access);
+    let frees = render_frees(&type_aliases);
+    // TODO: dart strings
+    let free_tokens = frees.into_iter().map(|(tokens, _)| tokens);
+
     let tokens = quote! {
         #tokens
         #rust_vec_access
+        #(#free_tokens)*
     };
     RenderedFunctionExportSimplified {
         tokens,
@@ -98,6 +119,7 @@ fn render_full(
     }
 }
 
+#[derive(Debug)]
 struct RenderedFunctionExportSimplified {
     tokens: TokenStream,
     dart_vec_access: String,
@@ -107,6 +129,7 @@ struct RenderedFunctionExportSimplified {
 fn render_impl(
     input: proc_macro2::TokenStream,
     owner: &str,
+    full: bool,
 ) -> RenderedFunctionExportSimplified {
     let config = Some(RenderFunctionExportConfig::bare());
     let type_info = TypeInfo::from((owner, attrs::Category::Struct));
@@ -125,9 +148,17 @@ fn render_impl(
         config,
     );
     let (rust_vec_access, dart_vec_access) = render_vec_access(vec_access);
+    let free_tokens = if full {
+        let frees = render_frees(&type_aliases);
+        // TODO: dart strings
+        frees.into_iter().map(|(tokens, _)| tokens).collect()
+    } else {
+        Vec::new()
+    };
     let tokens = quote! {
         #tokens
         #rust_vec_access
+        #(#free_tokens)*
     };
     RenderedFunctionExportSimplified {
         tokens,
@@ -210,7 +241,7 @@ mod no_args_composite_vec_return_full {
                 let ret_ptr = rid::RidVec::from(ret);
                 ret_ptr
             }
-            fn rid_free_Vec(arg: rid::RidVec<u8>) {
+            fn rid_free_vec_Vec(arg: rid::RidVec<u8>) {
                 arg.free();
             }
             fn rid_get_item_Vec(vec: rid::RidVec<u8>, idx: usize) -> u8 {
@@ -222,6 +253,7 @@ mod no_args_composite_vec_return_full {
 
         /* TODO: rendering dart access functions for Vec<primitive> is not properly
          * implemented yet. Mainly vec return type is wrong.
+         * Same issue affects `rid_free_..|rid_get_item_..` rust function names above
             let expected_dart = include_str!(
                 "./fixtures/function_export.return_vec_u8.dart.snapshot"
             );
@@ -244,7 +276,7 @@ mod no_args_composite_vec_return_full {
                 let ret_ptr = rid::RidVec::from(vec_with_pointers);
                 ret_ptr
             }
-            fn rid_free_Pointer_MyStruct(arg: rid::RidVec<Pointer_MyStruct>) {
+            fn rid_free_vec_Pointer_MyStruct(arg: rid::RidVec<Pointer_MyStruct>) {
                 arg.free();
             }
             fn rid_get_item_Pointer_MyStruct(
@@ -254,6 +286,7 @@ mod no_args_composite_vec_return_full {
                 vec[idx]
             }
         };
+
         assert_eq!(res.tokens.to_string(), expected.to_string());
         assert_eq!(res.type_aliases, "Pointer_MyStruct");
 
@@ -290,9 +323,9 @@ mod no_args_string_return {
 }
 
 // -----------------
-// Impl Method no args
+// Impl Instance Methods no args
 // -----------------
-mod impl_method {
+mod impl_instance_methods {
     use super::*;
 
     #[test]
@@ -303,6 +336,7 @@ mod impl_method {
                 fn id(&self) -> u32 { self.id }
             },
             "Model",
+            false,
         );
         let expected = quote! {
             fn rid_export_Model_id(ptr: Pointer_Model) -> u32 {
@@ -354,6 +388,7 @@ mod impl_method {
                 fn first(&self) -> &Item { &self.id }
             },
             "Model",
+            false,
         );
         let expected = quote! {
             fn rid_export_Model_first(ptr: Pointer_Model) -> Pointer_Item {
@@ -368,5 +403,38 @@ mod impl_method {
         };
         assert_eq!(res.tokens.to_string(), expected.to_string());
         assert_eq!(res.type_aliases, "Pointer_Item, Pointer_Model");
+    }
+}
+mod impl_static_methods {
+    use super::*;
+    #[test]
+    fn no_args_return_receiver_owned_by_name() {
+        let res = render_impl(
+            quote! {
+                #[rid::export]
+                fn new() -> Model { todo!() }
+            },
+            "Model",
+            true,
+        );
+        let expected = quote! {
+            fn rid_export_Model_new() -> PointerMut_Model {
+                let ret = Model::new();
+                let ret_ptr = std::boxed::Box::into_raw(std::boxed::Box::new(ret));
+                ret_ptr
+            }
+            fn rid_free_Model(ptr: PointerMut_Model) {
+                let instance = unsafe {
+                    assert!(!ptr.is_null());
+                    let ptr: PointerMut_Model = &mut *ptr;
+                    let ptr = ptr.as_mut().unwrap();
+                    Box::from_raw(ptr)
+                };
+                drop(instance);
+            }
+        };
+
+        assert_eq!(res.tokens.to_string(), expected.to_string());
+        // TODO: verify rendered dart
     }
 }

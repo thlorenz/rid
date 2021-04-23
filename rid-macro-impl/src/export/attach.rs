@@ -1,11 +1,11 @@
 use std::collections::HashMap;
 
 use crate::{
-    common::state::get_state,
+    common::state::{get_state, ImplementationType},
     parse::{ParsedFunction, ParsedImplBlock},
     render_common::{render_vec_accesses, VecAccess},
     render_dart,
-    render_rust::{self, TypeAlias},
+    render_rust::{self, ffi_prelude, TypeAlias},
 };
 
 use crate::{attrs::parse_rid_attrs, common::abort};
@@ -23,7 +23,8 @@ pub fn rid_export_impl(
         syn::Item::Impl(item) => {
             let attrs = parse_rid_attrs(&item.attrs);
             let parsed = ParsedImplBlock::new(item, &attrs);
-            let mut needed_type_aliases = HashMap::<Ident, TokenStream>::new();
+            let mut typedefs = HashMap::<Ident, TokenStream>::new();
+            let mut frees = HashMap::<String, TypeAlias>::new();
             let mut vec_accesses = HashMap::<Ident, VecAccess>::new();
             let rust_fn_tokens = &parsed
                 .methods
@@ -38,8 +39,25 @@ pub fn rid_export_impl(
                         Some(parsed.ty.ident.clone()),
                         Default::default(),
                     );
-                    for TypeAlias { alias, typedef } in type_aliases {
-                        needed_type_aliases.insert(alias, typedef);
+                    for TypeAlias {
+                        alias,
+                        typedef,
+                        type_name,
+                        needs_free,
+                    } in type_aliases
+                    {
+                        typedefs.insert(alias.clone(), typedef.clone());
+                        if needs_free {
+                            frees.insert(
+                                type_name.clone(),
+                                TypeAlias {
+                                    alias,
+                                    typedef,
+                                    type_name,
+                                    needs_free,
+                                },
+                            );
+                        }
                     }
                     vec_access.map(|x| {
                         vec_accesses.insert(x.vec_type.ident.clone(), x)
@@ -53,18 +71,25 @@ pub fn rid_export_impl(
             let dart_extension_tokens =
                 render_instance_method_extension(&parsed, None);
 
-            let typedef_tokens: Vec<&TokenStream> =
-                needed_type_aliases.values().collect();
-
             // Make sure we name the module differently for structs that have multiple impl blocks
             let module_ident = get_state()
                 .unique_ident(format_ident!("__rid_{}_impl", parsed.ty.ident));
 
-            let needed_vec_accesses =
-                get_state().need_implemtation(vec_accesses);
+            let needed_vec_accesses = get_state().need_implemtation(
+                &ImplementationType::VecAccess,
+                vec_accesses,
+            );
+
+            let needed_frees = get_state()
+                .need_implemtation(&ImplementationType::Free, frees.clone());
+            let free_tokens = needed_frees
+                .into_iter()
+                .map(|x| x.render_free(ffi_prelude()));
 
             let vec_access_tokens =
                 render_vec_accesses(&needed_vec_accesses, "///");
+
+            let typedef_tokens: Vec<&TokenStream> = typedefs.values().collect();
 
             quote! {
                 #[allow(non_snake_case)]
@@ -74,6 +99,7 @@ pub fn rid_export_impl(
                     #dart_extension_tokens
                     #(#rust_fn_tokens)*
                     #(#vec_access_tokens)*
+                    #(#free_tokens)*
                 }
             }
         }

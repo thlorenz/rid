@@ -11,7 +11,7 @@ use crate::{
     render_common::{
         fn_ident_and_impl_ident_string, RenderFunctionExportConfig, VecAccess,
     },
-    render_rust::{RenderedArgsPass, TypeAlias},
+    render_rust::{ffi_prelude, RenderedArgsPass, TypeAlias},
 };
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote, quote_spanned};
@@ -43,11 +43,7 @@ pub fn render_function_export(
     let return_ident = format_ident!("ret");
     let return_pointer_ident = format_ident!("ret_ptr");
     let ffi_prelude = match config.include_ffi {
-        true => quote! {
-            #[no_mangle]
-            #[allow(non_snake_case)]
-            pub extern "C"
-        },
+        true => ffi_prelude(),
         false => TokenStream::new(),
     };
 
@@ -104,7 +100,7 @@ pub fn render_function_export(
         };
 
         let fn_len_ident = format_ident!("rid_len_{}", ret_ident);
-        let fn_free_ident = format_ident!("rid_free_{}", ret_ident);
+        let fn_free_ident = format_ident!("rid_free_vec_{}", ret_ident);
         let fn_get_ident = format_ident!("rid_get_item_{}", ret_ident);
 
         let item_type = return_arg

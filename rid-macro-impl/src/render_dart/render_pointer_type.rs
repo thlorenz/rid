@@ -9,6 +9,7 @@ use crate::{
         rust_type::{Composite, RustType, TypeKind, Value},
         ParsedReference,
     },
+    render_rust::TypeAlias,
 };
 
 impl RustType {
@@ -27,7 +28,8 @@ impl RustType {
                     let item_type = ty.ident.to_string();
 
                     let pointer = format!(
-                        "{ffigen_bind}.RidVec_Pointer_{ty}",
+                        "{ffigen_bind}.RidVec_{pointer_prefix}{ty}",
+                        pointer_prefix = TypeAlias::POINTER_ALIAS_PREFIX,
                         ffigen_bind = FFI_GEN_BIND,
                         ty = &item_type
                     );

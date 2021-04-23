@@ -79,7 +79,8 @@ impl Value {
                 (None, quote! { *const ::std::os::raw::c_char })
             }
             Value::Custom(info, name) => {
-                let (alias, aliased_tok) = reference.render_pointer(name);
+                let (alias, aliased_tok) =
+                    reference.render_pointer(name, false);
                 (alias, quote_spanned! { info.key.span() => #aliased_tok })
             }
         }
