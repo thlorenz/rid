@@ -35,6 +35,7 @@ pub fn render_function_export(
 
     let ParsedFunction {
         fn_ident,
+        fn_ident_alias,
         receiver,
         args,
         return_arg,
@@ -49,6 +50,8 @@ pub fn render_function_export(
 
     let (rid_fn_ident, rid_impl_ident_str) =
         fn_ident_and_impl_ident_string(&fn_ident, &impl_ident);
+
+    let rid_export_ident = fn_ident_alias.as_ref().unwrap_or(&rid_fn_ident);
 
     let static_impl_call_tok = match &impl_ident {
         Some(ident) => quote! { #ident:: },
@@ -84,7 +87,7 @@ pub fn render_function_export(
 
     let fn_export = quote_spanned! { fn_ident.span() =>
         #ffi_prelude
-        fn #rid_fn_ident(#arg_pass) -> #ret_type {
+        fn #rid_export_ident(#arg_pass) -> #ret_type {
             #arg_resolve
             let #return_ident = #static_impl_call_tok#fn_call;
             #ret_to_pointer

@@ -1,3 +1,5 @@
+use quote::format_ident;
+
 use super::{
     rust_type::{RustType, TypeKind},
     ParsedReceiver, ParsedReference,
@@ -9,9 +11,19 @@ use crate::{
 
 #[derive(Debug)]
 pub struct ParsedFunction {
+    /// Ident of original exported function
     pub fn_ident: syn::Ident,
+
+    /// Ident to which the function wrapping the original one should be aliased
+    pub fn_ident_alias: Option<syn::Ident>,
+
+    /// Self of instance methods
     pub receiver: Option<ParsedReceiver>,
+
+    /// Function args besides the receiver
     pub args: Vec<RustType>,
+
+    /// The type of arg returned by the original function
     pub return_arg: RustType,
 }
 
@@ -96,8 +108,11 @@ impl ParsedFunction {
             None => return_arg,
         };
 
+        let fn_ident_alias = config.fn_export_alias.clone();
+
         Self {
             fn_ident: ident,
+            fn_ident_alias,
             receiver,
             args,
             return_arg,

@@ -9,6 +9,7 @@ use super::{add_idents_to_type_map, Category, RidAttr, TypeInfo, TypeInfoMap};
 pub struct FunctionConfig {
     pub type_infos: TypeInfoMap,
     pub is_exported: bool,
+    pub fn_export_alias: Option<Ident>,
 }
 
 impl FunctionConfig {
@@ -19,6 +20,7 @@ impl FunctionConfig {
         // TODO: very much duplicated from ./config_impl_block.rs @see there for more info
         let mut type_infos: TypeInfoMap = TypeInfoMap(HashMap::new());
         let mut is_exported: bool = false;
+        let mut fn_export_alias: Option<Ident> = None;
         for attr in attrs {
             match attr {
                 RidAttr::Structs(attr_ident, idents) => add_idents_to_type_map(
@@ -37,7 +39,10 @@ impl FunctionConfig {
                         "cannot have rid::message attribute on functions or methods"
                     );
                 }
-                RidAttr::Export(attr_ident) => is_exported = true,
+                RidAttr::Export(attr_ident, name) => {
+                    is_exported = true;
+                    fn_export_alias = name.clone();
+                }
                 // The below are invalid on a function but already checked by Rust itself
                 RidAttr::DeriveDebug(_) => {}
             }
@@ -65,6 +70,7 @@ impl FunctionConfig {
         Self {
             type_infos,
             is_exported,
+            fn_export_alias,
         }
     }
 }

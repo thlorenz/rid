@@ -16,7 +16,7 @@ pub enum RidAttr {
     Structs(Ident, Vec<syn::Ident>),
     Enums(Ident, Vec<syn::Ident>),
     Message(Ident, syn::Ident),
-    Export(Ident),
+    Export(Ident, Option<Ident>),
 
     // derives
     DeriveDebug(Ident),
@@ -116,8 +116,15 @@ fn parse_segments(
                         ))
                     }
                     "export" => {
-                        validate_empty(&second, &idents, "rid::export attributes don't support arguments and should always be just #[rid::export]");
-                        Some(RidAttr::Export(second.clone()))
+                        if idents.is_empty() {
+                            Some(RidAttr::Export(second.clone(), None))
+                        } else {
+                            validate_single(&second, &idents, "Empty 'rid::exports' calls take exactly one argument, use either '#[rid::exports]' or #[rid::exports(fn_name)]");
+                            Some(RidAttr::Export(
+                                second.clone(),
+                                Some(idents[0].clone()),
+                            ))
+                        }
                     }
                     _ => None,
                 }

@@ -37,6 +37,7 @@ mod base_case {
             receiver,
             args,
             return_arg: RustType { kind: ret_ty, .. },
+            ..
         } = parse(quote! {
             fn me() {}
         });
@@ -58,6 +59,7 @@ mod return_arg {
             receiver,
             args,
             return_arg: RustType { kind: ret_ty, .. },
+            ..
         } = parse(quote! {
             fn me() -> u8 {}
         });
@@ -80,6 +82,7 @@ mod return_arg {
                     reference,
                     ..
                 },
+            ..
         } = parse(quote! {
             #[rid::structs(Todo)]
             fn get_todo() -> &Todo {}
@@ -172,6 +175,7 @@ mod multiple_args {
             receiver,
             args,
             return_arg: RustType { kind: ret_ty, .. },
+            ..
         } = parse(quote! {
             fn me(id: i32, s: String) -> String {}
         });
@@ -231,6 +235,7 @@ mod receiver {
             receiver,
             args,
             return_arg: RustType { kind: ret_ty, .. },
+            ..
         } = parse(
             quote! {
                 fn me(&self) {}
@@ -258,6 +263,7 @@ mod receiver {
             receiver,
             args,
             return_arg: RustType { kind: ret_ty, .. },
+            ..
         } = parse(
             quote! {
                 fn me(&mut self, id: usize) {}
@@ -290,6 +296,7 @@ mod receiver {
             receiver,
             args,
             return_arg: RustType { kind: ret_ty, .. },
+            ..
         } = parse(
             quote! {
                 fn me(self) {}

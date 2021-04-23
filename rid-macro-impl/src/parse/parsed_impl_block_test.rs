@@ -56,6 +56,7 @@ mod self_aliasing {
 
         let ParsedFunction {
             fn_ident,
+            fn_ident_alias,
             receiver,
             args,
             return_arg:
@@ -67,6 +68,7 @@ mod self_aliasing {
         } = &methods[0];
 
         assert_eq!(fn_ident.to_string(), "new", "function name");
+        assert_eq!(fn_ident_alias, &None, "no export ident");
         assert_eq!(*receiver, None, "no receiver");
         assert_eq!(args.len(), 1, "one");
 
@@ -96,7 +98,8 @@ mod method_exports {
     use super::*;
 
     #[test]
-    fn impl_block_with_four_methods_three_with_rid_export_attr() {
+    fn impl_block_with_four_methods_three_with_rid_export_attr_new_aliased_to_init_model(
+    ) {
         let mystruct_str = "MyStruct".to_string();
 
         let ParsedImplBlock {
@@ -110,7 +113,7 @@ mod method_exports {
         } = parse(quote! {
             #[rid::export]
             impl MyStruct {
-                #[rid::export]
+                #[rid::export(initModel)]
                 pub fn new(id: u8) -> Self {
                     Self { id }
                 }
@@ -145,12 +148,18 @@ mod method_exports {
         // First Method: pub fn new(id: u8) -> Self
         let ParsedFunction {
             fn_ident,
+            fn_ident_alias,
             receiver,
             args,
             return_arg: RustType { kind: ret_ty, .. },
         } = &methods[0];
 
         assert_eq!(fn_ident.to_string(), "new", "function ident");
+        assert_eq!(
+            fn_ident_alias.as_ref().unwrap().to_string(),
+            "initModel",
+            "'initModel' export ident"
+        );
         assert_eq!(
             ret_ty, &owner_ty,
             "new() -> Self return type is owning struct"
@@ -166,12 +175,14 @@ mod method_exports {
         // Second Method: pub fn get_id(&self) -> u8
         let ParsedFunction {
             fn_ident,
+            fn_ident_alias,
             receiver,
             args,
             return_arg: RustType { kind: ret_ty, .. },
         } = &methods[1];
 
         assert_eq!(fn_ident.to_string(), "get_id", "function ident");
+        assert_eq!(fn_ident_alias, &None, "no export ident");
         assert_eq!(args.len(), 0, "no arg");
         assert_matches!(
             receiver,
@@ -186,11 +197,13 @@ mod method_exports {
         // Third Method: pub fn set_id(&mut self, id: u8)
         let ParsedFunction {
             fn_ident,
+            fn_ident_alias,
             receiver,
             args,
             return_arg: RustType { kind: ret_ty, .. },
         } = &methods[2];
         assert_eq!(fn_ident.to_string(), "set_id", "function ident");
+        assert_eq!(fn_ident_alias, &None, "no export ident");
         assert_eq!(args.len(), 1, "one arg");
         assert_eq!(
             args[0].kind,

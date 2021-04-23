@@ -41,13 +41,23 @@ mod exports {
     use super::*;
 
     #[test]
-    fn single_export() {
+    fn single_export_unaliased() {
         let attrs = parse(quote! {
             #[rid::export]
             fn noop(){}
         });
         let attrs = format!("{:?}", attrs);
-        assert_eq!(attrs, "[Export(Ident(export))]");
+        assert_eq!(attrs, "[Export(Ident(export), None)]");
+    }
+
+    #[test]
+    fn single_export_aliased() {
+        let attrs = parse(quote! {
+            #[rid::export(noopAlias)]
+            fn noop(){}
+        });
+        let attrs = format!("{:?}", attrs);
+        assert_eq!(attrs, "[Export(Ident(export), Some(Ident(noopAlias)))]");
     }
 }
 

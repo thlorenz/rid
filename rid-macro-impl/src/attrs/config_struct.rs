@@ -35,7 +35,7 @@ impl StructConfig {
                         "cannot have rid::message attribute on structs"
                     );
                 }
-                RidAttr::Export(attr_ident) => {
+                RidAttr::Export(attr_ident, _) => {
                     abort!(
                         attr_ident,
                         "cannot have rid::export attribute on structs"

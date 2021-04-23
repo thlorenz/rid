@@ -37,7 +37,13 @@ impl ImplBlockConfig {
                         "cannot have rid::message attribute on impl blocks"
                     );
                 }
-                RidAttr::Export(attr_ident) => is_exported = true,
+                RidAttr::Export(attr_ident, name) => {
+                    if name.is_some() {
+                        abort!(attr_ident, "impl block exports cannot define name and should always be just '#[rid::export]'")
+                    } else {
+                        is_exported = true;
+                    }
+                }
                 // The below are invalid on an impl block but already checked by Rust itself
                 RidAttr::DeriveDebug(_) => {}
             }

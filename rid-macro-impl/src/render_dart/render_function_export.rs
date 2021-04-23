@@ -19,6 +19,7 @@ pub fn render_function_export(
 
     let ParsedFunction {
         fn_ident,
+        fn_ident_alias,
         receiver,
         args,
         return_arg,
@@ -35,6 +36,9 @@ pub fn render_function_export(
         indent,
         &comment,
     );
+
+    let export_ident = fn_ident_alias.as_ref().unwrap_or(fn_ident);
+
     format!(
         r###"
 {comment}{indent}{return_pointer_type} {fn_name}() {{
@@ -42,7 +46,7 @@ pub fn render_function_export(
 {comment}{indent}}}
 "###,
         return_pointer_type = return_pointer_type,
-        fn_name = fn_ident,
+        fn_name = export_ident,
         fn_body = fn_body,
         comment = comment,
         indent = indent
