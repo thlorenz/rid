@@ -5,7 +5,7 @@ import 'dart:async';
 import 'log.dart';
 
 messages() {
-  final model = rid_ffi.rid_export_Model_new();
+  final model = rid_ffi.initModel();
   model.msgAddTodo("Hello");
   model.msgAddTodo("World");
   model.msgAddTodo("Hola");

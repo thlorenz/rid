@@ -17,9 +17,7 @@ pub struct Model {
 
 #[rid::export]
 impl Model {
-    // TODO: allow specifying under which name (at least on the dart side) this gets exposed
-    // #[rid::export("desired_name")]?
-    #[rid::export]
+    #[rid::export(initModel)]
     fn new() -> Self {
         Self {
             last_added_id: 0,

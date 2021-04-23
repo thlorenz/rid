@@ -6,14 +6,14 @@ import 'dart:async';
 import 'log.dart';
 
 printFiltered(Pointer<Model> model) {
-  final filtered = model.filter_todos();
+  final filtered = model.filtered_todos();
   final list = filtered.iter().toList();
   filtered.dispose();
   log.i("\n${list.first.debug(true)}");
 }
 
 main() {
-  final model = rid_ffi.rid_export_Model_new();
+  final model = rid_ffi.initModel();
   log.i("\n${model.debug(true)}");
   printFiltered(model);
   printFiltered(model);

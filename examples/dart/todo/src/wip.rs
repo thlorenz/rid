@@ -14,7 +14,7 @@ pub struct Todo {
 
 #[rid::export]
 impl Model {
-    #[rid::export]
+    #[rid::export(initModel)]
     fn new() -> Model {
         Self {
             todos: vec![
@@ -32,7 +32,7 @@ impl Model {
 
     #[rid::export]
     #[rid::structs(Todo)]
-    fn filter_todos(&self) -> Vec<&Todo> {
+    fn filtered_todos(&self) -> Vec<&Todo> {
         self.todos.iter().filter(|x| x.id > 0).collect()
     }
 }

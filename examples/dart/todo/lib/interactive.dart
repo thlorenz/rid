@@ -101,7 +101,7 @@ printCommands() {
 }
 
 interactive() {
-  final model = rid_ffi.rid_export_Model_new();
+  final model = rid_ffi.initModel();
   {
     model.msgAddTodo("Complete this Todo via:     cmp 1");
     model.msgAddTodo("Delete this Todo via:       del 2");
