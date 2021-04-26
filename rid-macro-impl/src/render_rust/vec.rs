@@ -1,11 +1,10 @@
 use proc_macro2::TokenStream;
 use quote::quote;
 
-use crate::render_common::VecAccess;
+use crate::render_common::{TypeAlias, VecAccess};
 
 use super::{
     render_access_item, render_free, RenderedAccessItem, RenderedFree,
-    TypeAlias,
 };
 
 pub struct RenderedVecRust {

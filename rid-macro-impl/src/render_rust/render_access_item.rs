@@ -1,13 +1,14 @@
-use super::{
-    render_lifetime_def, render_return_type, RenderedReturnType, TypeAlias,
-};
+use super::{render_lifetime_def, render_return_type, RenderedReturnType};
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote, quote_spanned};
 use syn::Ident;
 
-use crate::parse::{
-    rust_type::{Composite, Primitive, RustType, TypeKind, Value},
-    ParsedFunction, ParsedReference,
+use crate::{
+    parse::{
+        rust_type::{Composite, Primitive, RustType, TypeKind, Value},
+        ParsedFunction, ParsedReference,
+    },
+    render_common::TypeAlias,
 };
 
 pub struct RenderedAccessItem {

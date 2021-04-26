@@ -7,13 +7,12 @@ use crate::{
     attrs::{self, FunctionConfig, TypeInfo, TypeInfoMap},
     parse::ParsedFunction,
     render_common::{
-        render_vec_accesses, RenderFunctionExportConfig, VecAccess,
+        render_vec_accesses, RenderFunctionExportConfig, TypeAlias, VecAccess,
     },
 };
 
 use super::{
     render_function_export::render_function_export, RenderedFunctionExport,
-    TypeAlias,
 };
 
 fn stringify_type_aliases(type_aliases: &[TypeAlias]) -> String {
@@ -40,7 +39,7 @@ fn render_frees(type_aliases: &[TypeAlias]) -> Vec<(TokenStream, String)> {
         .iter()
         .filter(|alias| alias.needs_free)
         .map(|alias| {
-            let rust = alias.render_free(TokenStream::new());
+            let (_, rust) = alias.render_free(TokenStream::new());
             let dart = "".to_string(); // TODO: alias.render_dart("");
             (rust, dart)
         })

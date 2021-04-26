@@ -9,29 +9,10 @@ use crate::{
         rust_type::{RustType, TypeKind, Value},
         ParsedReceiver,
     },
+    render_common::TypeAlias,
 };
 
-use super::{render_pointer_type, render_to_return_type, TypeAlias};
-
-/*
-    #[no_mangle]
-    pub extern "C" fn get_id_mut(ptr: *mut Model) -> u32 {
-        let model: &mut Model = unsafe {
-            assert!(!ptr.is_null());
-            ptr.as_mut().unwrap()
-        };
-        Model::id(model)
-    }
-
-    #[no_mangle]
-    pub extern "C" fn get_id_ref(ptr: *const Model) -> u32 {
-        let model: &Model = unsafe {
-            assert!(!ptr.is_null());
-            ptr.as_ref().unwrap()
-        };
-        Model::id(model)
-    }
-*/
+use super::{render_pointer_type, render_to_return_type};
 
 // NOTE: for now assuming that all receivers are custom structs
 pub struct ReceiverArg {

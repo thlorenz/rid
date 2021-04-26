@@ -3,9 +3,9 @@ use std::collections::HashMap;
 use crate::{
     common::state::{get_state, ImplementationType},
     parse::{ParsedFunction, ParsedImplBlock},
-    render_common::{render_vec_accesses, VecAccess},
+    render_common::{render_vec_accesses, TypeAlias, VecAccess},
     render_dart,
-    render_rust::{self, ffi_prelude, TypeAlias},
+    render_rust::{self, ffi_prelude, render_free, RenderedTypeAliasInfo},
 };
 
 use crate::{attrs::parse_rid_attrs, common::abort};
@@ -14,6 +14,17 @@ use quote::{format_ident, quote};
 use proc_macro2::TokenStream;
 use render_dart::render_instance_method_extension;
 use syn::Ident;
+
+fn unpack_tuples<T, U>(tpls: Vec<(T, U)>) -> (Vec<T>, Vec<U>) {
+    let mut xs: Vec<T> = Vec::with_capacity(tpls.len());
+    let mut ys: Vec<U> = Vec::with_capacity(tpls.len());
+    for (x, y) in tpls {
+        xs.push(x);
+        ys.push(y);
+    }
+
+    (xs, ys)
+}
 
 pub fn rid_export_impl(
     item: syn::Item,
@@ -67,10 +78,6 @@ pub fn rid_export_impl(
                 })
                 .collect::<Vec<TokenStream>>();
 
-            // TODO: non-instance method strings
-            let dart_extension_tokens =
-                render_instance_method_extension(&parsed, None);
-
             // Make sure we name the module differently for structs that have multiple impl blocks
             let module_ident = get_state()
                 .unique_ident(format_ident!("__rid_{}_impl", parsed.ty.ident));
@@ -82,9 +89,25 @@ pub fn rid_export_impl(
 
             let needed_frees = get_state()
                 .need_implemtation(&ImplementationType::Free, frees.clone());
-            let free_tokens = needed_frees
+            let rendered_frees = needed_frees
                 .into_iter()
-                .map(|x| x.render_free(ffi_prelude()));
+                .map(|x| x.render_free(ffi_prelude()))
+                .collect();
+
+            let (infos, free_tokens) = unpack_tuples(rendered_frees);
+
+            // TODO: non-instance method strings
+
+            let dart_free_extensions_tokens = infos.into_iter().map(
+                |RenderedTypeAliasInfo { alias, fn_ident }| {
+                    parsed
+                        .ty
+                        .render_dart_dispose_extension(fn_ident, &alias, "///")
+                },
+            );
+
+            let dart_extension_tokens =
+                render_instance_method_extension(&parsed, None);
 
             let vec_access_tokens =
                 render_vec_accesses(&needed_vec_accesses, "///");
@@ -99,6 +122,7 @@ pub fn rid_export_impl(
                     #dart_extension_tokens
                     #(#rust_fn_tokens)*
                     #(#vec_access_tokens)*
+                    #(#dart_free_extensions_tokens)*
                     #(#free_tokens)*
                 }
             }

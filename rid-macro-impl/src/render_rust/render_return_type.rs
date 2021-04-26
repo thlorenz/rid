@@ -4,12 +4,11 @@ use crate::{
         rust_type::{Composite, Primitive, RustType, TypeKind, Value},
         ParsedReference,
     },
+    render_common::TypeAlias,
 };
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote, quote_spanned};
 use syn::Ident;
-
-use super::TypeAlias;
 
 pub struct RenderedReturnType {
     pub tokens: TokenStream,

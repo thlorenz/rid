@@ -1,12 +1,13 @@
 use proc_macro2::TokenStream;
 
-use crate::parse::{
-    rust_type::{Composite, Primitive, RustType, TypeKind, Value},
-    ParsedReference,
+use crate::{
+    parse::{
+        rust_type::{Composite, Primitive, RustType, TypeKind, Value},
+        ParsedReference,
+    },
+    render_common::TypeAlias,
 };
 use quote::{format_ident, quote, quote_spanned};
-
-use super::TypeAlias;
 
 /// C style pointer type for a given RustType, i.e. `*const Model`
 pub struct RenderedPointerType {

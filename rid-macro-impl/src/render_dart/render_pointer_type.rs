@@ -9,7 +9,7 @@ use crate::{
         rust_type::{Composite, RustType, TypeKind, Value},
         ParsedReference,
     },
-    render_rust::TypeAlias,
+    render_common::TypeAlias,
 };
 
 impl RustType {

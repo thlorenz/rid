@@ -1,9 +1,8 @@
-use super::TypeAlias;
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
 use syn::Ident;
 
-use crate::parse::ParsedReference;
+use crate::{parse::ParsedReference, render_common::TypeAlias};
 impl ParsedReference {
     pub fn stringify_lifetime(&self) -> String {
         match self.lifetime() {

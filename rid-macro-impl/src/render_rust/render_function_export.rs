@@ -9,9 +9,10 @@ use crate::{
         ParsedFunction, ParsedReceiver, ParsedReference,
     },
     render_common::{
-        fn_ident_and_impl_ident_string, RenderFunctionExportConfig, VecAccess,
+        fn_ident_and_impl_ident_string, RenderFunctionExportConfig, TypeAlias,
+        VecAccess,
     },
-    render_rust::{ffi_prelude, RenderedArgsPass, TypeAlias},
+    render_rust::{ffi_prelude, RenderedArgsPass},
 };
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote, quote_spanned};
