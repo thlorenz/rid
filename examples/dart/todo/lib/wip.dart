@@ -17,5 +17,5 @@ main() {
   log.i("\n${model.debug(true)}");
   printFiltered(model);
   printFiltered(model);
-  rid_ffi.rid_free_Model(model);
+  model.dispose();
 }

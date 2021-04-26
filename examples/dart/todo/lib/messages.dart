@@ -50,7 +50,7 @@ messages() {
   log.d("restarting non-existent todo");
   model.msgRestartTodo(5);
 
-  rid_ffi.rid_free_Model(model);
+  model.dispose();
 }
 
 onError(Object error, StackTrace stack) {

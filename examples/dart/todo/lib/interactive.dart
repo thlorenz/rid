@@ -127,8 +127,7 @@ interactive() {
       }
     }
   }
-  // TODO: expose via model.dispose()
-  rid_ffi.rid_free_Model(model);
+  model.dispose();
 }
 
 void main(List<String> args) {
