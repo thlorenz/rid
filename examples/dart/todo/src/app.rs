@@ -2,6 +2,8 @@
 #[macro_use]
 extern crate log;
 
+use std::fmt::Display;
+
 // -----------------
 // Main Model
 // -----------------
@@ -117,12 +119,22 @@ impl Ord for Todo {
 // -----------------
 // Filter
 // -----------------
-#[derive(Clone, Debug)]
-#[repr(u8)]
+#[derive(Clone, Debug, rid::Display)]
+#[repr(C)]
 pub enum Filter {
     Completed,
     Pending,
     All,
+}
+
+impl Display for Filter {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Filter::Completed => write!(f, "Completed"),
+            Filter::Pending => write!(f, "Pending"),
+            Filter::All => write!(f, "All"),
+        }
+    }
 }
 
 // -----------------

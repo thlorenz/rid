@@ -1,3 +1,4 @@
+use quote::format_ident;
 use syn::{
     AngleBracketedGenericArguments, GenericArgument, Ident, Path,
     PathArguments, PathSegment, Type, TypePath,
@@ -5,7 +6,7 @@ use syn::{
 
 use std::fmt::Debug;
 
-use crate::attrs::{TypeInfo, TypeInfoMap};
+use crate::attrs::{Category, TypeInfo, TypeInfoMap};
 
 use super::ParsedReference;
 
@@ -27,6 +28,33 @@ impl RustType {
             kind,
             reference,
         }
+    }
+
+    /// Used at this point only to name Dart presentations of Rust enums
+    pub fn dart_ident(&self) -> Ident {
+        format_ident!("Rid{}", self.ident)
+    }
+
+    pub fn from_owned_struct(ident: &Ident) -> Self {
+        let type_info = TypeInfo {
+            cat: Category::Struct,
+            key: ident.clone(),
+        };
+        let value = Value::Custom(type_info, ident.to_string());
+        let kind = TypeKind::Value(value);
+        let reference = ParsedReference::Owned;
+        Self::new(ident.clone(), kind, reference)
+    }
+
+    pub fn from_owned_enum(ident: &Ident) -> Self {
+        let type_info = TypeInfo {
+            cat: Category::Enum,
+            key: ident.clone(),
+        };
+        let value = Value::Custom(type_info, ident.to_string());
+        let kind = TypeKind::Value(value);
+        let reference = ParsedReference::Owned;
+        Self::new(ident.clone(), kind, reference)
     }
 
     pub fn self_unaliased(self, owner_name: String) -> Self {
@@ -91,6 +119,16 @@ impl RustType {
             TypeKind::Composite(_, _) => None,
             TypeKind::Unit => None,
             TypeKind::Unknown => None,
+        }
+    }
+
+    pub fn is_enum(&self) -> bool {
+        match &self.kind {
+            TypeKind::Primitive(_) => false,
+            TypeKind::Value(val) => val.is_enum(),
+            TypeKind::Composite(_, _) => false,
+            TypeKind::Unit => false,
+            TypeKind::Unknown => false,
         }
     }
 }
@@ -215,6 +253,14 @@ impl Value {
                 Self::Custom(type_info, owner_name)
             }
             _ => self,
+        }
+    }
+
+    fn is_enum(&self) -> bool {
+        use Value::*;
+        match self {
+            CString | String | Str => false,
+            Custom(type_info, _) => type_info.cat == Category::Enum,
         }
     }
 }

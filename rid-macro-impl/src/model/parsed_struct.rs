@@ -1,6 +1,6 @@
 use super::dart::GetterBody;
 use crate::{
-    attrs::{self, StructConfig, TypeInfoMap},
+    attrs::{self, StructConfig, TypeInfo, TypeInfoMap},
     common::{
         errors::type_error,
         parsed_field::ParsedField,
@@ -11,14 +11,33 @@ use crate::{
         state::{get_state, ImplementationType},
         DartType, RustType,
     },
+    parse::{
+        rust_type::{self, TypeKind, Value},
+        ParsedReference,
+    },
     render_dart::vec,
+    render_rust::RenderedStructDebugImpl,
 };
+use proc_macro2::TokenStream;
 use rid_common::{DART_FFI, FFI_GEN_BIND, RID_FFI};
 
 use quote::{format_ident, quote, quote_spanned};
 use syn::{punctuated::Punctuated, token::Comma, Field};
 
 type Tokens = proc_macro2::TokenStream;
+
+pub struct RenderedRustImplMethods {
+    pub tokens: TokenStream,
+    pub rust_type: rust_type::RustType,
+    pub fn_debug_method_name: String,
+    pub fn_debug_pretty_method_name: String,
+}
+
+pub struct RenderedRustModule {
+    pub rust_type: rust_type::RustType,
+    pub fn_debug_method_name: String,
+    pub fn_debug_pretty_method_name: String,
+}
 
 #[derive(Debug)]
 pub struct ParsedStruct {
@@ -51,30 +70,28 @@ impl ParsedStruct {
         if self.parsed_fields.is_empty() {
             return Tokens::new();
         }
-        let intro = format!(
-            "/// FFI access methods generated for struct '{}'.\n///\n",
-            self.ident
-        );
-        let dart_header = format!(
-            "/// Below is the dart extension to call those methods.\n///"
-        );
-        let comment_header: Tokens =
-            format!("{}{}", intro, dart_header).parse().unwrap();
-        let dart_extension = self.dart_extension();
-        let comment = quote!(
-            #comment_header
-            #dart_extension
-        );
-        self.rust_module(comment)
+        self.rust_module()
     }
 
     //
     // Rust Module
     //
 
-    fn rust_module(&self, doc_comment: Tokens) -> Tokens {
+    fn rust_module(&self) -> Tokens {
+        //
+        // Rust
+        //
         let (field_method_tokens, implemented_vecs) = self.rust_field_methods();
-        let rust_derive_tokens = self.rust_derive_methods();
+        let RenderedRustImplMethods {
+            tokens: rust_derive_tokens,
+            rust_type,
+            fn_debug_method_name,
+            fn_debug_pretty_method_name,
+        } = self.rust_impl_methods();
+
+        //
+        // Dart
+        //
         let builtins_comment: Tokens = if implemented_vecs.len() > 0 {
             let builtins_comment_str =
                 implemented_vecs.iter().fold("".to_string(), |acc, v| {
@@ -96,12 +113,34 @@ impl ParsedStruct {
             Tokens::new()
         };
 
+        let dart_extension = self.dart_extension(RenderedRustModule {
+            rust_type,
+            fn_debug_method_name,
+            fn_debug_pretty_method_name,
+        });
+
+        // TODO: use single quote! here
+        let intro = format!(
+            "/// FFI access methods generated for struct '{}'.\n///\n",
+            self.ident
+        );
+        let dart_header = format!(
+            "/// Below is the dart extension to call those methods.\n///"
+        );
+        let comment_header: Tokens =
+            format!("{}{}", intro, dart_header).parse().unwrap();
+
+        //
+        // Module combining Dart and Rust
+        //
         let mod_name = format_ident!("__{}_ffi", self.method_prefix);
         let tokens = quote! {
             mod #mod_name {
                 use super::*;
 
-                #doc_comment
+                #comment_header
+                #dart_extension
+
                 #builtins_comment
                 #field_method_tokens
                 #rust_derive_tokens
@@ -111,37 +150,31 @@ impl ParsedStruct {
         tokens
     }
 
-    fn rust_derive_methods(&self) -> Tokens {
+    fn rust_impl_methods(&self) -> RenderedRustImplMethods {
         let cstring_free_tokens = cstring_free();
-        if self.config.debug {
-            let struct_ident = &self.ident;
-            let struct_instance_ident = instance_ident(&struct_ident);
-            let fn_debug_ident = format_ident!("{}_debug", self.method_prefix);
-            let fn_debug_pretty_ident =
-                format_ident!("{}_debug_pretty", self.method_prefix);
-            let resolve_struct_ptr = resolve_ptr(struct_ident);
 
-            quote_spanned! { struct_ident.span() =>
-                #[no_mangle]
-                #[allow(non_snake_case)]
-                pub extern "C" fn #fn_debug_ident(ptr: *mut #struct_ident) -> *const ::std::os::raw::c_char {
-                    let #struct_instance_ident = #resolve_struct_ptr;
-                    let s = format!("{:?}", #struct_instance_ident);
-                    let cstring = ::std::ffi::CString::new(s.as_str()).unwrap();
-                    cstring.into_raw()
-                }
-                #[no_mangle]
-                #[allow(non_snake_case)]
-                pub extern "C" fn #fn_debug_pretty_ident(ptr: *mut #struct_ident) -> *const ::std::os::raw::c_char {
-                    let #struct_instance_ident = #resolve_struct_ptr;
-                    let s = format!("{:#?}", #struct_instance_ident);
-                    let cstring = ::std::ffi::CString::new(s.as_str()).unwrap();
-                    cstring.into_raw()
-                }
-                #cstring_free_tokens
-            }
+        let rust_type = rust_type::RustType::from_owned_struct(&self.ident);
+
+        let RenderedStructDebugImpl {
+            tokens: debug_tokens,
+            fn_debug_method_name,
+            fn_debug_pretty_method_name,
+        } = if self.config.debug {
+            rust_type.render_struct_debug_impl()
         } else {
-            cstring_free_tokens
+            RenderedStructDebugImpl::empty()
+        };
+
+        let tokens = quote_spanned! { self.ident.span() =>
+            #debug_tokens
+            #cstring_free_tokens
+        };
+
+        RenderedRustImplMethods {
+            tokens,
+            rust_type,
+            fn_debug_method_name,
+            fn_debug_pretty_method_name,
         }
     }
 
@@ -347,9 +380,9 @@ impl ParsedStruct {
     // Dart Extension
     //
 
-    fn dart_extension(&self) -> Tokens {
+    fn dart_extension(&self, rust_module: RenderedRustModule) -> Tokens {
         let (dart_field_getters_string, errors) = self.dart_field_getters();
-        let dart_derive_methods_string = self.dart_derive_methods();
+        let dart_derive_methods_string = self.dart_impl_methods(&rust_module);
         let s = format!(
             r###"
 /// ```dart
@@ -371,29 +404,15 @@ impl ParsedStruct {
         )
     }
 
-    fn dart_derive_methods(&self) -> String {
-        let mut getters = vec![];
+    fn dart_impl_methods(&self, rust_module: &RenderedRustModule) -> String {
+        let mut methods = vec![];
         if self.config.debug {
-            let ffi_debug_method = format!("{}_debug", self.method_prefix);
-            let ffi_debug_pretty_method =
-                format!("{}_debug_pretty", self.method_prefix);
-            getters.push(format!(
-                r###"
-                /// String debug([bool pretty = false]) {{
-                ///   final ptr = pretty
-                ///     ? {rid_ffi}.{ffi_debug_pretty_method}(this)
-                ///     : {rid_ffi}.{ffi_debug_method}(this);
-                ///   final s = ptr.toDartString();
-                ///   ptr.free();
-                ///   return s;
-                /// }}
-                "###,
-                rid_ffi = RID_FFI,
-                ffi_debug_method = ffi_debug_method,
-                ffi_debug_pretty_method = ffi_debug_pretty_method
+            methods.push(rust_module.rust_type.render_dart_struct_debug_impl(
+                &rust_module.fn_debug_method_name,
+                &rust_module.fn_debug_pretty_method_name,
             ));
         }
-        getters.join("\n")
+        methods.join("\n")
     }
 
     fn dart_field_getters(&self) -> (String, Vec<Tokens>) {
@@ -402,10 +421,11 @@ impl ParsedStruct {
         let mut dart_getters: Vec<String> = vec![];
         let mut errors: Vec<Tokens> = vec![];
         for field in fields {
+            let is_enum = field.rust_ty.as_ref().map_or(false, |x| x.is_enum());
+
             match &field.dart_ty {
-                Ok(dart_ty) => {
-                    dart_getters.push(self.dart_field_getter(&field, dart_ty))
-                }
+                Ok(dart_ty) => dart_getters
+                    .push(self.dart_field_getter(&field, dart_ty, is_enum)),
                 Err(err) => errors.push(type_error(&field.ty, err)),
             }
         }
@@ -421,6 +441,7 @@ impl ParsedStruct {
         &self,
         field: &ParsedField,
         dart_ty: &DartType,
+        is_enum: bool,
     ) -> String {
         let return_ty = dart_ty.return_type();
 
@@ -429,18 +450,42 @@ impl ParsedStruct {
             None => "".to_string(),
         };
 
-        let (body, delim) = match dart_ty.getter_body(&field.method_ident) {
-            GetterBody::Expression(body) => (body, " => "),
-            GetterBody::Statement(body) => (body, " "),
+        let enum_name = if is_enum {
+            Some(format!(
+                "Rid{}",
+                field.rust_ty.as_ref().unwrap().val_type_name()
+            ))
+        } else {
+            None
         };
-        format!(
-            "{attrib}/// {return_ty} get {field_ident}{delim}{body}",
-            delim = delim,
-            attrib = attrib,
-            return_ty = return_ty,
-            field_ident = &field.ident,
-            body = body
-        )
+        let (body, delim) =
+            match dart_ty.getter_body(&field.method_ident, &enum_name) {
+                GetterBody::Expression(body) => (body, " => "),
+                GetterBody::Statement(body) => (body, " "),
+            };
+        // NOTE: quickly hacked together enum resolution support since this code is going to be
+        // replaced anyways
+        if is_enum {
+            let enum_name = enum_name.as_ref().unwrap();
+
+            format!(
+                "{attrib}/// {enum_name} get {field_ident}{delim}{body}",
+                delim = delim,
+                attrib = attrib,
+                enum_name = enum_name,
+                field_ident = &field.ident,
+                body = body
+            )
+        } else {
+            format!(
+                "{attrib}/// {return_ty} get {field_ident}{delim}{body}",
+                delim = delim,
+                attrib = attrib,
+                return_ty = return_ty,
+                field_ident = &field.ident,
+                body = body
+            )
+        }
     }
 }
 

@@ -8,8 +8,25 @@ pub enum GetterBody {
 }
 
 impl DartType {
-    pub fn getter_body(&self, ffi_method: &syn::Ident) -> GetterBody {
+    pub fn getter_body(
+        &self,
+        ffi_method: &syn::Ident,
+        enum_name: &Option<String>,
+    ) -> GetterBody {
         use GetterBody::*;
+
+        // NOTE: quickly hacked together enum resolution support since this code is going to be
+        // replaced anyways
+        if enum_name.is_some() {
+            let enum_name = enum_name.as_ref().unwrap();
+
+            return Expression(format!(
+                "{enum_name}.values[{rid_ffi}.{ffi_method}(this)];",
+                enum_name = enum_name,
+                rid_ffi = RID_FFI,
+                ffi_method = ffi_method
+            ));
+        }
 
         match self {
             DartType::String => Statement(format!(

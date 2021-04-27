@@ -14,6 +14,7 @@ pub struct ExpandState {
 
 pub enum ImplementationType {
     VecAccess,
+    DartEnum,
     Free,
 }
 
@@ -22,6 +23,9 @@ impl fmt::Display for ImplementationType {
         match self {
             ImplementationType::VecAccess => {
                 write!(f, "VecAccess")
+            }
+            ImplementationType::DartEnum => {
+                write!(f, "DartEnum")
             }
             ImplementationType::Free => {
                 write!(f, "Free")

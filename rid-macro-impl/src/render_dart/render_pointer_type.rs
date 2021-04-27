@@ -65,6 +65,8 @@ impl Value {
             String => todo!("Value::render_dart_pointer_type ::String"),
             Str => todo!("Value::render_dart_pointer_type ::Str"),
             Custom(type_info, type_name) => match type_info.cat {
+                // NOTE: assumes that enums are `repr(C)`.
+                // If they are `repr(u8)` this would have to be a Uint8
                 C::Enum => format!(
                     "{dart_ffi}.Pointer<{dart_ffi}.Int32>",
                     dart_ffi = DART_FFI

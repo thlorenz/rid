@@ -1,16 +1,22 @@
 mod render_dart_type;
+mod render_display_extension;
+mod render_enum;
 mod render_fn_body;
 mod render_function_export;
 mod render_instance_method_extension;
 mod render_pointer_type;
+mod render_struct_debug_impl;
 mod type_alias;
 pub mod vec;
 
 pub use render_dart_type::*;
+pub use render_display_extension::*;
+pub use render_enum::*;
 pub use render_fn_body::*;
 pub use render_function_export::*;
 pub use render_instance_method_extension::*;
 pub use render_pointer_type::*;
+pub use render_struct_debug_impl::*;
 pub use type_alias::*;
 
 #[cfg(test)]

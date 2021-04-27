@@ -21,11 +21,12 @@ String prettyStringTodo(Pointer<Todo> todo) {
 printStatus(Pointer<Model> model) {
   final todos = model.todos;
   final total = todos.length;
-  final filter = DartFilter.values[model.filter].toString().substring(11);
+
+  final filter = model.filter;
   final matchingTodos = model.filtered_todos();
 
   print("Total Todos:     $total");
-  print("Filter:          $filter");
+  print("Filter:          ${filter.display()}");
   print("\nMatching Todos:");
   for (final todo in matchingTodos.iter()) {
     print("    ${prettyStringTodo(todo)}");

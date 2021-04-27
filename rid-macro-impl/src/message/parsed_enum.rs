@@ -6,8 +6,10 @@ use crate::{
         resolvers::{instance_ident, resolve_ptr, resolve_string_ptr},
         rust::RustType,
     },
+    parse::rust_type,
 };
-use quote::{format_ident, quote_spanned};
+use proc_macro2::TokenStream;
+use quote::{format_ident, quote, quote_spanned};
 use rid_common::{DART_FFI, FFI_GEN_BIND, RID_FFI, STRING_TO_NATIVE_INT8};
 use std::collections::HashMap;
 use syn::{punctuated::Punctuated, token::Comma, Ident, Variant};
@@ -21,6 +23,7 @@ pub struct ParsedEnum {
     struct_ident: syn::Ident,
     module_ident: syn::Ident,
     ident_lower_camel: String,
+    config: EnumConfig,
 }
 
 impl ParsedEnum {
@@ -45,6 +48,7 @@ impl ParsedEnum {
             struct_ident,
             module_ident,
             ident_lower_camel,
+            config,
         }
     }
 

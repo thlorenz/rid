@@ -10,6 +10,24 @@ pub enum ValueType {
     RCustom(TypeInfo, String),
 }
 
+impl ValueType {
+    pub fn is_enum(&self) -> bool {
+        match self {
+            RCustom(type_info, _) => type_info.cat == Category::Enum,
+            _ => false,
+        }
+    }
+
+    pub fn type_name(&self) -> String {
+        match self {
+            RCustom(type_info, _) => type_info.key.to_string(),
+            _ => {
+                panic!("Unable to get typename for anything but RCustom types")
+            }
+        }
+    }
+}
+
 impl Display for ValueType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let ty = match self {
@@ -86,7 +104,7 @@ use PrimitiveType::*;
 use RustType::*;
 use ValueType::*;
 
-use crate::attrs::{self, TypeInfo, TypeInfoMap};
+use crate::attrs::{self, Category, TypeInfo, TypeInfoMap};
 
 pub fn extract_path_segment(
     path: &syn::Path,
@@ -195,6 +213,22 @@ impl RustType {
         match self {
             Primitive(_) => true,
             _ => false,
+        }
+    }
+
+    pub fn is_enum(&self) -> bool {
+        match self {
+            Value(val) => val.is_enum(),
+            _ => false,
+        }
+    }
+
+    pub fn val_type_name(&self) -> String {
+        match self {
+            Value(val) => val.type_name(),
+            _ => {
+                panic!("Unable to get typename for anything but Value types")
+            }
         }
     }
 
