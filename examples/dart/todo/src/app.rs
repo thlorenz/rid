@@ -1,8 +1,9 @@
 #![allow(dead_code)]
-#[macro_use]
-extern crate log;
 
 use std::fmt::Display;
+
+#[macro_use]
+extern crate log;
 
 // -----------------
 // Main Model
@@ -103,7 +104,7 @@ impl Model {
 // Todo Model
 // -----------------
 #[rid::model]
-#[derive(Debug, PartialEq, Eq, PartialOrd)]
+#[derive(Debug, PartialEq, Eq, PartialOrd, rid::Display)]
 pub struct Todo {
     id: u32,
     title: String,
@@ -113,6 +114,13 @@ pub struct Todo {
 impl Ord for Todo {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
         self.id.cmp(&other.id)
+    }
+}
+
+impl Display for Todo {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let status = if self.completed { "✓" } else { " " };
+        write!(f, "[{}] ({}) '{}'", status, self.id, self.title)
     }
 }
 

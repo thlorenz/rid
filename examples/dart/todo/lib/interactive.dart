@@ -8,16 +8,6 @@ onError(Object error, StackTrace stack) {
   print(stack);
 }
 
-// TODO: generate this from the rust type as well as a converter to rust enum
-// via an extension
-enum DartFilter { Completed, Pending, All }
-
-// TODO: this could be .display()
-String prettyStringTodo(Pointer<Todo> todo) {
-  final status = todo.completed ? "✓" : " ";
-  return "[$status] (${todo.id}) '${todo.title}'";
-}
-
 printStatus(Pointer<Model> model) {
   final todos = model.todos;
   final total = todos.length;
@@ -29,7 +19,7 @@ printStatus(Pointer<Model> model) {
   print("Filter:          ${filter.display()}");
   print("\nMatching Todos:");
   for (final todo in matchingTodos.iter()) {
-    print("    ${prettyStringTodo(todo)}");
+    print("    ${todo.display()}");
   }
   matchingTodos.dispose();
 }
