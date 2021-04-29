@@ -1,4 +1,4 @@
-# Rid
+# Rid [![](https://github.com/thlorenz/rid/workflows/Build+Test/badge.svg?branch=master)](https://github.com/thlorenz/rid/actions)
 
 Rust integrated Dart framework providing an easy way to build Flutter apps with Rust.
 
