@@ -4,11 +4,9 @@ use crate::{
     common::{
         errors::type_error,
         parsed_field::ParsedField,
-        resolvers::{
-            cstring_free, instance_ident, resolve_ptr, resolve_vec_ptr,
-        },
         rust::ValueType,
         state::{get_state, ImplementationType},
+        tokens::{cstring_free, instance_ident, resolve_ptr, resolve_vec_ptr},
         DartType, RustType,
     },
     parse::{

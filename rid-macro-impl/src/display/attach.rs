@@ -7,8 +7,8 @@ use syn::{
 use crate::{
     common::{
         abort,
-        resolvers::cstring_free,
         state::{get_state, ImplementationType},
+        tokens::cstring_free,
     },
     parse::rust_type::RustType,
     render_rust::RenderedDisplayImpl,

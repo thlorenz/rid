@@ -6,7 +6,7 @@ use crate::{
     attrs::Category,
     common::{
         abort,
-        resolvers::{instance_ident, resolve_ptr},
+        tokens::{instance_ident, resolve_ptr},
     },
     parse::rust_type::{RustType, TypeKind, Value},
 };

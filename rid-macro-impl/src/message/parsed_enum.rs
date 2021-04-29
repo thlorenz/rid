@@ -3,8 +3,8 @@ use crate::{
     attrs::{self, EnumConfig, TypeInfoMap},
     common::{
         errors::derive_error,
-        resolvers::{instance_ident, resolve_ptr, resolve_string_ptr},
         rust::RustType,
+        tokens::{instance_ident, resolve_ptr, resolve_string_ptr},
     },
     parse::rust_type,
 };

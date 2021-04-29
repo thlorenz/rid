@@ -2,7 +2,7 @@ use proc_macro2::TokenStream;
 use quote::{format_ident, quote_spanned};
 
 use crate::{
-    common::resolvers::{instance_ident, resolve_ptr},
+    common::tokens::{instance_ident, resolve_ptr},
     parse::rust_type::RustType,
 };
 

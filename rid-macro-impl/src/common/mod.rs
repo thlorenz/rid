@@ -1,9 +1,9 @@
 pub mod dart;
 pub mod errors;
 pub mod parsed_field;
-pub mod resolvers;
 pub mod rust;
 pub mod state;
+pub mod tokens;
 
 pub use dart::DartType;
 pub use errors::*;
