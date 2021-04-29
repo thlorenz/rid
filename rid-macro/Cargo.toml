@@ -6,15 +6,12 @@ edition = "2018"
 
 [lib]
 proc-macro = true
+doctest=false
 
 # [[bin]]
 # name = "main"
 # path = "src/main.rs"
  
-[[test]]
-name = "tests"
-path = "tests/expand.rs"
-
 [dependencies]
 rid_macro_impl = { path = "../rid-macro-impl" }
 

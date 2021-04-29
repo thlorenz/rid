@@ -6,6 +6,9 @@ publish = false
 
 [workspace]
 
+[lib]
+doctest = false
+
 [[bin]]
 name = "rid_macro_test"
 path = "main.rs"

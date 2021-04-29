@@ -3,3 +3,6 @@ name = "rid_common"
 version = "0.1.0"
 authors = ["Thorsten Lorenz <thlorenz@gmx.de>"]
 edition = "2018"
+
+[lib]
+doctest = false

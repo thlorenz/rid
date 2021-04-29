@@ -8,6 +8,8 @@ edition = "2018"
 name = "todo"
 crate-type = ["cdylib"]
 path = "src/app.rs"
+doctest = false
+test = false
 
 [[bin]]
 name = "rid_build"
