@@ -56,7 +56,7 @@ pub fn message(attrs: TokenStream, input: TokenStream) -> TokenStream {
 #[proc_macro_error]
 pub fn display(input: TokenStream) -> TokenStream {
     let item = parse_macro_input!(input as syn::DeriveInput);
-    rid_display_impl(&item).into()
+    rid_display_impl(&item, Default::default()).into()
 }
 
 #[proc_macro_attribute]

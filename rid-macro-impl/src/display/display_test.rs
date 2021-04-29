@@ -1,4 +1,4 @@
-use super::rid_display_impl;
+use super::{rid_display_impl, DisplayImplConfig};
 use proc_macro2::TokenStream;
 use quote::quote;
 use syn::parse_macro_input;
@@ -15,7 +15,7 @@ fn remove_doc_comments(tokens: TokenStream) -> TokenStream {
 
 fn render(input: proc_macro2::TokenStream) -> TokenStream {
     let item = syn::parse2::<syn::DeriveInput>(input).unwrap();
-    remove_doc_comments(rid_display_impl(&item))
+    remove_doc_comments(rid_display_impl(&item, DisplayImplConfig::for_tests()))
 }
 
 mod enums_display_impl {
@@ -40,13 +40,6 @@ mod enums_display_impl {
                 let s = instance.to_string();
                 let cstring = ::std::ffi::CString::new(s.as_str()).unwrap();
                 cstring.into_raw()
-            }
-            #[no_mangle]
-            #[allow(non_snake_case)]
-            pub extern "C" fn rid_cstring_free(ptr: *mut ::std::os::raw::c_char) {
-                if !ptr.is_null() {
-                    ::core::mem::drop(unsafe { ::std::ffi::CString::from_raw(ptr) });
-                }
             }
         };
 
@@ -77,13 +70,6 @@ mod enums_display_impl {
                 let cstring = ::std::ffi::CString::new(s.as_str()).unwrap();
                 cstring.into_raw()
             }
-            #[no_mangle]
-            #[allow(non_snake_case)]
-            pub extern "C" fn rid_cstring_free(ptr: *mut ::std::os::raw::c_char) {
-                if !ptr.is_null() {
-                    ::core::mem::drop(unsafe { ::std::ffi::CString::from_raw(ptr) });
-                }
-            }
         };
 
         assert_eq!(res.to_string().trim(), expected.to_string().trim())
@@ -111,13 +97,6 @@ mod structs_display_impl {
                 let s = instance.to_string();
                 let cstring = ::std::ffi::CString::new(s.as_str()).unwrap();
                 cstring.into_raw()
-            }
-            #[no_mangle]
-            #[allow(non_snake_case)]
-            pub extern "C" fn rid_cstring_free(ptr: *mut ::std::os::raw::c_char) {
-                if !ptr.is_null() {
-                    ::core::mem::drop(unsafe { ::std::ffi::CString::from_raw(ptr) });
-                }
             }
         };
 

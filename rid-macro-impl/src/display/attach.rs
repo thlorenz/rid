@@ -14,16 +14,39 @@ use crate::{
     render_rust::RenderedDisplayImpl,
 };
 
-pub fn rid_display_impl(input: &DeriveInput) -> TokenStream {
+pub struct DisplayImplConfig {
+    render_cstring_free: bool,
+}
+
+impl Default for DisplayImplConfig {
+    fn default() -> Self {
+        Self {
+            render_cstring_free: true,
+        }
+    }
+}
+
+impl DisplayImplConfig {
+    pub fn for_tests() -> Self {
+        Self {
+            render_cstring_free: false,
+        }
+    }
+}
+
+pub fn rid_display_impl(
+    input: &DeriveInput,
+    config: DisplayImplConfig,
+) -> TokenStream {
     match &input.data {
         Data::Struct(data) => {
             let rust_type = RustType::from_owned_struct(&input.ident);
-            render_display(rust_type, &None)
+            render_display(rust_type, &config, &None)
         }
         Data::Enum(DataEnum { variants, .. }) => {
             let rust_type = RustType::from_owned_enum(&input.ident);
             let variants = Some(extract_variant_names(variants));
-            render_display(rust_type, &variants)
+            render_display(rust_type, &config, &variants)
         }
         Data::Union(data) => abort!(
             input.ident,
@@ -34,9 +57,14 @@ pub fn rid_display_impl(input: &DeriveInput) -> TokenStream {
 
 fn render_display(
     rust_type: RustType,
+    config: &DisplayImplConfig,
     enum_variants: &Option<Vec<String>>,
 ) -> TokenStream {
-    let cstring_free_tokens = cstring_free();
+    let cstring_free_tokens = if config.render_cstring_free {
+        cstring_free()
+    } else {
+        TokenStream::new()
+    };
 
     let RenderedDisplayImpl {
         tokens: rust_method_tokens,
