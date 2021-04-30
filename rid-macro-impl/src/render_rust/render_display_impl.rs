@@ -16,7 +16,7 @@ use crate::{
 
 pub struct RenderedDisplayImpl {
     pub tokens: TokenStream,
-    pub fn_display_method_name: String,
+    pub fn_display_method_ident: Ident,
 }
 
 impl RustType {
@@ -73,7 +73,7 @@ impl RustType {
     }
 
     fn render_struct_display_impl(&self) -> RenderedDisplayImpl {
-        let fn_display_ident = self.get_fn_display_ident();
+        let fn_display_method_ident = self.get_fn_display_ident();
 
         let struct_ident = &self.ident;
         // TODO: consider using type aliases over `*mut` types via `self.render_pointer_type()`
@@ -82,7 +82,7 @@ impl RustType {
         let tokens = quote_spanned! { struct_ident.span() =>
             #[no_mangle]
             #[allow(non_snake_case)]
-            pub extern "C" fn #fn_display_ident(ptr: *mut #struct_ident) -> *const ::std::os::raw::c_char {
+            pub extern "C" fn #fn_display_method_ident(ptr: *mut #struct_ident) -> *const ::std::os::raw::c_char {
                 let instance = #resolve_struct_ptr;
                 let s = instance.to_string();
                 let cstring = ::std::ffi::CString::new(s.as_str()).unwrap();
@@ -92,7 +92,7 @@ impl RustType {
 
         RenderedDisplayImpl {
             tokens,
-            fn_display_method_name: fn_display_ident.to_string(),
+            fn_display_method_ident,
         }
     }
 
@@ -101,7 +101,7 @@ impl RustType {
         variants: &[String],
         is_primitive: bool,
     ) -> RenderedDisplayImpl {
-        let fn_display_ident = self.get_fn_display_ident();
+        let fn_display_method_ident = self.get_fn_display_ident();
         let enum_ident = &self.ident;
 
         let tokens = if is_primitive {
@@ -116,7 +116,7 @@ impl RustType {
             quote_spanned! { enum_ident.span() =>
                 #[no_mangle]
                 #[allow(non_snake_case)]
-                pub extern "C" fn #fn_display_ident(#arg_ident: #arg_type_ident) -> *const ::std::os::raw::c_char {
+                pub extern "C" fn #fn_display_method_ident(#arg_ident: #arg_type_ident) -> *const ::std::os::raw::c_char {
                     #resolve_enum_arg_tokens
                     let s = #instance_ident.to_string();
                     let cstring = ::std::ffi::CString::new(s.as_str()).unwrap();
@@ -128,7 +128,7 @@ impl RustType {
             quote_spanned! { enum_ident.span() =>
                 #[no_mangle]
                 #[allow(non_snake_case)]
-                pub extern "C" fn #fn_display_ident(ptr: *mut #enum_ident) -> *const ::std::os::raw::c_char {
+                pub extern "C" fn #fn_display_method_ident(ptr: *mut #enum_ident) -> *const ::std::os::raw::c_char {
                     let instance = #resolve_enum_ptr;
                     let s = instance.to_string();
                     let cstring = ::std::ffi::CString::new(s.as_str()).unwrap();
@@ -139,7 +139,7 @@ impl RustType {
 
         RenderedDisplayImpl {
             tokens,
-            fn_display_method_name: fn_display_ident.to_string(),
+            fn_display_method_ident,
         }
     }
 
