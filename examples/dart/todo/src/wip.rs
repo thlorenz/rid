@@ -1,12 +1,12 @@
 #[rid::model]
 #[rid::structs(Todo)]
-#[derive(Debug)]
+#[derive(Debug, rid::Debug)]
 pub struct Model {
     todos: Vec<Todo>,
 }
 
 #[rid::model]
-#[derive(Debug)]
+#[derive(Debug, rid::Debug)]
 pub struct Todo {
     id: u32,
     title: String,

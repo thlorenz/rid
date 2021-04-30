@@ -11,7 +11,7 @@ extern crate log;
 #[rid::model]
 #[rid::structs(Todo)]
 #[rid::enums(Filter)]
-#[derive(Debug)]
+#[derive(Debug, rid::Debug)]
 pub struct Model {
     last_added_id: u32,
     todos: Vec<Todo>,
@@ -104,7 +104,7 @@ impl Model {
 // Todo Model
 // -----------------
 #[rid::model]
-#[derive(Debug, PartialEq, Eq, PartialOrd, rid::Display)]
+#[derive(Debug, rid::Debug, PartialEq, Eq, PartialOrd, rid::Display)]
 pub struct Todo {
     id: u32,
     title: String,
@@ -127,7 +127,7 @@ impl Display for Todo {
 // -----------------
 // Filter
 // -----------------
-#[derive(Clone, Debug, rid::Display)]
+#[derive(Clone, Debug, rid::Debug, rid::Display)]
 #[repr(C)]
 pub enum Filter {
     Completed,
