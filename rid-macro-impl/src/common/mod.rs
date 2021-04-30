@@ -3,12 +3,14 @@ pub mod errors;
 pub mod parsed_field;
 pub mod rust;
 pub mod state;
+mod syn_helpers;
 pub mod tokens;
 
 pub use dart::DartType;
 pub use errors::*;
 pub use parsed_field::ParsedField;
 pub use rust::{extract_path_segment, PrimitiveType, RustType, ValueType};
+pub use syn_helpers::*;
 
 // Test replacements
 #[cfg(not(test))]
@@ -29,3 +31,8 @@ macro_rules! abort {
 }
 #[cfg(test)]
 pub use abort;
+
+#[cfg(test)]
+mod test;
+#[cfg(test)]
+pub use test::*;

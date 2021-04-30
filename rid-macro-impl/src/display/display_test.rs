@@ -1,23 +1,17 @@
+use crate::common::remove_doc_comments;
+
 use super::{rid_display_impl, DisplayImplConfig};
 use proc_macro2::TokenStream;
 use quote::quote;
 use syn::parse_macro_input;
-
-fn remove_doc_comments(tokens: TokenStream) -> TokenStream {
-    let code = tokens.to_string();
-    let lines = code.split("\"]");
-    let without_docs: Vec<&str> = lines
-        .into_iter()
-        .filter(|x| !x.contains("# [doc ="))
-        .collect();
-    without_docs.join("\n").parse().unwrap()
-}
 
 fn render(input: proc_macro2::TokenStream) -> TokenStream {
     let item = syn::parse2::<syn::DeriveInput>(input).unwrap();
     remove_doc_comments(rid_display_impl(&item, DisplayImplConfig::for_tests()))
 }
 
+// TODO: we aren't testing the generated dart code
+// TODO: we should not render the #[no_mangle]... preamble during tests
 mod enums_display_impl {
     use super::*;
 

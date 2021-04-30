@@ -6,7 +6,10 @@ use crate::{
     attrs::Category,
     common::{
         abort,
-        tokens::{instance_ident, resolve_ptr},
+        tokens::{
+            instance_ident, resolve_enum_from_int, resolve_ptr,
+            ResolvedEnumFromInt,
+        },
     },
     parse::rust_type::{RustType, TypeKind, Value},
 };
@@ -70,16 +73,11 @@ impl RustType {
     }
 
     fn render_struct_display_impl(&self) -> RenderedDisplayImpl {
-        let method_prefix =
-            format!("rid_{}", self.ident.to_string().to_lowercase())
-                .to_string();
+        let fn_display_ident = self.get_fn_display_ident();
 
         let struct_ident = &self.ident;
-
         // TODO: consider using type aliases over `*mut` types via `self.render_pointer_type()`
         let resolve_struct_ptr = resolve_ptr(struct_ident);
-
-        let fn_display_ident = format_ident!("{}_display", method_prefix);
 
         let tokens = quote_spanned! { struct_ident.span() =>
             #[no_mangle]
@@ -98,31 +96,22 @@ impl RustType {
         }
     }
 
-    // TODO: this is identical to `render_struct_display_impl` with different naming
     fn render_enum_display_impl(
         &self,
         variants: &[String],
         is_primitive: bool,
     ) -> RenderedDisplayImpl {
-        let method_prefix =
-            format!("rid_{}", self.ident.to_string().to_lowercase())
-                .to_string();
-
-        let fn_display_ident = format_ident!("{}_display", method_prefix);
+        let fn_display_ident = self.get_fn_display_ident();
         let enum_ident = &self.ident;
 
         let tokens = if is_primitive {
             // NOTE: assuming `repr(C)` for primitive enums
-            let arg_type_ident = format_ident!("i32");
-            let arg_ident = format_ident!("n");
-            let instance_ident = format_ident!("instance");
-
-            let resolve_enum_arg_tokens = resolve_enum_from_int(
-                &arg_ident,
-                &instance_ident,
-                &enum_ident,
-                variants,
-            );
+            let ResolvedEnumFromInt {
+                arg_ident,
+                arg_type_ident,
+                instance_ident,
+                tokens: resolve_enum_arg_tokens,
+            } = resolve_enum_from_int(enum_ident, variants);
 
             quote_spanned! { enum_ident.span() =>
                 #[no_mangle]
@@ -136,7 +125,6 @@ impl RustType {
             }
         } else {
             let resolve_enum_ptr = resolve_ptr(enum_ident);
-
             quote_spanned! { enum_ident.span() =>
                 #[no_mangle]
                 #[allow(non_snake_case)]
@@ -154,42 +142,11 @@ impl RustType {
             fn_display_method_name: fn_display_ident.to_string(),
         }
     }
-}
 
-/// Generates tokens to convert an int to an enum.
-///
-/// match f {
-///     0 => Filter::Completed,
-///     1 => Filter::Pending,
-///     2 => Filter::All,
-///     _ => panic!("Not a valid filter value"),
-/// }
-fn resolve_enum_from_int(
-    arg_ident: &syn::Ident,
-    instance_ident: &syn::Ident,
-    enum_ident: &syn::Ident,
-    variants: &[String],
-) -> TokenStream {
-    let variant_idents: Vec<TokenStream> = Vec::new();
-    let variant_tokens: Vec<TokenStream> = variants
-        .iter()
-        .enumerate()
-        .map(|(idx, x)| {
-            format!("{} => {}::{},\n", idx, enum_ident, x)
-                .parse()
-                .unwrap()
-        })
-        .collect();
-
-    let default_branch: TokenStream =
-        format!("_ => panic!(\"Not a valid {} value\",)", enum_ident)
-            .parse()
-            .unwrap();
-
-    quote_spanned! { enum_ident.span() =>
-        let #instance_ident = match #arg_ident {
-            #(#variant_tokens)*
-            #default_branch
-        };
+    fn get_fn_display_ident(&self) -> Ident {
+        let method_prefix =
+            format!("rid_{}", self.ident.to_string().to_lowercase())
+                .to_string();
+        format_ident!("{}_display", method_prefix)
     }
 }

@@ -14,7 +14,7 @@ use crate::{
         ParsedReference,
     },
     render_dart::vec,
-    render_rust::RenderedStructDebugImpl,
+    render_rust::RenderedDebugImpl,
 };
 use proc_macro2::TokenStream;
 use rid_common::{DART_FFI, FFI_GEN_BIND, RID_FFI};
@@ -80,12 +80,6 @@ impl ParsedStruct {
         // Rust
         //
         let (field_method_tokens, implemented_vecs) = self.rust_field_methods();
-        let RenderedRustImplMethods {
-            tokens: rust_derive_tokens,
-            rust_type,
-            fn_debug_method_name,
-            fn_debug_pretty_method_name,
-        } = self.rust_impl_methods();
 
         //
         // Dart
@@ -111,12 +105,7 @@ impl ParsedStruct {
             Tokens::new()
         };
 
-        let dart_extension = self.dart_extension(RenderedRustModule {
-            rust_type,
-            fn_debug_method_name,
-            fn_debug_pretty_method_name,
-        });
-
+        let dart_extension = self.dart_extension();
         // TODO: use single quote! here
         let intro = format!(
             "/// FFI access methods generated for struct '{}'.\n///\n",
@@ -141,39 +130,10 @@ impl ParsedStruct {
 
                 #builtins_comment
                 #field_method_tokens
-                #rust_derive_tokens
             }
         };
 
         tokens
-    }
-
-    fn rust_impl_methods(&self) -> RenderedRustImplMethods {
-        let cstring_free_tokens = cstring_free();
-
-        let rust_type = rust_type::RustType::from_owned_struct(&self.ident);
-
-        let RenderedStructDebugImpl {
-            tokens: debug_tokens,
-            fn_debug_method_name,
-            fn_debug_pretty_method_name,
-        } = if self.config.debug {
-            rust_type.render_struct_debug_impl()
-        } else {
-            RenderedStructDebugImpl::empty()
-        };
-
-        let tokens = quote_spanned! { self.ident.span() =>
-            #debug_tokens
-            #cstring_free_tokens
-        };
-
-        RenderedRustImplMethods {
-            tokens,
-            rust_type,
-            fn_debug_method_name,
-            fn_debug_pretty_method_name,
-        }
     }
 
     fn rust_field_methods(&self) -> (Tokens, Vec<vec::ImplementVecOld>) {
@@ -378,14 +338,12 @@ impl ParsedStruct {
     // Dart Extension
     //
 
-    fn dart_extension(&self, rust_module: RenderedRustModule) -> Tokens {
+    fn dart_extension(&self) -> Tokens {
         let (dart_field_getters_string, errors) = self.dart_field_getters();
-        let dart_derive_methods_string = self.dart_impl_methods(&rust_module);
         let s = format!(
             r###"
 /// ```dart
 /// extension Rid_Model_ExtOnPointer{struct_ident} on {dart_ffi}.Pointer<{ffigen_bind}.{struct_ident}> {{  {field_getters}
-/// {derive_methods}
 /// }}
 /// ```
         "###,
@@ -393,24 +351,12 @@ impl ParsedStruct {
             dart_ffi = DART_FFI,
             ffigen_bind = FFI_GEN_BIND,
             field_getters = dart_field_getters_string,
-            derive_methods = dart_derive_methods_string
         );
         let comment: Tokens = s.parse().unwrap();
         quote!(
             #(#errors)*
             #comment
         )
-    }
-
-    fn dart_impl_methods(&self, rust_module: &RenderedRustModule) -> String {
-        let mut methods = vec![];
-        if self.config.debug {
-            methods.push(rust_module.rust_type.render_dart_struct_debug_impl(
-                &rust_module.fn_debug_method_name,
-                &rust_module.fn_debug_pretty_method_name,
-            ));
-        }
-        methods.join("\n")
     }
 
     fn dart_field_getters(&self) -> (String, Vec<Tokens>) {
