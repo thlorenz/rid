@@ -13,7 +13,7 @@ mod log;
 mod project;
 
 pub use dart_generator::BuildTarget;
-pub use project::Project;
+pub use project::{FlutterConfig, Project};
 
 pub struct BuildConfig<'a> {
     pub project_root: &'a str,
@@ -91,6 +91,7 @@ fn generate(
         ffigen_binding,
         path_to_target,
         binding: &bindings_h_content,
+        project: &project,
     };
 
     log::info!("Generating dart");

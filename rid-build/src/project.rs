@@ -1,27 +1,48 @@
 use std::path::{Path, PathBuf};
 
 #[derive(Debug, PartialEq)]
+pub struct FlutterConfig {
+    pub plugin_name: String,
+}
+
+#[derive(Debug, PartialEq)]
 pub enum Project {
     Dart,
-    Flutter,
+    Flutter(FlutterConfig),
 }
 
 impl Project {
     fn path_to_generated_dir(&self, project_root: &Path) -> PathBuf {
         match self {
-            Project::Dart | Project::Flutter => {
+            Project::Dart => {
                 project_root.join("lib").join("generated").to_path_buf()
             }
+            Project::Flutter(FlutterConfig { plugin_name }) => project_root
+                .join(plugin_name)
+                .join("lib")
+                .join("generated")
+                .to_path_buf(),
         }
     }
 
-    fn path_to_ios_lib_dir(&self, project_root: &Path) -> PathBuf {
-        debug_assert_eq!(
-            *self,
-            Project::Flutter,
+    fn path_to_ios_lib_dir(
+        &self,
+        project_root: &Path,
+        plugin_name: &str,
+    ) -> PathBuf {
+        let is_flutter_project = match self {
+            Project::Dart => false,
+            Project::Flutter(_) => true,
+        };
+        debug_assert!(
+            is_flutter_project,
             "ios libs only exist in flutter apps"
         );
-        project_root.join("ios").join("Classes").join("binding.h")
+        project_root
+            .join(plugin_name)
+            .join("ios")
+            .join("Classes")
+            .join("binding.h")
     }
 
     pub(crate) fn path_to_generated_ffigen(
@@ -51,7 +72,9 @@ impl Project {
                 .path_to_generated_dir(project_root)
                 .join("bindings.h")
                 .to_path_buf(),
-            Project::Flutter => self.path_to_ios_lib_dir(project_root),
+            Project::Flutter(FlutterConfig { plugin_name }) => {
+                self.path_to_ios_lib_dir(project_root, &plugin_name)
+            }
         }
     }
 
