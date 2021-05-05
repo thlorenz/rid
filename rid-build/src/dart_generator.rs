@@ -2,6 +2,8 @@ use rid_common::{
     CSTRING_FREE, DART_COLLECTION, DART_FFI, FFI_GEN_BIND, RID_FFI,
     STRING_TO_NATIVE_INT8,
 };
+
+use crate::{FlutterConfig, Project};
 const PACKAGE_FFI: &str = "package_ffi";
 
 const TYPEDEF_STRUCT: &str = "typedef struct ";
@@ -49,13 +51,14 @@ extension Rid_ExtOnString on String {{
     )
 }
 
-fn dart_rid_native() -> String {
+fn load_dynamic_library(constructor: &str) -> String {
     format!(
         r###"final {dart_ffi}.DynamicLibrary _dl = _open();
-final {rid_ffi} = {ffigen_bind}.NativeLibrary(_dl);"###,
+final {rid_ffi} = {ffigen_bind}.{constructor}(_dl);"###,
         dart_ffi = DART_FFI,
         rid_ffi = RID_FFI,
-        ffigen_bind = FFI_GEN_BIND
+        ffigen_bind = FFI_GEN_BIND,
+        constructor = constructor,
     )
 }
 
@@ -81,11 +84,18 @@ pub(crate) struct DartGenerator<'a> {
 
     /// Rust library to load, Release or Debug.
     pub(crate) target: &'a BuildTarget,
+
+    pub(crate) project: &'a Project,
 }
 
 impl<'a> DartGenerator<'a> {
     pub(crate) fn generate(&self) -> String {
         let (extensions, structs) = self.parse_binding();
+        let dynamic_library_constructor = match self.project {
+            Project::Dart => "NativeLibrary",
+            Project::Flutter(FlutterConfig { plugin_name }) => plugin_name,
+        };
+
         format!(
             r###"{imports}
 // Forwarding dart_ffi types essential to access Rust structs
@@ -114,7 +124,7 @@ impl<'a> DartGenerator<'a> {
             string_from_pointer_extension = dart_string_from_pointer(),
             string_pointer_from_string_extension =
                 dart_string_pointer_from_string(),
-            native_export = dart_rid_native()
+            native_export = load_dynamic_library(dynamic_library_constructor),
         )
         .to_string()
     }
@@ -137,24 +147,44 @@ import '{ffigen_binding}' as {ffigen_bind};
     }
 
     fn dart_open_dl(&self) -> String {
-        let sub_target_folder = match self.target {
-            BuildTarget::Release => "release",
-            BuildTarget::Debug => "debug",
-        };
-        format!(
-            r###"{dart_ffi}.DynamicLibrary _open() {{
+        match self.project {
+            Project::Dart => {
+                let sub_target_folder = match self.target {
+                    BuildTarget::Release => "release",
+                    BuildTarget::Debug => "debug",
+                };
+                format!(
+                    r###"{dart_ffi}.DynamicLibrary _open() {{
   if (dart_io.Platform.isLinux)
     return {dart_ffi}.DynamicLibrary.open('{path_to_target}/{sub}/{lib_name}.so');
   if (dart_io.Platform.isMacOS)
     return {dart_ffi}.DynamicLibrary.open('{path_to_target}/{sub}/{lib_name}.dylib');
-  throw UnsupportedError('This platform is not supported.');
+  throw UnsupportedError(
+      'Platform "${{dart_io.Platform.operatingSystem}}" is not supported.');
 }}
 "###,
-            dart_ffi = DART_FFI,
-            path_to_target = self.path_to_target,
-            sub = sub_target_folder,
-            lib_name = self.lib_name
-        )
+                    dart_ffi = DART_FFI,
+                    path_to_target = self.path_to_target,
+                    sub = sub_target_folder,
+                    lib_name = self.lib_name
+                )
+            }
+            Project::Flutter(_) => {
+                format!(
+                    r###"{dart_ffi}.DynamicLibrary _open() {{
+  if (dart_io.Platform.isLinux || dart_io.Platform.isAndroid)
+    return {dart_ffi}.DynamicLibrary.open('{lib_name}.so');
+  if (dart_io.Platform.isMacOS || dart_io.Platform.isIOS)
+    return {dart_ffi}.DynamicLibrary.executable();
+  throw UnsupportedError(
+      'Platform "${{dart_io.Platform.operatingSystem}}" is not supported.');
+}}
+"###,
+                    dart_ffi = DART_FFI,
+                    lib_name = self.lib_name
+                )
+            }
+        }
     }
 
     fn dart_struct_reexports(&self, structs: Vec<String>) -> String {
