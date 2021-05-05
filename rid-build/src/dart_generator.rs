@@ -90,7 +90,7 @@ pub(crate) struct DartGenerator<'a> {
 
 impl<'a> DartGenerator<'a> {
     pub(crate) fn generate(&self) -> String {
-        let (extensions, structs) = self.parse_binding();
+        let (extensions, mut structs) = self.parse_binding();
         let dynamic_library_constructor = match self.project {
             Project::Dart => "NativeLibrary",
             Project::Flutter(FlutterConfig { plugin_name }) => plugin_name,
@@ -118,7 +118,7 @@ impl<'a> DartGenerator<'a> {
 {native_export}"###,
             imports = self.dart_imports(),
             dart_ffi_exports = dart_ffi_reexports(),
-            struct_exports = self.dart_struct_reexports(structs),
+            struct_exports = self.dart_struct_reexports(&mut structs),
             open_dl = self.dart_open_dl(),
             extensions = extensions,
             string_from_pointer_extension = dart_string_from_pointer(),
@@ -187,13 +187,19 @@ import '{ffigen_binding}' as {ffigen_bind};
         }
     }
 
-    fn dart_struct_reexports(&self, structs: Vec<String>) -> String {
-        let structs = structs.join(", ");
-        format!(
-            "export '{ffigen_binding}' show {structs};\n",
-            ffigen_binding = self.ffigen_binding,
-            structs = structs
-        )
+    fn dart_struct_reexports(&self, structs: &mut Vec<String>) -> String {
+        if structs.len() == 0 {
+            "".to_string()
+        } else {
+            structs.sort();
+            structs.dedup();
+            let structs = structs.join(", ");
+            format!(
+                "export '{ffigen_binding}' show {structs};\n",
+                ffigen_binding = self.ffigen_binding,
+                structs = structs
+            )
+        }
     }
 
     fn parse_binding(&self) -> (String, Vec<String>) {
