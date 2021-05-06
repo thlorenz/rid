@@ -93,7 +93,7 @@ impl<'a> DartGenerator<'a> {
         let (extensions, mut structs) = self.parse_binding();
         let dynamic_library_constructor = match self.project {
             Project::Dart => "NativeLibrary",
-            Project::Flutter(FlutterConfig { plugin_name }) => plugin_name,
+            Project::Flutter(FlutterConfig { plugin_name, .. }) => plugin_name,
         };
 
         format!(

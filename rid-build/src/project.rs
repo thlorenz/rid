@@ -1,11 +1,42 @@
 use std::path::{Path, PathBuf};
 
-#[derive(Debug, PartialEq)]
-pub struct FlutterConfig {
-    pub plugin_name: String,
+/// All paths are relative to the plugin folder, i.e. `ios/Classes`
+#[derive(Debug)]
+pub struct FlutterPlatform {
+    binding_file: Option<String>,
+    swift_plugin_file: Option<String>,
 }
 
-#[derive(Debug, PartialEq)]
+impl FlutterPlatform {
+    pub fn ios() -> Self {
+        Self {
+            binding_file: Some("ios/Classes/bindings.h".to_string()),
+            swift_plugin_file: Some(
+                "ios/Classes/SwiftPlugin.swift".to_string(),
+            ),
+        }
+    }
+    pub fn macos() -> Self {
+        Self {
+            binding_file: Some("macos/Classes/bindings.h".to_string()),
+            swift_plugin_file: Some("macos/Classes/Plugin.swift".to_string()),
+        }
+    }
+    pub fn android() -> Self {
+        Self {
+            binding_file: None,
+            swift_plugin_file: None,
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct FlutterConfig {
+    pub plugin_name: String,
+    pub platforms: Vec<FlutterPlatform>,
+}
+
+#[derive(Debug)]
 pub enum Project {
     Dart,
     Flutter(FlutterConfig),
@@ -17,32 +48,12 @@ impl Project {
             Project::Dart => {
                 project_root.join("lib").join("generated").to_path_buf()
             }
-            Project::Flutter(FlutterConfig { plugin_name }) => project_root
+            Project::Flutter(FlutterConfig { plugin_name, .. }) => project_root
                 .join(plugin_name)
                 .join("lib")
                 .join("generated")
                 .to_path_buf(),
         }
-    }
-
-    fn path_to_ios_lib_dir(
-        &self,
-        project_root: &Path,
-        plugin_name: &str,
-    ) -> PathBuf {
-        let is_flutter_project = match self {
-            Project::Dart => false,
-            Project::Flutter(_) => true,
-        };
-        debug_assert!(
-            is_flutter_project,
-            "ios libs only exist in flutter apps"
-        );
-        project_root
-            .join(plugin_name)
-            .join("ios")
-            .join("Classes")
-            .join("binding.h")
     }
 
     pub(crate) fn path_to_generated_ffigen(
@@ -63,17 +74,29 @@ impl Project {
             .to_path_buf()
     }
 
-    pub(crate) fn path_to_generated_c_bindings(
+    pub(crate) fn paths_to_generated_c_bindings(
         &self,
         project_root: &Path,
-    ) -> PathBuf {
+    ) -> Vec<PathBuf> {
         match self {
-            Project::Dart => self
+            Project::Dart => vec![self
                 .path_to_generated_dir(project_root)
                 .join("bindings.h")
-                .to_path_buf(),
-            Project::Flutter(FlutterConfig { plugin_name }) => {
-                self.path_to_ios_lib_dir(project_root, &plugin_name)
+                .to_path_buf()],
+            Project::Flutter(FlutterConfig {
+                plugin_name,
+                platforms,
+                ..
+            }) => {
+                let mut vec = platforms
+                    .iter()
+                    .flat_map(|x| &x.binding_file)
+                    .map(|x| project_root.join(plugin_name).join(x))
+                    .collect::<Vec<PathBuf>>();
+                vec.push(
+                    self.path_to_generated_dir(project_root).join("bindings.h"),
+                );
+                vec
             }
         }
     }
