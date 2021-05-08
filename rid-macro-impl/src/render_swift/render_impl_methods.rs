@@ -28,7 +28,10 @@ pub fn render_impl_methods(
                 "{comment}    {call};",
                 comment = comment,
                 call = render_swift_call(
-                    &x.fn_ident_alias.as_ref().unwrap_or(&x.fn_ident),
+                    &x.fn_ident_alias
+                        .as_ref()
+                        .unwrap_or(&x.fn_ident)
+                        .to_string(),
                     &x.args,
                     x.receiver.is_some()
                 )

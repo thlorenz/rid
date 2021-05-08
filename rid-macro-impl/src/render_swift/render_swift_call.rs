@@ -6,7 +6,7 @@ use crate::{
 };
 
 pub fn render_swift_call(
-    fn_ident: &Ident,
+    fn_ident_str: &str,
     args: &[RustType],
     has_receiver: bool,
 ) -> String {
@@ -19,7 +19,7 @@ pub fn render_swift_call(
         swift_dummy_args.insert(0, SwiftArg::Nil.render_dummy_arg());
     }
 
-    format!("{}({})", fn_ident, swift_dummy_args.join(","))
+    format!("{}({})", fn_ident_str, swift_dummy_args.join(","))
 }
 
 enum SwiftArg {
