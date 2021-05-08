@@ -8,12 +8,15 @@ use bindings_generator::BindingsGenerator;
 use dart_generator::DartGenerator;
 
 mod bindings_generator;
+mod code_sections;
 mod dart_generator;
 mod log;
 mod project;
 
 pub use dart_generator::BuildTarget;
 pub use project::{FlutterConfig, FlutterPlatform, Project};
+
+use crate::code_sections::CodeSections;
 
 pub struct BuildConfig<'a> {
     pub project_root: &'a str,
@@ -87,12 +90,13 @@ fn generate(
     let path_to_target =
         &format!("{}", project.path_to_target(target_crate_root).display());
 
+    let code_sections = CodeSections::new(&bindings_h_content);
     let dart_generator = DartGenerator {
         lib_name,
         target,
         ffigen_binding,
         path_to_target,
-        binding: &bindings_h_content,
+        code_sections: &code_sections,
         project: &project,
     };
 
