@@ -12,12 +12,14 @@ use crate::{
     },
     parse::rust_type::RustType,
     render_rust::RenderedDisplayImpl,
+    render_swift::render_swift_display_call,
 };
 
 pub struct DisplayImplConfig {
     render_cstring_free: bool,
     render_dart_extension: bool,
     render_dart_enum: bool,
+    render_swift_methods: bool,
 }
 
 impl Default for DisplayImplConfig {
@@ -26,6 +28,7 @@ impl Default for DisplayImplConfig {
             render_cstring_free: true,
             render_dart_extension: true,
             render_dart_enum: true,
+            render_swift_methods: true,
         }
     }
 }
@@ -36,6 +39,7 @@ impl DisplayImplConfig {
             render_cstring_free: false,
             render_dart_extension: false,
             render_dart_enum: false,
+            render_swift_methods: false,
         }
     }
 }
@@ -89,6 +93,16 @@ fn render_display(
         TokenStream::new()
     };
 
+    let swift_call_tokens: TokenStream = if config.render_swift_methods {
+        let method_str = render_swift_display_call(
+            &fn_display_method_ident.to_string(),
+            "///",
+        );
+        method_str.parse().unwrap()
+    } else {
+        TokenStream::new()
+    };
+
     // TODO: once model/parsed_struct.rs is normalized to parse::RustType we need to render
     // this enum there as well once we see a field of its type.
     let dart_enum_tokens: TokenStream = if config.render_dart_enum
@@ -110,11 +124,13 @@ fn render_display(
         TokenStream::new()
     };
 
+    // TODO: cstring_free swift
     let mod_ident = format_ident!("__rid_mod_{}", fn_display_method_ident);
     quote! {
         mod #mod_ident {
             use super::*;
             #dart_enum_tokens
+            #swift_call_tokens
             #dart_ext_tokens
             #rust_method_tokens
             #cstring_free_tokens
