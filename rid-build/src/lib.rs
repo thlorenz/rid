@@ -1,6 +1,6 @@
 #![allow(stable_features)]
 #![feature(str_split_once)]
-use std::{fs, path::Path};
+use std::{fmt::Display, fs, path::Path};
 
 use anyhow::Result;
 
@@ -12,11 +12,12 @@ mod code_sections;
 mod dart_generator;
 mod log;
 mod project;
+mod swift_injector;
 
 pub use dart_generator::BuildTarget;
 pub use project::{FlutterConfig, FlutterPlatform, Project};
 
-use crate::code_sections::CodeSections;
+use crate::{code_sections::CodeSections, swift_injector::SwiftInjector};
 
 pub struct BuildConfig<'a> {
     pub project_root: &'a str,
@@ -32,7 +33,7 @@ pub struct BuildConfig<'a> {
 /// folder where it is needed, for Dart it is placed alongside the generated dart for now.
 /// The generated Dart and the path to where it should be placed is included as well.
 #[derive(Debug)]
-struct GenerateResult {
+pub struct BuildResult {
     /// Content of Dart generated and to be included by the Dart or Flutter app.
     generated_dart: String,
 
@@ -44,6 +45,28 @@ struct GenerateResult {
     /// Path at which the C headers file was ALREADY written. This may be ignored for Dart apps,
     /// but should be located in the correct location for Flutter apps.
     generated_bindings_h_path: String,
+
+    /// Swift plugin files that were modified in ordert to prevent Rust functions from being
+    /// removed via tree shaking.
+    swift_plugin_files: Vec<String>,
+}
+
+impl Display for BuildResult {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "
+Rid Build Result
+================
+Path to generated bindings: {generated_bindings_h_path}
+Path to generated Dart:     {generated_dart_path}
+Paths to modified Swift:    [{swift_plugin_files}]
+",
+            generated_bindings_h_path = self.generated_bindings_h_path,
+            generated_dart_path = self.generated_dart_path,
+            swift_plugin_files = self.swift_plugin_files.join(", "),
+        )
+    }
 }
 
 fn generate(
@@ -55,7 +78,7 @@ fn generate(
         project,
         target,
     }: &BuildConfig,
-) -> Result<GenerateResult> {
+) -> Result<BuildResult> {
     let bindings_generator = BindingsGenerator {
         crate_name,
         crate_dir: project_root,
@@ -90,7 +113,11 @@ fn generate(
     let path_to_target =
         &format!("{}", project.path_to_target(target_crate_root).display());
 
+    // Extract Dart and Swift code from bindings.h
     let code_sections = CodeSections::new(&bindings_h_content);
+
+    // Generate Dart glue code and add to code extracted from bindings.h
+    log::info!("Generating Dart glue code");
     let dart_generator = DartGenerator {
         lib_name,
         target,
@@ -99,30 +126,39 @@ fn generate(
         code_sections: &code_sections,
         project: &project,
     };
-
-    log::info!("Generating dart");
     let generated_dart = dart_generator.generate();
 
-    Ok(GenerateResult {
+    // Inject swift code to prevent tree shaking
+    log::info!("Injecting Swift code into plugin");
+    let swift_injector = SwiftInjector { project: &project };
+    let swift_plugin_files = swift_injector
+        .inject(&project_root, &code_sections.swift_code)?
+        .into_iter()
+        .map(|x| format!("{}", x.display()))
+        .collect();
+
+    Ok(BuildResult {
         generated_dart,
         generated_dart_path: format!("{}", generated_dart_path.display()),
         generated_bindings_h_path: format!("{}", bindings_h_path.display()),
+        swift_plugin_files,
     })
 }
 
-pub fn build(build_config: &BuildConfig) -> Result<()> {
+pub fn build(build_config: &BuildConfig) -> Result<BuildResult> {
     log::init();
 
-    let GenerateResult {
+    let generate_result = generate(build_config)?;
+    let BuildResult {
         generated_dart,
         generated_dart_path,
         ..
-    } = generate(build_config)?;
+    } = &generate_result;
 
     // NOTE: the directory to hold the file is recursively created if it doesn't exist yet
     fs::write(generated_dart_path, generated_dart)?;
 
-    Ok(())
+    Ok(generate_result)
 }
 
 // TODO: disabled due to getting stuck

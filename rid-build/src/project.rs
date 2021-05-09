@@ -101,6 +101,24 @@ impl Project {
         }
     }
 
+    pub(crate) fn paths_to_swift_plugin_files(
+        &self,
+        project_root: &Path,
+    ) -> Vec<PathBuf> {
+        match self {
+            Project::Dart => vec![],
+            Project::Flutter(FlutterConfig {
+                plugin_name,
+                platforms,
+                ..
+            }) => platforms
+                .iter()
+                .flat_map(|x| &x.swift_plugin_file)
+                .map(|x| project_root.join(plugin_name).join(x))
+                .collect::<Vec<PathBuf>>(),
+        }
+    }
+
     pub(crate) fn path_to_target(&self, workspace_root: &Path) -> PathBuf {
         workspace_root.join("target").to_path_buf()
     }
