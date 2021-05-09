@@ -29,5 +29,7 @@ fn main() {
         project_root: &crate_dir,
         workspace_root: Some(&workspace_dir),
     };
-    build(&build_config).expect("Build failed");
+    let build_result = build(&build_config).expect("Build failed");
+
+    eprintln!("{}", build_result);
 }
