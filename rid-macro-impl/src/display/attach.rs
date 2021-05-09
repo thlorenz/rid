@@ -113,6 +113,7 @@ fn render_display(
     let mod_ident = format_ident!("__rid_mod_{}", fn_display_method_ident);
     quote! {
         mod #mod_ident {
+            use super::*;
             #dart_enum_tokens
             #dart_ext_tokens
             #rust_method_tokens
