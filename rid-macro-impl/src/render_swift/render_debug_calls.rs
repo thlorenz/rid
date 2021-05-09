@@ -10,7 +10,7 @@ pub fn render_swift_debug_calls(
 {comment} Swift calls generated for exported debug methods to prevent removal.
 {comment} 
 {comment} ```swift
-{comment} func dummyCalls_{debug_method_name}_{debug_pretty_method_name} {{
+{comment} func dummyCalls_{debug_method_name}_{debug_pretty_method_name}() {{
 {comment}     {debug_call};
 {comment}     {debug_pretty_call};
 {comment} }}

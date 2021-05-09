@@ -49,7 +49,7 @@ pub fn render_impl_methods(
 {comment}They are necessary to prevent Rust methods being removed via Swift tree shaking.
 {comment}
 {comment}```swift
-{comment}func dummyMethodsFor{impl_ident} {{
+{comment}func dummyMethodsFor{impl_ident}() {{
 {methods}
 {comment}}}
 {comment}```
