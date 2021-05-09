@@ -8,8 +8,4 @@ public class SwiftPlugin: NSObject, FlutterPlugin {
   public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
     result(nil)
   }
-  public static func dummyMethodToEnforceBundling() {
-    // Prevent Swift Treeshake
-    add(40, 2)
-  }
 }
