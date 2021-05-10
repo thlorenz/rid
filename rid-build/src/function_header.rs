@@ -31,6 +31,6 @@ impl FunctionHeader {
     pub fn render_swift_call(&self) -> String {
         let args: Vec<String> =
             self.args.iter().map(|x| x.render_swift()).collect();
-        format!("{}({})", self.name, args.join(","))
+        format!("{}({})", self.name, args.join(", "))
     }
 }
