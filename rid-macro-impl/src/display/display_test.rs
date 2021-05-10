@@ -23,6 +23,7 @@ mod enums_display_impl {
 
         let expected = quote! {
             mod __rid_mod_rid_single_display {
+                use super::*;
                 #[no_mangle]
                 #[allow(non_snake_case)]
                 pub extern "C" fn rid_single_display(n: i32) -> *const ::std::os::raw::c_char {
@@ -52,6 +53,7 @@ mod enums_display_impl {
 
         let expected = quote! {
             mod __rid_mod_rid_single_display {
+                use super::*;
                 #[no_mangle]
                 #[allow(non_snake_case)]
                 pub extern "C" fn rid_single_display(n: i32) -> *const ::std::os::raw::c_char {
@@ -83,6 +85,7 @@ mod structs_display_impl {
 
         let expected = quote! {
             mod __rid_mod_rid_single_display {
+                use super::*;
                 #[no_mangle]
                 #[allow(non_snake_case)]
                 pub extern "C" fn rid_single_display(ptr: *mut Single) -> *const ::std::os::raw::c_char {
