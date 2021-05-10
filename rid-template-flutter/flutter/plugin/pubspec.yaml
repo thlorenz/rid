@@ -12,7 +12,7 @@ ffigen:
   output: 'lib/generated/ffigen_binding.dart'
   headers:
     entry-points:
-      - 'lib/generated/binding.h'
+      - 'lib/generated/bindings.h'
 
 dependencies:
   ffi: ^1.0.0
