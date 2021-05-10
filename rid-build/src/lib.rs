@@ -8,16 +8,18 @@ use bindings_generator::BindingsGenerator;
 use dart_generator::DartGenerator;
 
 mod bindings_generator;
-mod code_sections;
 mod dart_generator;
+mod function_header;
+mod function_header_parser;
 mod log;
+mod parsed_bindings;
 mod project;
 mod swift_injector;
 
 pub use dart_generator::BuildTarget;
 pub use project::{FlutterConfig, FlutterPlatform, Project};
 
-use crate::{code_sections::CodeSections, swift_injector::SwiftInjector};
+use crate::{parsed_bindings::ParsedBindings, swift_injector::SwiftInjector};
 
 pub struct BuildConfig<'a> {
     pub project_root: &'a str,
@@ -114,7 +116,7 @@ fn generate(
         &format!("{}", project.path_to_target(target_crate_root).display());
 
     // Extract Dart and Swift code from bindings.h
-    let code_sections = CodeSections::new(&bindings_h_content);
+    let parsed_bindings = ParsedBindings::new(&bindings_h_content);
 
     // Generate Dart glue code and add to code extracted from bindings.h
     log::info!("Generating Dart glue code");
@@ -123,7 +125,7 @@ fn generate(
         target,
         ffigen_binding,
         path_to_target,
-        code_sections: &code_sections,
+        code_sections: &parsed_bindings,
         project: &project,
     };
     let generated_dart = dart_generator.generate();
@@ -132,7 +134,7 @@ fn generate(
     log::info!("Injecting Swift code into plugin");
     let swift_injector = SwiftInjector { project: &project };
     let swift_plugin_files = swift_injector
-        .inject(&project_root, &code_sections.swift_code)?
+        .inject(&project_root, &parsed_bindings.swift_code)?
         .into_iter()
         .map(|x| format!("{}", x.display()))
         .collect();

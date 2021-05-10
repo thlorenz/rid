@@ -3,7 +3,7 @@ use rid_common::{
     STRING_TO_NATIVE_INT8,
 };
 
-use crate::{code_sections::CodeSections, FlutterConfig, Project};
+use crate::{parsed_bindings::ParsedBindings, FlutterConfig, Project};
 const PACKAGE_FFI: &str = "package_ffi";
 
 #[derive(Clone, Copy)]
@@ -76,7 +76,7 @@ pub(crate) struct DartGenerator<'a> {
     pub(crate) lib_name: &'a str,
 
     /// Code sections to render inside the generated Dart and Swift modules respectively.
-    pub(crate) code_sections: &'a CodeSections,
+    pub(crate) code_sections: &'a ParsedBindings,
 
     /// Rust library to load, Release or Debug.
     pub(crate) target: &'a BuildTarget,
