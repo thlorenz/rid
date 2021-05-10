@@ -14,6 +14,7 @@ impl Model {
     fn update(&mut self, msg: Msg) {
         match msg {
             Msg::Inc => self.count += 1,
+            Msg::Add(n) => self.count += n,
         }
     }
 }
@@ -22,4 +23,5 @@ impl Model {
 #[derive(Debug)]
 pub enum Msg {
     Inc,
+    Add(u32),
 }
