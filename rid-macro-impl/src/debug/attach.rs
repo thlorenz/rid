@@ -12,7 +12,6 @@ use crate::{
     },
     parse::rust_type::RustType,
     render_rust::{RenderedDebugImpl, RenderedDisplayImpl},
-    render_swift::render_swift_debug_calls,
 };
 
 pub struct DebugImplConfig {
@@ -95,17 +94,6 @@ fn render_debug(
         TokenStream::new()
     };
 
-    let swift_calls: TokenStream = if config.render_swift_calls {
-        let swift_calls_str = render_swift_debug_calls(
-            &fn_debug_method_ident.to_string(),
-            &fn_debug_pretty_method_ident.to_string(),
-            "///",
-        );
-        swift_calls_str.parse().unwrap()
-    } else {
-        TokenStream::new()
-    };
-
     // TODO: once model/parsed_struct.rs is normalized to parse::RustType we need to render
     // this enum there as well once we see a field of its type.
     let dart_enum_tokens: TokenStream = if config.render_dart_enum
@@ -132,7 +120,6 @@ fn render_debug(
         mod #mod_ident {
             use super::*;
             #dart_enum_tokens
-            #swift_calls
             #dart_ext_tokens
             #rust_method_tokens
             #cstring_free_tokens

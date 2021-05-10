@@ -6,7 +6,6 @@ use crate::{
     render_common::{render_vec_accesses, TypeAlias, VecAccess},
     render_dart,
     render_rust::{self, ffi_prelude, render_free, RenderedTypeAliasInfo},
-    render_swift,
 };
 
 use crate::{attrs::parse_rid_attrs, common::abort};
@@ -14,7 +13,6 @@ use quote::{format_ident, quote};
 
 use proc_macro2::TokenStream;
 use render_dart::render_instance_method_extension;
-use render_swift::render_impl_methods;
 use syn::Ident;
 
 fn unpack_tuples<T, U>(tpls: Vec<(T, U)>) -> (Vec<T>, Vec<U>) {
@@ -111,9 +109,6 @@ pub fn rid_export_impl(
             let dart_extension_tokens =
                 render_instance_method_extension(&parsed, None);
 
-            let swift_method_tokens =
-                render_swift::render_impl_methods(&module_ident, &parsed, None);
-
             let vec_access_tokens =
                 render_vec_accesses(&needed_vec_accesses, "///");
 
@@ -124,7 +119,6 @@ pub fn rid_export_impl(
                 mod #module_ident {
                     use super::*;
                     #(#typedef_tokens)*
-                    #swift_method_tokens
                     #dart_extension_tokens
                     #(#rust_fn_tokens)*
                     #(#vec_access_tokens)*

@@ -10,7 +10,6 @@ mod parse;
 mod render_common;
 mod render_dart;
 mod render_rust;
-mod render_swift;
 
 pub use attrs::parse_rid_attrs;
 pub use debug::rid_debug_impl;
