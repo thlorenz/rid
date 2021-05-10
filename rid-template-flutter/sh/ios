@@ -24,6 +24,3 @@ cargo lipo \
   --targets $IOS_TARGETS
 
 cp $LIB_SOURCE_FILE $LIB_TARGET_FILE
-
-PLUGIN_GENERATED_DIR=$DIR/../plugin/lib/generated
-cp $PLUGIN_GENERATED_DIR/binding.h $FLUTTER_IOS_DIR/Classes/binding.h 

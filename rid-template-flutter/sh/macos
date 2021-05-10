@@ -18,6 +18,3 @@ LIB_TARGET_FILE="$FLUTTER_MACOS_DIR/$LIB_NAME"
 cargo build
 
 cp $LIB_SOURCE_FILE $LIB_TARGET_FILE
-
-PLUGIN_GENERATED_DIR=$DIR/../plugin/lib/generated
-cp $PLUGIN_GENERATED_DIR/binding.h $FLUTTER_MACOS_DIR/Classes/binding.h 
