@@ -3,17 +3,20 @@ pub enum FunctionArg {
     Pointer,
     Int,
     Struct(String),
+    Enum(String),
+    RidVec(String),
 }
 
 impl FunctionArg {
     fn render_swift(&self) -> String {
         use FunctionArg::*;
         match self {
-            Pointer => "nil",
-            Int => "0",
-            Struct(_) => "nil",
+            Pointer => "nil".to_string(),
+            Int => "0".to_string(),
+            Struct(_) => "nil".to_string(),
+            Enum(name) => format!("{}(rawValue: 0)", name),
+            RidVec(name) => format!("{}()", name),
         }
-        .to_string()
     }
 }
 

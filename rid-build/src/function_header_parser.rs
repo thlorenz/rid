@@ -24,7 +24,18 @@ pub fn parse_function_header(line: &str) -> Option<FunctionHeader> {
 fn parse_arg(arg: &str) -> Option<FunctionArg> {
     if arg == "void" {
         None
-    } else if arg.contains('*') || arg.contains("PointerMut_") {
+    } else if arg.starts_with("enum") {
+        let enum_name = arg.splitn(3, ' ').collect::<Vec<&str>>()[1];
+        Some(FunctionArg::Enum(enum_name.to_string()))
+    } else if arg.starts_with("struct RidVec_") {
+        // TODO: this case should be merged with struct without a *
+        let vec_name = arg.splitn(3, ' ').collect::<Vec<&str>>()[1];
+        Some(FunctionArg::RidVec(vec_name.to_string()))
+    } else if arg.contains('*')
+        || arg.contains("PointerMut_")
+        // TODO(thlorenz): this can be less brittle by looking at the typedefs (structs) 
+        || arg.starts_with("Pointer_")
+    {
         Some(FunctionArg::Pointer)
     } else if arg.starts_with("struct") {
         let parts: Vec<&str> = arg.split(' ').collect();
@@ -72,20 +83,6 @@ mod tests {
         );
 
         let res = parse_function_header(
-            "Pointer_Todo rid_get_item_Pointer_Todo(struct RidVec_Pointer_Todo vec, uintptr_t idx);"
-        );
-        assert_eq!(
-            res,
-            Some(FunctionHeader {
-                name: "rid_get_item_Pointer_Todo".to_string(),
-                args: vec![
-                    FunctionArg::Struct("RidVec_Pointer_Todo".to_string()),
-                    FunctionArg::Int
-                ]
-            })
-        );
-
-        let res = parse_function_header(
             "void rid_msg_AddTodo(struct Model *ptr, char *arg0);",
         );
         assert_eq!(
@@ -113,6 +110,46 @@ mod tests {
             Some(FunctionHeader {
                 name: "initModel".to_string(),
                 args: vec![]
+            })
+        );
+
+        let res = parse_function_header(
+            "struct RidVec_Pointer_Todo rid_export_Model_filtered_todos(Pointer_Model ptr);"
+        );
+
+        assert_eq!(
+            res,
+            Some(FunctionHeader {
+                name: "rid_export_Model_filtered_todos".to_string(),
+                args: vec![FunctionArg::Pointer]
+            })
+        );
+
+        let res = parse_function_header(
+            "void rid_msg_SetFilter(struct Model *ptr, enum Filter arg0);",
+        );
+        assert_eq!(
+            res,
+            Some(FunctionHeader {
+                name: "rid_msg_SetFilter".to_string(),
+                args: vec![
+                    FunctionArg::Pointer,
+                    FunctionArg::Enum("Filter".to_string())
+                ]
+            })
+        );
+
+        let res = parse_function_header(
+            "Pointer_Todo rid_get_item_Pointer_Todo(struct RidVec_Pointer_Todo vec, uintptr_t idx);"
+        );
+        assert_eq!(
+            res,
+            Some(FunctionHeader {
+                name: "rid_get_item_Pointer_Todo".to_string(),
+                args: vec![
+                    FunctionArg::RidVec("RidVec_Pointer_Todo".to_string()),
+                    FunctionArg::Int,
+                ]
             })
         );
     }
