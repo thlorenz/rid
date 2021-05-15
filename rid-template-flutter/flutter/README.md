@@ -9,7 +9,7 @@ Use the below scripts to get the app ready to run with Flutter.
 ### 1. Generate Glue Code
 
 ```sh
-./sh/bindgen && ./sh/ffigen
+./sh/bindgen
 ```
 
 ### 2. Build For Desired Target/Device
@@ -80,11 +80,13 @@ functionality currently provided by these scripts.
 - `bindgen` generates the `binding.h` header file for the extern Rust functions found inside
   `./src`. These are then placed inside the `./plugin` device folders were needed as well as
   `./plugin/lib/generated/binding.h` where they are used to generate Dart glue code
-- `ffigen` generates Dart glue code inside `./plugin/lib/generated/ffigen_binding.dart` using
-  `./plugin/lib/generated/binding.h` as input
+  - as part of this script `ffigen` generates Dart glue code inside
+    `./plugin/lib/generated/ffigen_binding.dart` using `./plugin/lib/generated/binding.h` as input
 - `./android` builds the Rust binary to run on Android devices/emulators and places it inside
   `./plugin/lib/android`
 - `./ios` builds the Rust binary to run on IOS devices/emulators and places it inside
   `./plugin/lib/ios`
 - `./macos` builds the Rust binary to run on MacOs directly and places it inside
   `./plugin/lib/macos`, this is the same format as running `cargo build` on your Mac
+- `clean` cleans both the Flutter plugin and application, run this to reset Flutter when things
+  aren't working
