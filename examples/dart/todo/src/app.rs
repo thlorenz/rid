@@ -50,7 +50,7 @@ impl Model {
                         return warn!("Could not find Todo with id '{}'", id)
                     }
                 };
-                self.todos.swap_remove(idx);
+                self.todos.remove(idx);
             }
 
             RemoveCompleted => self.todos.retain(|todo| !todo.completed),
