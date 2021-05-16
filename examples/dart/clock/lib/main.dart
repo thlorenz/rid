@@ -3,7 +3,7 @@ import 'dart:ffi';
 import 'dart:io';
 import 'package:clock/generated/ffigen_binding.dart';
 import 'package:clock/generated/rid_generated.dart';
-import 'package:isolate/ports.dart';
+import 'package:clock/isolate.dart';
 
 ///
 /// Rid generated dynamic library open and export

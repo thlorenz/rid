@@ -13,4 +13,3 @@ ffigen:
 dependencies: 
   ffi: ^1.0.0
   ffigen: ^2.2.4
-  isolate: ^2.0.3
