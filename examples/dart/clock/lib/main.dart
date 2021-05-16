@@ -63,9 +63,20 @@ class Test {
   }
 }
 
+Timer wait() {
+  return new Timer.periodic(const Duration(seconds: 1), (Timer timer) {
+    print('.');
+  });
+}
+
 Future<void> main() async {
   Test.setup();
   final test = Test();
-  final res = await test.loadPage("https://github.com");
-  print("Response: $res");
+  final timer = wait();
+  test.loadPage("https://github.com").then((val) {
+    timer.cancel();
+    print("Response: $val\n");
+  });
+
+  print("Waiting for the response, but life goes on\n");
 }
