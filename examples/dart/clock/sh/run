@@ -3,4 +3,5 @@
 dart                          \
   --enable-asserts            \
   --packages=.packages        \
+  --no-sound-null-safety      \
   package:clock/main.dart 
