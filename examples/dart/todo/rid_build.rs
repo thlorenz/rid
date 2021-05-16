@@ -10,7 +10,7 @@ fn main() {
     // CARGO_BUILD_TARGET is only present in build.rs it seems.
     // DYLD_FALLBACK_LIBRARY_PATH should help here
     // https://doc.rust-lang.org/cargo/reference/environment-variables.html#dynamic-library-paths
-    let workspace_dir = &format!("{}/../../../", crate_dir);
+    let workspace_dir = &format!("{}", crate_dir);
 
     let crate_name = &env::var("CARGO_PKG_NAME")
         .expect("Missing CARGO_PKG_NAME, please run this via 'cargo run'");

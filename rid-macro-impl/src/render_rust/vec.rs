@@ -1,7 +1,7 @@
 use proc_macro2::TokenStream;
 use quote::quote;
 
-use crate::render_common::{TypeAlias, VecAccess};
+use crate::render_common::{PointerTypeAlias, VecAccess};
 
 use super::{
     render_access_item, render_free, RenderedAccessItem, RenderedFree,
@@ -9,7 +9,7 @@ use super::{
 
 pub struct RenderedVecRust {
     pub tokens: TokenStream,
-    pub type_aliases: Vec<TypeAlias>,
+    pub type_aliases: Vec<PointerTypeAlias>,
 }
 
 impl VecAccess {
@@ -18,7 +18,7 @@ impl VecAccess {
     // If it turns out that we don't need those then we don't have to return them from
     // `render_free` or `render_access_item` either.
     pub fn render_rust(&self) -> RenderedVecRust {
-        let mut type_aliases = Vec::<TypeAlias>::new();
+        let mut type_aliases = Vec::<PointerTypeAlias>::new();
 
         let RenderedFree {
             tokens: free_tokens,

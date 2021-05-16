@@ -5,37 +5,36 @@ use crate::{
         rust_type::{Composite, Primitive, RustType, TypeKind, Value},
         ParsedReference,
     },
-    render_common::TypeAlias,
+    render_common::PointerTypeAlias,
 };
 use quote::{format_ident, quote, quote_spanned};
 
 /// C style pointer type for a given RustType, i.e. `*const Model`
 pub struct RenderedPointerType {
     pub tokens: TokenStream,
-    pub alias: Option<TypeAlias>,
+    pub alias: Option<PointerTypeAlias>,
 }
 impl RustType {
     /// Renders C style pointer type for a given RustType, i.e. `*const Model`
     pub fn render_pointer_type(&self) -> RenderedPointerType {
         use crate::parse::ParsedReference::*;
         use TypeKind as K;
-        let RustType {
-            ident,
-            kind,
-            reference,
-        } = self;
         let mut alias = None;
 
-        let tokens = match kind {
+        let tokens = match &self.kind {
             K::Primitive(prim) => prim.render_pointer_type(),
             K::Value(val) => {
-                let (al, tokens) = val.render_pointer_type(reference);
+                let (al, tokens) = val.render_pointer_type(&self);
                 alias = al;
                 tokens
             }
             K::Composite(Composite::Vec, rust_type) => {
                 // similar to same case in ./render_return_type.rs
                 todo!("render_pointer_type::custom_composite::vec")
+            }
+            K::Composite(Composite::Option, rust_type) => {
+                // similar to same case in ./render_return_type.rs
+                todo!("render_pointer_type::custom_composite::option")
             }
             K::Composite(composite, rust_type) => {
                 todo!("render_pointer_type::custom_composite")
@@ -71,17 +70,18 @@ impl Primitive {
 impl Value {
     fn render_pointer_type(
         &self,
-        reference: &ParsedReference,
-    ) -> (Option<TypeAlias>, TokenStream) {
+        rust_type: &RustType,
+    ) -> (Option<PointerTypeAlias>, TokenStream) {
         use Value as V;
 
         match self {
             V::CString | V::String | V::Str => {
                 (None, quote! { *const ::std::os::raw::c_char })
             }
-            Value::Custom(info, name) => {
-                let (alias, aliased_tok) =
-                    reference.render_pointer(name, false);
+            Value::Custom(info, _) => {
+                let (alias, aliased_tok) = rust_type
+                    .reference
+                    .render_pointer(&rust_type.ident().to_string(), false);
                 (alias, quote_spanned! { info.key.span() => #aliased_tok })
             }
         }

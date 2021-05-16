@@ -1,6 +1,7 @@
 pub mod dart;
 pub mod errors;
 pub mod parsed_field;
+pub mod prefixes;
 pub mod rust;
 pub mod state;
 mod syn_helpers;

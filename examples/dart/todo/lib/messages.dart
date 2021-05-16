@@ -1,56 +1,56 @@
-import 'generated/ffigen_binding.dart';
-import 'generated/rid_generated.dart';
+import 'generated/rid_api.dart';
 import 'dart:async';
 
 import 'log.dart';
 
-messages() {
-  final model = rid_ffi.initModel();
-  model.msgAddTodo("Hello");
-  model.msgAddTodo("World");
-  model.msgAddTodo("Hola");
-  model.msgAddTodo("Mundo");
+messages() async {
+  RID_DEBUG_REPLY = (reply) => log.d('$reply');
 
-  log.v(model.debug(LOG_VERBOSE));
+  final store = Store.instance;
+  await store.msgAddTodo("Hello");
+  await store.msgAddTodo("World");
+  await store.msgAddTodo("Hola");
+  await store.msgAddTodo("Mundo");
 
-  model.msgCompleteTodo(1);
-  log.v(model.debug(LOG_VERBOSE));
+  log.v(store.debug(LOG_VERBOSE));
 
-  model.msgRestartTodo(1);
-  log.v(model.debug(LOG_VERBOSE));
+  await store.msgCompleteTodo(1);
+  log.v(store.debug(LOG_VERBOSE));
 
-  model.msgRemoveTodo(1);
-  log.v(model.debug(LOG_VERBOSE));
+  await store.msgRestartTodo(1);
+  log.v(store.debug(LOG_VERBOSE));
 
-  model.msgToggleTodo(2);
-  model.msgToggleTodo(3);
-  log.v(model.debug(LOG_VERBOSE));
+  await store.msgRemoveTodo(1);
+  log.v(store.debug(LOG_VERBOSE));
 
-  model.msgSetFilter(Filter.Completed);
-  log.v(model.debug(LOG_VERBOSE));
+  await store.msgToggleTodo(2);
+  await store.msgToggleTodo(3);
+  log.v(store.debug(LOG_VERBOSE));
 
-  final filteredTodos = model.filtered_todos();
-  log.i("len: ${filteredTodos.length}, cap: ${filteredTodos.capacity}");
+  await store.msgSetFilter(Filter.Completed);
+  log.v(store.debug(LOG_VERBOSE));
+
+  final filteredTodos = store.filteredTodos();
+  log.i("len: ${filteredTodos.length}");
 
   final firstFiltered = filteredTodos[0];
-  log.v(firstFiltered.debug(LOG_VERBOSE));
+  log.v(firstFiltered.toString());
   final secondFiltered = filteredTodos[1];
-  log.v(secondFiltered.debug(LOG_VERBOSE));
-  filteredTodos.dispose();
+  log.v(secondFiltered.toString());
 
-  model.msgRemoveCompleted();
-  log.v(model.debug(LOG_VERBOSE));
+  await store.msgRemoveCompleted();
+  log.v(store.debug(LOG_VERBOSE));
 
-  model.msgCompleteAll();
-  log.v(model.debug(LOG_VERBOSE));
+  await store.msgCompleteAll();
+  log.v(store.debug(LOG_VERBOSE));
 
-  model.msgRestartAll();
-  log.v(model.debug(LOG_VERBOSE));
+  await store.msgRestartAll();
+  log.v(store.debug(LOG_VERBOSE));
 
   log.d("restarting non-existent todo");
-  model.msgRestartTodo(5);
+  await store.msgRestartTodo(5);
 
-  model.dispose();
+  store.dispose();
 }
 
 onError(Object error, StackTrace stack) {
@@ -58,7 +58,7 @@ onError(Object error, StackTrace stack) {
   print(stack);
 }
 
-void main(List<String> args) {
-  runZonedGuarded(messages, onError);
+void main(List<String> args) async {
+  await runZonedGuarded(messages, onError);
   log.i("App run completed successfully");
 }

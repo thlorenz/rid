@@ -1,7 +1,7 @@
 use proc_macro2::TokenStream;
 use syn::Ident;
 
-use crate::parse::rust_type::RustType;
+use crate::{attrs::TypeInfoMap, parse::rust_type::RustType};
 use quote::quote;
 
 pub struct VecAccess {
@@ -9,7 +9,7 @@ pub struct VecAccess {
     pub vec_type: RustType,
 
     /// Identifier used for the vector type, possibly using alias for inner type
-    /// Example: `RidVec_Pointer_Item`
+    /// Example: `RidVec_Pointer_RawItem`
     pub vec_type_dart: String,
 
     /// Type of the item enclosed by the vector
@@ -31,6 +31,7 @@ pub struct VecAccess {
 
 pub fn render_vec_accesses(
     vec_accesses: &[VecAccess],
+    type_infos: &TypeInfoMap,
     comment: &str,
 ) -> Vec<TokenStream> {
     vec_accesses
@@ -38,7 +39,7 @@ pub fn render_vec_accesses(
         .map(|x| {
             let rust_tokens = x.render_rust().tokens;
 
-            let implement_vecs = x.render_dart(comment);
+            let implement_vecs = x.render_dart(type_infos, comment);
             let dart_string: String = format!(
                 r###"
             {comment} Vector access methods matching the below Rust methods.

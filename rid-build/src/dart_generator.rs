@@ -1,10 +1,17 @@
 use rid_common::{
-    CSTRING_FREE, DART_COLLECTION, DART_FFI, FFI_GEN_BIND, RID_FFI,
+    CSTRING_FREE, DART_ASYNC, DART_COLLECTION, DART_FFI, FFI_GEN_BIND, RID_FFI,
     STRING_TO_NATIVE_INT8,
 };
 
 use crate::{parsed_bindings::ParsedBindings, FlutterConfig, Project};
 const PACKAGE_FFI: &str = "package_ffi";
+static RID_WIDGETS: &str = include_str!("../dart/_rid_widgets.dart");
+static RID_UTILS_FLUTTER: &str =
+    include_str!("../dart/_rid_utils_flutter.dart");
+static RID_UTILS_DART: &str = include_str!("../dart/_rid_utils_dart.dart");
+static STORE_STUB_DART: &str = include_str!("../dart/_store_stub.dart");
+static REPLY_CHANNEL_STUB_DART: &str =
+    include_str!("../dart/_reply_channel_stub.dart");
 
 #[derive(Clone, Copy)]
 pub enum BuildTarget {
@@ -69,6 +76,9 @@ pub(crate) struct DartGenerator<'a> {
     /// generated here.
     pub(crate) ffigen_binding: &'a str,
 
+    /// Relative path to the reply_channel Dart implementation
+    pub(crate) reply_channel: &'a str,
+
     /// Path to the 'target' directory of Rust binaries where we load the dynamic library from.
     pub(crate) path_to_target: &'a str,
 
@@ -82,27 +92,61 @@ pub(crate) struct DartGenerator<'a> {
     pub(crate) target: &'a BuildTarget,
 
     pub(crate) project: &'a Project,
+
+    /// If `true` the user didn't implement a store yet and we need to stub some methods to make
+    /// things work
+    pub(crate) needs_store_stub: bool,
+
+    /// If `true` the user didn't implement a #[rid::reply] enum yet and we need to stub a
+    /// `dipsose`able `replyChannel` global var
+    pub(crate) needs_reply_channel_stub: bool,
 }
 
 impl<'a> DartGenerator<'a> {
     pub(crate) fn generate(&self) -> String {
         let extensions = &self.code_sections.dart_code;
         let structs = &self.code_sections.structs;
+
+        let _enums = &self.code_sections.enums;
         let dynamic_library_constructor = match self.project {
             Project::Dart => "NativeLibrary",
             Project::Flutter(FlutterConfig { plugin_name, .. }) => plugin_name,
         };
+        let flutter_widget_overrides = match self.project {
+            Project::Dart => "",
+            Project::Flutter(_) => RID_WIDGETS,
+        };
+        let rid_utils = match self.project {
+            Project::Dart => RID_UTILS_DART,
+            Project::Flutter(_) => RID_UTILS_FLUTTER,
+        };
+        let store_stub = if self.needs_store_stub {
+            STORE_STUB_DART
+        } else {
+            ""
+        };
+
+        let reply_channel_stub = if self.needs_reply_channel_stub {
+            REPLY_CHANNEL_STUB_DART
+        } else {
+            ""
+        };
 
         format!(
             r###"{imports}
-// Forwarding dart_ffi types essential to access Rust structs
+// Forwarding dart_ffi types essential to access raw Rust structs
 {dart_ffi_exports}
-// Forwarding Dart Types for Rust structs
+// Forwarding Dart Types for raw Rust structs
 {struct_exports}
 //
 // Open Dynamic Library
 //
 {open_dl}
+{flutter_widget_overrides}
+//
+// Rid internal Utils
+// 
+{rid_utils}
 //
 // Extensions to provide an API for FFI calls into Rust
 //
@@ -112,33 +156,55 @@ impl<'a> DartGenerator<'a> {
 //
 // Exporting Native Library to call Rust functions directly
 //
-{native_export}"###,
+{native_export}
+
+{store_stub}
+{reply_channel_stub}
+"###,
             imports = self.dart_imports(),
             dart_ffi_exports = dart_ffi_reexports(),
-            struct_exports = self.dart_struct_reexports(&structs),
+            struct_exports = self.dart_rust_type_reexports(&structs),
             open_dl = self.dart_open_dl(),
+            flutter_widget_overrides = flutter_widget_overrides,
+            rid_utils = rid_utils,
             extensions = extensions,
             string_from_pointer_extension = dart_string_from_pointer(),
             string_pointer_from_string_extension =
                 dart_string_pointer_from_string(),
             native_export = load_dynamic_library(dynamic_library_constructor),
+            store_stub = store_stub,
+            reply_channel_stub = reply_channel_stub
         )
         .to_string()
     }
 
     fn dart_imports(&self) -> String {
+        let project_specific_imports = match self.project {
+            Project::Dart => "",
+            Project::Flutter(_) => {
+                r###"
+import 'package:flutter/widgets.dart';
+import 'package:flutter/foundation.dart' as Foundation;"###
+            }
+        };
         format!(
             r###"import 'dart:ffi' as {dart_ffi};
+import 'dart:async' as {dart_async};
 import 'dart:io' as dart_io;
 import 'dart:collection' as {dart_collection};
 import 'package:ffi/ffi.dart' as {pack_ffi};
 import '{ffigen_binding}' as {ffigen_bind};
+import '{reply_channel}';
+{project_specific_imports}
 "###,
             dart_ffi = DART_FFI,
+            dart_async = DART_ASYNC,
             dart_collection = DART_COLLECTION,
             ffigen_binding = self.ffigen_binding,
+            reply_channel = self.reply_channel,
             pack_ffi = PACKAGE_FFI,
-            ffigen_bind = FFI_GEN_BIND
+            ffigen_bind = FFI_GEN_BIND,
+            project_specific_imports = project_specific_imports,
         )
         .to_string()
     }
@@ -184,15 +250,17 @@ import '{ffigen_binding}' as {ffigen_bind};
         }
     }
 
-    fn dart_struct_reexports(&self, structs: &Vec<String>) -> String {
-        if structs.len() == 0 {
+    /// Reexports native struct/enum types generated by ffigen from the binding.
+    /// They are static classes with int properties
+    fn dart_rust_type_reexports(&self, types: &Vec<String>) -> String {
+        if types.len() == 0 {
             "".to_string()
         } else {
-            let structs = structs.join(", ");
+            let types = types.join(", ");
             format!(
-                "export '{ffigen_binding}' show {structs};\n",
+                "export '{ffigen_binding}' show {types};\n",
                 ffigen_binding = self.ffigen_binding,
-                structs = structs
+                types = types
             )
         }
     }

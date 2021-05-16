@@ -68,9 +68,27 @@ impl Project {
             .to_path_buf()
     }
 
-    pub(crate) fn path_to_generated_rid(&self, project_root: &Path) -> PathBuf {
+    pub(crate) fn path_to_rid_dart_api(&self, project_root: &Path) -> PathBuf {
         self.path_to_generated_dir(project_root)
-            .join("rid_generated.dart")
+            .join("rid_api.dart")
+            .to_path_buf()
+    }
+
+    pub(crate) fn path_to_isolate_binding_dart(
+        &self,
+        project_root: &Path,
+    ) -> PathBuf {
+        self.path_to_generated_dir(project_root)
+            .join("_isolate_binding.dart")
+            .to_path_buf()
+    }
+
+    pub(crate) fn path_to_reply_channel_dart(
+        &self,
+        project_root: &Path,
+    ) -> PathBuf {
+        self.path_to_generated_dir(project_root)
+            .join("_reply_channel.dart")
             .to_path_buf()
     }
 

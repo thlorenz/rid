@@ -1,4 +1,4 @@
-use quote::format_ident;
+use quote::{format_ident, quote_spanned};
 use syn::{
     AngleBracketedGenericArguments, GenericArgument, Ident, Path,
     PathArguments, PathSegment, Type, TypePath,
@@ -6,13 +6,19 @@ use syn::{
 
 use std::fmt::Debug;
 
-use crate::attrs::{Category, TypeInfo, TypeInfoMap};
+use crate::attrs::{raw_typedef_ident, Category, TypeInfo, TypeInfoMap};
 
 use super::ParsedReference;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct RustType {
-    pub ident: Ident,
+    ident: Ident,
+    raw_ident: Ident,
+
+    /// If a type alias is needed, namely if the ident differs from the rust ident
+    /// This is currently the case for structs and vecs
+    pub needs_type_alias: bool,
+
     pub kind: TypeKind,
     pub reference: ParsedReference,
 }
@@ -23,22 +29,38 @@ impl RustType {
         kind: TypeKind,
         reference: ParsedReference,
     ) -> Self {
+        let raw_ident = raw_typedef_ident(&ident);
+        let needs_type_alias = kind.is_struct() || kind.is_vec();
         Self {
             ident,
+            raw_ident,
+            needs_type_alias,
             kind,
             reference,
         }
     }
 
-    /// Used at this point only to name Dart presentations of Rust enums
-    pub fn dart_ident(&self) -> Ident {
-        format_ident!("Rid{}", self.ident)
+    /// Ident that should be used inside generated Rust/Dart wrapper methods
+    /// For structs this is `rust_ident` prefixed with `Raw` and equal to `rust_ident` for all
+    /// else.
+    pub fn ident(&self) -> &Ident {
+        if self.needs_type_alias {
+            &self.raw_ident
+        } else {
+            &self.ident
+        }
+    }
+
+    /// Ident that came directly from the annotated Rust code
+    pub fn rust_ident(&self) -> &Ident {
+        &self.ident
     }
 
     pub fn from_owned_struct(ident: &Ident) -> Self {
         let type_info = TypeInfo {
             cat: Category::Struct,
             key: ident.clone(),
+            typedef: Some(raw_typedef_ident(&ident)),
         };
         let value = Value::Custom(type_info, ident.to_string());
         let kind = TypeKind::Value(value);
@@ -50,6 +72,7 @@ impl RustType {
         let type_info = TypeInfo {
             cat: Category::Enum,
             key: ident.clone(),
+            typedef: None,
         };
         let value = Value::Custom(type_info, ident.to_string());
         let kind = TypeKind::Value(value);
@@ -58,11 +81,11 @@ impl RustType {
     }
 
     pub fn self_unaliased(self, owner_name: String) -> Self {
-        RustType {
-            ident: self.ident,
-            kind: self.kind.self_unaliased(owner_name),
-            reference: self.reference,
-        }
+        RustType::new(
+            self.ident,
+            self.kind.self_unaliased(owner_name),
+            self.reference,
+        )
     }
 
     pub fn with_lifetime_option(self, lifetime: Option<Ident>) -> Self {
@@ -73,63 +96,43 @@ impl RustType {
     }
 
     pub fn with_lifetime(self, lifetime: Ident) -> Self {
-        RustType {
-            ident: self.ident,
-            kind: self.kind,
-            reference: self.reference.with_lifetime(lifetime),
-        }
+        RustType::new(
+            self.ident,
+            self.kind,
+            self.reference.with_lifetime(lifetime),
+        )
     }
 
     pub fn ensured_lifetime(self, lifetime: Ident) -> Self {
-        RustType {
-            ident: self.ident,
-            kind: self.kind,
-            reference: self.reference.ensured_lifetime(lifetime),
-        }
+        RustType::new(
+            self.ident,
+            self.kind,
+            self.reference.ensured_lifetime(lifetime),
+        )
     }
 
     pub fn is_primitive(&self) -> bool {
-        match self.kind {
-            TypeKind::Primitive(_) => true,
-            TypeKind::Value(_) => false,
-            TypeKind::Composite(_, _) => false,
-            TypeKind::Unit => true,
-            TypeKind::Unknown => false,
-        }
+        self.kind.is_primitive()
+    }
+
+    pub fn is_composite(&self) -> bool {
+        self.kind.is_composite()
+    }
+
+    pub fn is_struct(&self) -> bool {
+        self.kind.is_struct()
     }
 
     pub fn is_vec(&self) -> bool {
-        match self.kind {
-            TypeKind::Primitive(_) => false,
-            TypeKind::Value(_) => false,
-            TypeKind::Composite(Composite::Vec, _) => true,
-            TypeKind::Composite(_, _) => false,
-            TypeKind::Unit => true,
-            TypeKind::Unknown => false,
-        }
+        self.kind.is_vec()
     }
 
     pub fn inner_composite_type(&self) -> Option<RustType> {
-        match &self.kind {
-            TypeKind::Primitive(_) => None,
-            TypeKind::Value(_) => None,
-            TypeKind::Composite(Composite::Vec, inner) => {
-                inner.as_ref().map(|x| (*x.clone()))
-            }
-            TypeKind::Composite(_, _) => None,
-            TypeKind::Unit => None,
-            TypeKind::Unknown => None,
-        }
+        self.kind.inner_composite_rust_type()
     }
 
     pub fn is_enum(&self) -> bool {
-        match &self.kind {
-            TypeKind::Primitive(_) => false,
-            TypeKind::Value(val) => val.is_enum(),
-            TypeKind::Composite(_, _) => false,
-            TypeKind::Unit => false,
-            TypeKind::Unknown => false,
-        }
+        self.kind.is_enum()
     }
 }
 
@@ -183,6 +186,67 @@ impl TypeKind {
         match self {
             TypeKind::Value(val) => Self::Value(val.self_unaliased(owner_name)),
             _ => self,
+        }
+    }
+
+    pub fn is_primitive(&self) -> bool {
+        if let TypeKind::Primitive(_) = self {
+            true
+        } else {
+            false
+        }
+    }
+
+    pub fn is_composite(&self) -> bool {
+        if let TypeKind::Composite(_, _) = self {
+            true
+        } else {
+            false
+        }
+    }
+
+    pub fn is_vec(&self) -> bool {
+        if let TypeKind::Composite(Composite::Vec, _) = self {
+            true
+        } else {
+            false
+        }
+    }
+
+    pub fn is_option(&self) -> bool {
+        if let TypeKind::Composite(Composite::Option, _) = self {
+            true
+        } else {
+            false
+        }
+    }
+
+    pub fn is_enum(&self) -> bool {
+        if let TypeKind::Value(val) = self {
+            val.is_enum()
+        } else {
+            false
+        }
+    }
+
+    pub fn is_struct(&self) -> bool {
+        if let TypeKind::Value(val) = self {
+            val.is_struct()
+        } else {
+            false
+        }
+    }
+
+    pub fn inner_composite_rust_type(&self) -> Option<RustType> {
+        match self {
+            TypeKind::Primitive(_) => None,
+            TypeKind::Value(_) => None,
+            TypeKind::Composite(Composite::Vec, inner) => {
+                inner.as_ref().map(|x| (*x.clone()))
+            }
+            TypeKind::Composite(_, _) => None,
+            TypeKind::Unit => None,
+            TypeKind::Unknown => None,
         }
     }
 }
@@ -263,6 +327,14 @@ impl Value {
             Custom(type_info, _) => type_info.cat == Category::Enum,
         }
     }
+
+    fn is_struct(&self) -> bool {
+        use Value::*;
+        match self {
+            CString | String | Str => false,
+            Custom(type_info, _) => type_info.cat == Category::Struct,
+        }
+    }
 }
 
 // --------------
@@ -271,6 +343,7 @@ impl Value {
 #[derive(Clone, PartialEq)]
 pub enum Composite {
     Vec,
+    Option,
     Custom(TypeInfo, String),
 }
 
@@ -278,6 +351,7 @@ impl Debug for Composite {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Composite::Vec => write!(f, "Composite::Vec"),
+            Composite::Option => write!(f, "Composite::Option"),
             Composite::Custom(type_info, name) => {
                 write!(f, "Composite::Custom({:?}, \"{}\")", type_info, name)
             }
@@ -298,6 +372,10 @@ impl RustType {
 
     pub fn from_type(ty: &Type, type_infos: &TypeInfoMap) -> Option<RustType> {
         resolve_rust_ty(ty, type_infos)
+    }
+
+    pub fn from_plain_type(ty: &Type) -> Option<RustType> {
+        resolve_rust_ty(ty, &TypeInfoMap::default())
     }
 }
 
@@ -321,11 +399,7 @@ fn resolve_rust_ty(ty: &Type, type_infos: &TypeInfoMap) -> Option<RustType> {
         _ => return None,
     };
 
-    Some(RustType {
-        ident: ident.clone(),
-        kind,
-        reference,
-    })
+    Some(RustType::new(ident.clone(), kind, reference))
 }
 
 fn ident_to_kind(
@@ -384,6 +458,9 @@ fn ident_to_kind(
                         resolve_rust_ty(ty, type_infos).map(|x| Box::new(x));
                     match ident_str.as_str() {
                         "Vec" => TypeKind::Composite(Composite::Vec, inner),
+                        "Option" => {
+                            TypeKind::Composite(Composite::Option, inner)
+                        }
                         _ => {
                             if let Some(type_info) = type_infos.get(&ident_str)
                             {

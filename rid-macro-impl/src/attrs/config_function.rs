@@ -3,7 +3,10 @@ use syn::Ident;
 use crate::common::abort;
 use std::collections::HashMap;
 
-use super::{add_idents_to_type_map, Category, RidAttr, TypeInfo, TypeInfoMap};
+use super::{
+    add_idents_to_type_map, raw_typedef_ident, Category, RidAttr, TypeInfo,
+    TypeInfoMap,
+};
 
 #[derive(Debug)]
 pub struct FunctionConfig {
@@ -48,7 +51,7 @@ impl FunctionConfig {
             }
         }
         if let Some((ident, owner_type_infos)) = owner {
-            merge_type_infos(&mut type_infos, owner_type_infos);
+            type_infos.merge_into_exclusive(owner_type_infos);
 
             let key = ident.to_string();
             if !type_infos.contains_key(&key) {
@@ -57,6 +60,7 @@ impl FunctionConfig {
                     TypeInfo {
                         key: ident.clone(),
                         cat: Category::Struct,
+                        typedef: Some(raw_typedef_ident(&ident)),
                     },
                 );
             }
@@ -72,14 +76,5 @@ impl FunctionConfig {
             is_exported,
             fn_export_alias,
         }
-    }
-}
-
-fn merge_type_infos(tgt: &mut TypeInfoMap, src: &TypeInfoMap) {
-    for (key, val) in src.iter() {
-        if tgt.contains_key(key) {
-            abort!(val.key, "duplicate type info key")
-        }
-        tgt.insert(key.clone(), val.clone());
     }
 }

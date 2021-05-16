@@ -16,9 +16,7 @@ impl RustType {
         use crate::parse::ParsedReference::*;
         use TypeKind as K;
         let RustType {
-            ident,
-            kind,
-            reference,
+            kind, reference, ..
         } = self;
 
         let tokens = match kind {
@@ -27,6 +25,9 @@ impl RustType {
             K::Composite(Composite::Vec, rust_type) => {
                 // similar to same case in ./render_return_type.rs
                 todo!("render_rust_type::custom_composite::vec")
+            }
+            K::Composite(Composite::Option, rust_type) => {
+                todo!("render_rust_type::custom_composite::option")
             }
             K::Composite(composite, rust_type) => {
                 todo!("render_rust_type::custom_composite")
@@ -43,7 +44,7 @@ impl RustType {
 
 impl Primitive {
     // TODO: same as in ./render_pointer_type.rs
-    fn render_rust_type(&self) -> TokenStream {
+    pub fn render_rust_type(&self) -> TokenStream {
         use Primitive::*;
         match self {
             U8 => quote! { u8 },
@@ -55,7 +56,7 @@ impl Primitive {
             U64 => quote! { u64 },
             I64 => quote! { i64 },
             USize => quote! { usize },
-            Bool => quote! { bool },
+            Bool => quote! { u8 },
         }
     }
 }

@@ -8,12 +8,12 @@ use crate::{
         rust_type::{Composite, Primitive, RustType, TypeKind, Value},
         ParsedFunction, ParsedReference,
     },
-    render_common::TypeAlias,
+    render_common::PointerTypeAlias,
 };
 
 pub struct RenderedAccessItem {
     pub tokens: TokenStream,
-    pub type_alias: Option<TypeAlias>,
+    pub type_alias: Option<PointerTypeAlias>,
 }
 
 pub fn render_access_item(
@@ -65,7 +65,7 @@ fn render_vec_access_item(
     outer_type: &RustType,
     item_type: &RustType,
     fn_access_ident: &Ident,
-) -> (Option<TypeAlias>, TokenStream) {
+) -> (Option<PointerTypeAlias>, TokenStream) {
     let RenderedReturnType {
         tokens: vec_arg_type,
         ..

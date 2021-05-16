@@ -7,6 +7,7 @@ use super::{
 use crate::{
     attrs::{Category, FunctionConfig, RidAttr, TypeInfo, TypeInfoMap},
     common::abort,
+    render_dart::DartArg,
 };
 
 #[derive(Debug)]
@@ -23,14 +24,20 @@ pub struct ParsedFunction {
     /// Function args besides the receiver
     pub args: Vec<RustType>,
 
+    /// The `args` converted into `DartArg` to use when rendering Dart code
+    pub dart_args: Vec<DartArg>,
+
     /// The type of arg returned by the original function
     pub return_arg: RustType,
+
+    /// Function config with extra information like type_infos [TypeInfoMap]
+    pub config: FunctionConfig,
 }
 
 impl ParsedFunction {
     pub fn new(
         sig: syn::Signature,
-        config: &FunctionConfig,
+        config: FunctionConfig,
         owner: Option<(&syn::Ident, &TypeInfoMap)>,
     ) -> ParsedFunction {
         use syn::*;
@@ -72,13 +79,13 @@ impl ParsedFunction {
                     match RustType::from_boxed_type(
                         ty.clone(),
                         &config.type_infos,
-                    ) {
+                        ) {
                         Some(rust_type) => args.push(rust_type),
                         None => abort!(
-                        ty,
-                        "[rid] Type not supported for exported functions {:#?}",
-                        *ty
-                    ),
+                            ty,
+                            "[rid] Type not supported for exported functions {:#?}",
+                            *ty
+                            ),
                     }
                 }
             };
@@ -110,12 +117,26 @@ impl ParsedFunction {
 
         let fn_ident_alias = config.fn_export_alias.clone();
 
+        let dart_args: Vec<DartArg> = args
+            .iter()
+            .enumerate()
+            .map(|(slot, arg)| DartArg::from(arg, &config.type_infos, slot))
+            .collect();
+
         Self {
             fn_ident: ident,
             fn_ident_alias,
             receiver,
             args,
             return_arg,
+            config,
+            dart_args,
         }
+    }
+
+    /// Information about custom types specified on top of the functio's impl block or the function
+    /// definition itself
+    pub fn type_infos(&self) -> &TypeInfoMap {
+        &self.config.type_infos
     }
 }

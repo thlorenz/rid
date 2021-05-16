@@ -7,7 +7,7 @@ use syn::Ident;
 /// For example `*const Item` is aliased to `Pointer_Item` which then results in
 /// `RidVec_Pointer_Item` instead of something like `RidVec______Item`.
 #[derive(Debug, Clone)]
-pub struct TypeAlias {
+pub struct PointerTypeAlias {
     pub alias: Ident,
     pub typedef: TokenStream,
     pub type_name: String,

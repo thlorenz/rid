@@ -1,6 +1,6 @@
-use syn::Ident;
+use syn::{Ident, ItemImpl};
 
-use crate::common::abort;
+use crate::{common::abort, parse_rid_attrs};
 use std::collections::HashMap;
 
 use super::{add_idents_to_type_map, Category, RidAttr, TypeInfo, TypeInfoMap};
@@ -8,17 +8,15 @@ use super::{add_idents_to_type_map, Category, RidAttr, TypeInfo, TypeInfoMap};
 #[derive(Debug)]
 pub struct ImplBlockConfig {
     pub type_infos: TypeInfoMap,
+    pub attrs: Vec<RidAttr>,
     pub is_exported: bool,
 }
 
 impl ImplBlockConfig {
-    pub fn new(attrs: &[RidAttr]) -> Self {
-        // TODO: exactly duplicated from ./config_enum.rs
-        // We may do a TypeInfoMap::From(&[RidAttr]), but then we still should validate + warn
-        // for invalid attrs on a specific type
+    pub fn new(attrs: Vec<RidAttr>) -> Self {
         let mut type_infos: TypeInfoMap = TypeInfoMap(HashMap::new());
         let mut is_exported = false;
-        for attr in attrs {
+        for attr in &attrs {
             match attr {
                 // TODO: detect #[derive(Debug)]
                 RidAttr::Structs(attr_ident, idents) => add_idents_to_type_map(
@@ -50,7 +48,13 @@ impl ImplBlockConfig {
         }
         Self {
             type_infos,
+            attrs,
             is_exported,
         }
+    }
+
+    pub fn from(impl_item: &ItemImpl) -> Self {
+        let attrs = parse_rid_attrs(&impl_item.attrs);
+        ImplBlockConfig::new(attrs)
     }
 }

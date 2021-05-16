@@ -6,7 +6,10 @@ pub const FFI_GEN_BIND: &str = "ffigen_bind";
 
 /// The built in 'dart:ffi' library is imported into the build wrapper as this id.
 pub const DART_FFI: &str = "dart_ffi";
-///
+
+/// The built in 'dart:async' library is imported into the build wrapper as this id.
+pub const DART_ASYNC: &str = "dart_async";
+
 /// The built in 'dart:collection' library is imported into the build wrapper as this id.
 pub const DART_COLLECTION: &str = "dart_collection";
 
@@ -19,3 +22,27 @@ pub const STRING_TO_NATIVE_INT8: &str = "toNativeInt8";
 
 /// Method invoked to free a CString by resolving and dropping it.
 pub const CSTRING_FREE: &str = "rid_cstring_free";
+
+/// Function set to debug rid store locking
+pub const RID_DEBUG_LOCK: &str = "RID_DEBUG_LOCK";
+
+/// Function set to debug posted replies
+pub const RID_DEBUG_REPLY: &str = "RID_DEBUG_REPLY";
+
+/// Duration set to specify default message timeout
+pub const RID_MSG_TIMEOUT: &str = "RID_MSG_TIMEOUT";
+
+/// Dart method name to create the Rust store
+pub const RID_CREATE_STORE: &str = "_createStore";
+
+/// Name of the Rust store. The convention is to name it 'Store'.
+///
+/// This makes a lot of things possible or easier that otherwise weren't.
+/// For instance the #[rid::message] needs not be passed the Store type.
+///
+/// Additionally #[rid::export] instance methods can be limited to only be present on the store
+/// which is good practice and avoids memory race conditions.
+///
+/// These exports can then be re-exported on the higher level API, extending the Dart 'Store'
+/// class as well.
+pub const STORE: &str = "Store";

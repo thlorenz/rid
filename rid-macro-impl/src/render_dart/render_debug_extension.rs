@@ -11,8 +11,8 @@ impl RustType {
         debug_pretty_method_name: &str,
         comment: &str,
     ) -> String {
-        let type_name = self.dart_ident().to_string();
-        let rust_type_name = self.ident.to_string();
+        let type_name = self.rust_ident().to_string();
+        let rust_type_name = self.ident().to_string();
         let (extension_target, method_arg) = if self.is_enum() {
             (type_name.clone(), "this.index")
         } else {

@@ -1,5 +1,5 @@
 use super::rust_type::{Primitive, RustType, TypeKind, Value};
-use crate::attrs;
+use crate::attrs::{self, ImplBlockConfig};
 use assert_matches::assert_matches;
 use attrs::{parse_rid_attrs, Category, TypeInfo};
 
@@ -10,8 +10,8 @@ fn parse(input: proc_macro2::TokenStream) -> ParsedImplBlock {
     let item = syn::parse2::<syn::Item>(input).unwrap();
     match item {
         syn::Item::Impl(item) => {
-            let rid_attrs = parse_rid_attrs(&item.attrs);
-            ParsedImplBlock::new(item, &rid_attrs)
+            let config = ImplBlockConfig::from(&item);
+            ParsedImplBlock::new(item, config)
         }
         _ => panic!("Unexpected item, we're trying to parse functions here"),
     }
@@ -23,15 +23,7 @@ mod self_aliasing {
     fn impl_block_with_new_returning_self() {
         let mystruct_str = "MyStruct".to_string();
 
-        let ParsedImplBlock {
-            ty:
-                RustType {
-                    ident,
-                    kind,
-                    reference,
-                },
-            methods,
-        } = parse(quote! {
+        let ParsedImplBlock { ty, methods, .. } = parse(quote! {
             #[rid::export]
             #[rid::structs(MyStruct)]
             impl MyStruct {
@@ -41,14 +33,20 @@ mod self_aliasing {
                 }
             }
         });
-        assert_eq!(ident.to_string(), "MyStruct", "return ident");
-        assert_eq!(reference, ParsedReference::Owned, "return reference");
+        assert_eq!(ty.ident().to_string(), "RawMyStruct", "return ident");
+        assert_eq!(
+            ty.rust_ident().to_string(),
+            "MyStruct",
+            "return rust ident"
+        );
+        assert_eq!(ty.reference, ParsedReference::Owned, "return reference");
         assert_matches!(
-            kind,
+            ty.kind,
             TypeKind::Value(Value::Custom(
                 TypeInfo {
                     key,
-                    cat: Category::Struct
+                    cat: Category::Struct,
+                    typedef,
                 },
                 mystruct_str
             ))
@@ -65,6 +63,8 @@ mod self_aliasing {
                     reference,
                     ..
                 },
+            config: _,
+            ..
         } = &methods[0];
 
         assert_eq!(fn_ident.to_string(), "new", "function name");
@@ -75,15 +75,15 @@ mod self_aliasing {
         assert_matches!(
             &args[0],
             RustType {
-                ident,
                 kind: TypeKind::Primitive(Primitive::U8),
                 reference: ParsedReference::Owned,
+                ..
             }
         );
 
         assert_matches!(
             &ret_ty ,
-            TypeKind::Value(Value::Custom(TypeInfo { key: _, cat }, name)) => {
+            TypeKind::Value(Value::Custom(TypeInfo { key: _, cat, .. }, name)) => {
                 assert_eq!(
                     (cat, name.as_str()),
                     (&attrs::Category::Struct, "MyStruct"),
@@ -100,19 +100,15 @@ mod method_exports {
     #[test]
     fn impl_block_with_four_methods_three_with_rid_export_attr_new_aliased_to_init_model(
     ) {
-        let mystruct_str = "MyStruct".to_string();
+        let store_str = "Store".to_string();
 
         let ParsedImplBlock {
-            ty:
-                RustType {
-                    ident,
-                    kind: owner_ty,
-                    reference,
-                },
+            ty: owner_ty,
             methods,
+            ..
         } = parse(quote! {
             #[rid::export]
-            impl MyStruct {
+            impl Store {
                 #[rid::export(initModel)]
                 pub fn new(id: u8) -> Self {
                     Self { id }
@@ -131,14 +127,24 @@ mod method_exports {
             }
         });
 
-        assert_eq!(ident.to_string(), "MyStruct", "return ident");
-        assert_eq!(reference, ParsedReference::Owned, "return reference");
+        assert_eq!(owner_ty.ident().to_string(), "RawStore", "return ident");
+        assert_eq!(
+            owner_ty.rust_ident().to_string(),
+            "Store",
+            "return rust ident"
+        );
+        assert_eq!(
+            owner_ty.reference,
+            ParsedReference::Owned,
+            "return reference"
+        );
         assert_matches!(
-            &owner_ty,
+            &owner_ty.kind,
             TypeKind::Value(Value::Custom(
                 TypeInfo {
                     key,
-                    cat: Category::Struct
+                    cat: Category::Struct,
+                    typedef,
                 },
                 mystruct_str
             ))
@@ -151,7 +157,9 @@ mod method_exports {
             fn_ident_alias,
             receiver,
             args,
-            return_arg: RustType { kind: ret_ty, .. },
+            return_arg: RustType { kind: ret_kind, .. },
+            config: _,
+            ..
         } = &methods[0];
 
         assert_eq!(fn_ident.to_string(), "new", "function ident");
@@ -161,7 +169,7 @@ mod method_exports {
             "'initModel' export ident"
         );
         assert_eq!(
-            ret_ty, &owner_ty,
+            ret_kind, &owner_ty.kind,
             "new() -> Self return type is owning struct"
         );
         assert_eq!(args.len(), 1, "one arg");
@@ -179,6 +187,8 @@ mod method_exports {
             receiver,
             args,
             return_arg: RustType { kind: ret_ty, .. },
+            config: _,
+            ..
         } = &methods[1];
 
         assert_eq!(fn_ident.to_string(), "get_id", "function ident");
@@ -201,6 +211,8 @@ mod method_exports {
             receiver,
             args,
             return_arg: RustType { kind: ret_ty, .. },
+            config: _,
+            ..
         } = &methods[2];
         assert_eq!(fn_ident.to_string(), "set_id", "function ident");
         assert_eq!(fn_ident_alias, &None, "no export ident");

@@ -37,6 +37,13 @@ impl ParsedField {
             dart_ty,
         }
     }
+
+    pub fn is_struct(&self) -> bool {
+        match &self.rust_ty {
+            Ok(ty) => ty.is_struct(),
+            Err(_) => false,
+        }
+    }
 }
 
 fn method_ident_from_field(

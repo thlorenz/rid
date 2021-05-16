@@ -1,5 +1,4 @@
-import 'generated/ffigen_binding.dart';
-import 'generated/rid_generated.dart';
+import 'generated/rid_api.dart';
 import 'dart:io';
 import 'dart:async';
 
@@ -8,23 +7,19 @@ onError(Object error, StackTrace stack) {
   print(stack);
 }
 
-printStatus(Pointer<Model> model) {
-  final todos = model.todos;
+printStatus(Store store) {
+  final todos = store.todos;
   final total = todos.length;
 
-  final filter = model.filter;
-  final matchingTodos = model.filtered_todos();
-
   print("Total Todos:     $total");
-  print("Filter:          ${filter.display()}");
+  print("Filter:          ${store.filter}");
   print("\nMatching Todos:");
-  for (final todo in matchingTodos.iter()) {
-    print("    ${todo.display()}");
+  for (final todo in store.filteredTodos()) {
+    print("    $todo");
   }
-  matchingTodos.dispose();
 }
 
-bool handleCommand(Pointer<Model> model, String line) {
+Future<bool> handleCommand(Store model, String line) async {
   String cmd;
   String payload;
 
@@ -38,19 +33,19 @@ bool handleCommand(Pointer<Model> model, String line) {
 
   switch (cmd) {
     case "add":
-      model.msgAddTodo(payload);
+      await model.msgAddTodo(payload);
       break;
     case "del":
-      model.msgRemoveTodo(int.parse(payload));
+      await model.msgRemoveTodo(int.parse(payload));
       break;
     case "cmp":
-      model.msgCompleteTodo(int.parse(payload));
+      await model.msgCompleteTodo(int.parse(payload));
       break;
     case "tog":
-      model.msgToggleTodo(int.parse(payload));
+      await model.msgToggleTodo(int.parse(payload));
       break;
     case "rst":
-      model.msgRestartTodo(int.parse(payload));
+      await model.msgRestartTodo(int.parse(payload));
       break;
     case "fil":
       final filter = payload == "cmp"
@@ -58,16 +53,16 @@ bool handleCommand(Pointer<Model> model, String line) {
           : payload == "pen"
               ? Filter.Pending
               : Filter.All;
-      model.msgSetFilter(filter);
+      await model.msgSetFilter(filter);
       break;
     case "ca":
-      model.msgCompleteAll();
+      await model.msgCompleteAll();
       break;
     case "dc":
-      model.msgRemoveCompleted();
+      await model.msgRemoveCompleted();
       break;
     case "ra":
-      model.msgRestartAll();
+      await model.msgRestartAll();
       break;
 
     default:
@@ -91,13 +86,13 @@ printCommands() {
   print("  q                 -- to quit");
 }
 
-interactive() {
-  final model = rid_ffi.initModel();
+interactive() async {
+  final store = Store.instance;
   {
-    model.msgAddTodo("Complete this Todo via:     cmp 1");
-    model.msgAddTodo("Delete this Todo via:       del 2");
-    model.msgAddTodo("Toggle this Todo via:       tog 3");
-    model.msgAddTodo("Restart the first Todo via: rst 1");
+    await store.msgAddTodo("Complete this Todo via:     cmp 1");
+    await store.msgAddTodo("Delete this Todo via:       del 2");
+    await store.msgAddTodo("Toggle this Todo via:       tog 3");
+    await store.msgAddTodo("Restart the first Todo via: rst 1");
 
     String? input;
     bool ok = true;
@@ -106,7 +101,9 @@ interactive() {
       if (ok) {
         print("\x1B[2J\x1B[0;0H");
       }
-      printStatus(model);
+
+      printStatus(store);
+
       printCommands();
       stdout.write("\n> ");
       input = stdin.readLineSync();
@@ -114,13 +111,13 @@ interactive() {
         break;
       }
       if (input != null && input.length > 1) {
-        ok = handleCommand(model, input.trim());
+        ok = await handleCommand(store, input.trim());
       }
     }
   }
-  model.dispose();
+  await store.dispose();
 }
 
-void main(List<String> args) {
-  runZonedGuarded(interactive, onError);
+void main(List<String> args) async {
+  await runZonedGuarded(interactive, onError);
 }

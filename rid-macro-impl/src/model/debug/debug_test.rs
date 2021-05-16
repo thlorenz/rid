@@ -1,15 +1,38 @@
-use super::{rid_debug_impl, DebugImplConfig};
+use crate::{common::extract_variant_names, parse::rust_type::RustType};
+
+use super::{render_debug, RenderDebugConfig};
 use proc_macro2::TokenStream;
 use quote::quote;
-use syn::parse_macro_input;
-
-fn render(input: proc_macro2::TokenStream) -> TokenStream {
-    let item = syn::parse2::<syn::DeriveInput>(input).unwrap();
-    rid_debug_impl(&item, DebugImplConfig::for_tests())
-}
+use syn::{parse_macro_input, Data, DataEnum, DeriveInput};
 
 // TODO: we aren't testing the generated dart code
 // TODO: we should not render the #[no_mangle]... preamble during tests
+
+fn render_struct_or_enum_derive(
+    input: &DeriveInput,
+    config: RenderDebugConfig,
+) -> TokenStream {
+    match &input.data {
+        Data::Struct(data) => {
+            let rust_type = RustType::from_owned_struct(&input.ident);
+            render_debug(rust_type, &None, config.clone())
+        }
+        Data::Enum(DataEnum { variants, .. }) => {
+            let rust_type = RustType::from_owned_enum(&input.ident);
+            let variants = Some(extract_variant_names(variants));
+            render_debug(rust_type, &variants, config.clone())
+        }
+        Data::Union(data) => {
+            panic!("Cannot derive debug for an untagged Union type")
+        }
+    }
+}
+
+fn render(input: proc_macro2::TokenStream) -> TokenStream {
+    let item = syn::parse2::<syn::DeriveInput>(input).unwrap();
+    render_struct_or_enum_derive(&item, RenderDebugConfig::for_tests())
+}
+
 mod enums_debug_impl {
     use super::*;
 
@@ -63,36 +86,36 @@ mod structs_debug_impl {
         });
 
         let expected = quote! {
-            mod __rid_mod_rid_single_debug {
+            mod __rid_mod_rid_rawsingle_debug {
                 use super::*;
+                type RawSingle = Single;
                 #[no_mangle]
                 #[allow(non_snake_case)]
-                pub extern "C" fn rid_single_debug(ptr: *mut Single) -> *const ::std::os::raw::c_char {
-                    let single = unsafe {
+                pub extern "C" fn rid_rawsingle_debug(ptr: *mut RawSingle) -> *const ::std::os::raw::c_char {
+                    let rawsingle = unsafe {
                         assert!(!ptr.is_null());
-                        let ptr: *mut Single = &mut *ptr;
+                        let ptr: *mut RawSingle = &mut *ptr;
                         ptr.as_mut().unwrap()
                     };
-                    let s = format!("{:?}", single);
+                    let s = format!("{:?}", rawsingle);
                     let cstring = ::std::ffi::CString::new(s.as_str()).unwrap();
                     cstring.into_raw()
                 }
                 #[no_mangle]
                 #[allow(non_snake_case)]
-                pub extern "C" fn rid_single_debug_pretty(ptr: *mut Single) -> *const ::std::os::raw::c_char {
-                    let single = unsafe {
+                pub extern "C" fn rid_rawsingle_debug_pretty(ptr: *mut RawSingle) -> *const ::std::os::raw::c_char {
+                    let rawsingle = unsafe {
                         assert!(!ptr.is_null());
-                        let ptr: *mut Single = &mut *ptr;
+                        let ptr: *mut RawSingle = &mut *ptr;
                         ptr.as_mut().unwrap()
                     };
-                    let s = format!("{:#?}", single);
+                    let s = format!("{:#?}", rawsingle);
                     let cstring = ::std::ffi::CString::new(s.as_str()).unwrap();
                     cstring.into_raw()
                 }
             }
         };
 
-        // eprintln!("{}", res.to_string());
         assert_eq!(res.to_string().trim(), expected.to_string().trim())
     }
 }

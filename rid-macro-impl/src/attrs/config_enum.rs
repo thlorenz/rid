@@ -1,25 +1,25 @@
-use syn::Ident;
+use syn::{Ident, ItemEnum};
 
-use crate::common::abort;
+use crate::{common::abort, parse_rid_attrs};
 use std::collections::HashMap;
 
-use super::{add_idents_to_type_map, Category, RidAttr, TypeInfo, TypeInfoMap};
+use super::{
+    add_idents_to_type_map, parse_rid_args, Category, RidAttr, TypeInfo,
+    TypeInfoMap,
+};
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct EnumConfig {
-    // TODO: does not yet generate any ffi code for this yet since enums are only used for messages
-    // for now which aren't printed in Dart
     pub debug: bool,
+    pub attrs: Vec<RidAttr>,
     pub type_infos: TypeInfoMap,
-    pub to: Ident,
 }
 
 impl EnumConfig {
-    pub fn new(attrs: &[RidAttr], model_ident: &Ident) -> Self {
-        // TODO: very much duplicated from ./config_struct.rs
+    pub fn new(attrs: Vec<RidAttr>) -> Self {
         let mut debug = false;
         let mut type_infos: TypeInfoMap = TypeInfoMap(HashMap::new());
-        for attr in attrs {
+        for attr in &attrs {
             match attr {
                 RidAttr::Structs(attr_ident, idents) => add_idents_to_type_map(
                     &mut type_infos,
@@ -34,7 +34,7 @@ impl EnumConfig {
                 RidAttr::Message(attr_ident, _) => {
                     abort!(
                         attr_ident,
-                        "cannot have rid::message attribute on enums"
+                        "cannot have duplicate rid::message attribute on enums"
                     );
                 }
                 RidAttr::Export(attr_ident, _) => {
@@ -49,7 +49,12 @@ impl EnumConfig {
         Self {
             debug,
             type_infos,
-            to: model_ident.clone(),
+            attrs,
         }
+    }
+
+    pub fn from(enum_item: &ItemEnum) -> Self {
+        let rid_attrs = parse_rid_attrs(&enum_item.attrs);
+        Self::new(rid_attrs)
     }
 }

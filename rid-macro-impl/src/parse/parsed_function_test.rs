@@ -22,7 +22,7 @@ fn parse(input: proc_macro2::TokenStream) -> ParsedFunction {
         }) => {
             let rid_attrs = parse_rid_attrs(&attrs);
             let config = FunctionConfig::new(&rid_attrs, None);
-            ParsedFunction::new(sig, &config, None)
+            ParsedFunction::new(sig, config, None)
         }
         _ => panic!("Unexpected item, we're trying to parse functions here"),
     }
@@ -94,7 +94,7 @@ mod return_arg {
 
         assert_matches!(
             &ret_ty ,
-            TypeKind::Value(Value::Custom(TypeInfo { key: _, cat }, name)) => {
+            TypeKind::Value(Value::Custom(TypeInfo { key: _, cat, .. }, name)) => {
                 assert_eq!(
                     (cat, name.as_str()),
                     (&attrs::Category::Struct, "Todo"),
@@ -122,39 +122,30 @@ mod return_arg {
 
     #[test]
     fn vec_custom_type_ref_return() {
-        let ParsedFunction {
-            return_arg:
-                RustType {
-                    ident,
-                    kind: ret_ty,
-                    reference,
-                },
-            ..
-        } = parse(quote! {
+        let ParsedFunction { return_arg, .. } = parse(quote! {
             #[rid::structs(Todo)]
             fn filtered_todos() -> Vec<&Todo> {}
         });
 
-        assert_eq!(ident.to_string(), "Vec", "ident");
-        assert_matches!(reference, ParsedReference::Owned);
+        assert_eq!(return_arg.ident().to_string(), "RawVec", "ident");
+        assert_eq!(return_arg.rust_ident().to_string(), "Vec", "rust ident");
+        assert_matches!(return_arg.reference, ParsedReference::Owned);
 
-        if let TypeKind::Composite(composite, inner) = ret_ty {
+        if let TypeKind::Composite(composite, inner) = return_arg.kind {
             let todo_str = "Todo".to_string();
             assert_matches!(composite, Composite::Vec);
-            let RustType {
-                ident,
-                kind,
-                reference,
-            } = *inner.expect("has inner rust type");
+            let inner = inner.expect("has inner rust type");
 
-            assert_eq!(ident.to_string(), "Todo", "ident");
-            assert_matches!(reference, ParsedReference::Ref(None));
+            assert_eq!(inner.ident().to_string(), "RawTodo", "ident");
+            assert_eq!(inner.rust_ident().to_string(), "Todo", "rust ident");
+            assert_matches!(inner.reference, ParsedReference::Ref(None));
             assert_matches!(
-                kind,
+                inner.kind,
                 TypeKind::Value(Value::Custom(
                     TypeInfo {
                         key,
-                        cat: Category::Struct
+                        cat: Category::Struct,
+                        typedef,
                     },
                     todo_str
                 ))
@@ -220,7 +211,7 @@ mod receiver {
                 let rid_attrs = parse_rid_attrs(&attrs);
                 let owner = Some((&type_info.key, &type_info_map));
                 let config = FunctionConfig::new(&rid_attrs, owner);
-                ParsedFunction::new(sig, &config, owner)
+                ParsedFunction::new(sig, config, owner)
             }
             _ => {
                 panic!("Unexpected item, we're trying to parse functions here")

@@ -1,0 +1,23 @@
+[package]
+name = "clock"
+version = "0.1.0"
+authors = ["Thorsten Lorenz <thlorenz@gmx.de>"]
+edition = "2018"
+
+[lib]
+name = "clock"
+crate-type = ["cdylib"]
+path = "src/lib.rs"
+doctest = false
+test = false
+
+[[bin]]
+name = "rid_build"
+path = "rid_build.rs"
+
+[dependencies]
+rid = { path = "../../../" }
+rid_build = { path = "../../../rid-build" }
+
+[build-dependencies]
+rid_build = { path = "../../../rid-build" }

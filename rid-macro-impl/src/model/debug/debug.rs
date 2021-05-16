@@ -14,14 +14,15 @@ use crate::{
     render_rust::{RenderedDebugImpl, RenderedDisplayImpl},
 };
 
-pub struct DebugImplConfig {
+#[derive(Clone)]
+pub struct RenderDebugConfig {
     render_cstring_free: bool,
     render_dart_extension: bool,
     render_dart_enum: bool,
     render_swift_calls: bool,
 }
 
-impl Default for DebugImplConfig {
+impl Default for RenderDebugConfig {
     fn default() -> Self {
         Self {
             render_cstring_free: true,
@@ -32,7 +33,7 @@ impl Default for DebugImplConfig {
     }
 }
 
-impl DebugImplConfig {
+impl RenderDebugConfig {
     pub fn for_tests() -> Self {
         Self {
             render_cstring_free: false,
@@ -43,31 +44,10 @@ impl DebugImplConfig {
     }
 }
 
-pub fn rid_debug_impl(
-    input: &DeriveInput,
-    config: DebugImplConfig,
-) -> TokenStream {
-    match &input.data {
-        Data::Struct(data) => {
-            let rust_type = RustType::from_owned_struct(&input.ident);
-            render_debug(rust_type, &config, &None)
-        }
-        Data::Enum(DataEnum { variants, .. }) => {
-            let rust_type = RustType::from_owned_enum(&input.ident);
-            let variants = Some(extract_variant_names(variants));
-            render_debug(rust_type, &config, &variants)
-        }
-        Data::Union(data) => abort!(
-            input.ident,
-            "Cannot derive debug for an untagged Union type"
-        ),
-    }
-}
-
-fn render_debug(
+pub fn render_debug(
     rust_type: RustType,
-    config: &DebugImplConfig,
     enum_variants: &Option<Vec<String>>,
+    config: RenderDebugConfig,
 ) -> TokenStream {
     let cstring_free_tokens = if config.render_cstring_free {
         cstring_free()
@@ -94,32 +74,12 @@ fn render_debug(
         TokenStream::new()
     };
 
-    // TODO: once model/parsed_struct.rs is normalized to parse::RustType we need to render
-    // this enum there as well once we see a field of its type.
-    let dart_enum_tokens: TokenStream = if config.render_dart_enum
-        && rust_type.is_enum()
-        && get_state().needs_implementation(
-            &ImplementationType::DartEnum,
-            &rust_type.ident.to_string(),
-        ) {
-        rust_type
-            .render_dart_enum(
-                enum_variants
-                    .as_ref()
-                    .expect("Need variants to render enum"),
-                "///",
-            )
-            .parse()
-            .unwrap()
-    } else {
-        TokenStream::new()
-    };
-
     let mod_ident = format_ident!("__rid_mod_{}", fn_debug_method_ident);
+    let typealias = rust_type.typealias_tokens();
     quote! {
         mod #mod_ident {
             use super::*;
-            #dart_enum_tokens
+            #typealias
             #dart_ext_tokens
             #rust_method_tokens
             #cstring_free_tokens

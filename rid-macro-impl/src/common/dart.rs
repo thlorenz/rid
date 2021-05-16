@@ -33,8 +33,10 @@ impl DartType {
                     Ok(DartType::Vec(vec_indent.to_string()))
                 }
                 CString | RString => Ok(DartType::String),
-                RCustom(info, ty) => {
-                    Ok(DartType::Custom(info.clone(), ty.to_string()))
+                RCustom(info, _) => {
+                    let ty =
+                        info.typedef.as_ref().unwrap_or(&info.key).to_string();
+                    Ok(DartType::Custom(info.clone(), ty))
                 }
             },
             _ => Err(format!(
@@ -50,6 +52,15 @@ impl DartType {
             DartType::String => false,
             DartType::Vec(_) => false,
             DartType::Custom(_, _) => false,
+        }
+    }
+
+    pub fn is_struct(&self) -> bool {
+        match self {
+            DartType::Int32 | DartType::Int64 | DartType::Bool => false,
+            DartType::String => false,
+            DartType::Vec(_) => false,
+            DartType::Custom(inner, _) => !inner.is_enum(),
         }
     }
 }

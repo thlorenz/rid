@@ -92,33 +92,12 @@ fn render_display(
         TokenStream::new()
     };
 
-    // TODO: once model/parsed_struct.rs is normalized to parse::RustType we need to render
-    // this enum there as well once we see a field of its type.
-    let dart_enum_tokens: TokenStream = if config.render_dart_enum
-        && rust_type.is_enum()
-        && get_state().needs_implementation(
-            &ImplementationType::DartEnum,
-            &rust_type.ident.to_string(),
-        ) {
-        rust_type
-            .render_dart_enum(
-                enum_variants
-                    .as_ref()
-                    .expect("Need variants to render enum"),
-                "///",
-            )
-            .parse()
-            .unwrap()
-    } else {
-        TokenStream::new()
-    };
-
-    // TODO: cstring_free swift
     let mod_ident = format_ident!("__rid_mod_{}", fn_display_method_ident);
+    let typealias = rust_type.typealias_tokens();
     quote! {
         mod #mod_ident {
             use super::*;
-            #dart_enum_tokens
+            #typealias
             #dart_ext_tokens
             #rust_method_tokens
             #cstring_free_tokens

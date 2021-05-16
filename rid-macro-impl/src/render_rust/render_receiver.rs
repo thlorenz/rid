@@ -9,14 +9,14 @@ use crate::{
         rust_type::{RustType, TypeKind, Value},
         ParsedReceiver,
     },
-    render_common::TypeAlias,
+    render_common::PointerTypeAlias,
 };
 
 use super::{render_pointer_type, render_to_return_type};
 
 // NOTE: for now assuming that all receivers are custom structs
 pub struct ReceiverArg {
-    pub arg_pass: RenderedArgsPass,
+    pub arg_pass: RenderedReceiverArgPass,
     pub arg_resolve: TokenStream,
     pub receiver_ident: syn::Ident,
 }
@@ -33,9 +33,13 @@ impl ParsedReceiver {
             TypeKind::Value(Value::Custom(info.clone(), info.key.to_string()));
         let rust_type =
             RustType::new(info.key.clone(), kind, reference.clone());
-        let arg_pass = render_args_pass(&ptr_ident, info, &rust_type);
-        let arg_resolve =
-            render_arg_resolve(&ptr_ident, &&receiver_ident, info, &rust_type);
+        let arg_pass = render_receiver_args_pass(&ptr_ident, info, &rust_type);
+        let arg_resolve = render_receiver_arg_resolve(
+            &ptr_ident,
+            &&receiver_ident,
+            info,
+            &rust_type,
+        );
         ReceiverArg {
             arg_pass,
             arg_resolve,
@@ -44,12 +48,12 @@ impl ParsedReceiver {
     }
 }
 
-pub struct RenderedArgsPass {
+pub struct RenderedReceiverArgPass {
     pub tokens: TokenStream,
-    pub type_alias: Option<TypeAlias>,
+    pub type_alias: Option<PointerTypeAlias>,
 }
 
-impl RenderedArgsPass {
+impl RenderedReceiverArgPass {
     pub fn empty() -> Self {
         Self {
             tokens: TokenStream::new(),
@@ -58,22 +62,22 @@ impl RenderedArgsPass {
     }
 }
 
-fn render_args_pass(
+fn render_receiver_args_pass(
     ptr_ident: &syn::Ident,
     type_info: &TypeInfo,
     rust_type: &RustType,
-) -> RenderedArgsPass {
+) -> RenderedReceiverArgPass {
     let RenderedPointerType {
         alias,
         tokens: ptr_type_toks,
     } = rust_type.render_pointer_type();
-    RenderedArgsPass {
+    RenderedReceiverArgPass {
         type_alias: alias,
         tokens: quote_spanned! { type_info.key.span() => #ptr_ident: #ptr_type_toks },
     }
 }
 
-fn render_arg_resolve(
+fn render_receiver_arg_resolve(
     ptr_ident: &syn::Ident,
     arg_ident: &syn::Ident,
     type_info: &TypeInfo,

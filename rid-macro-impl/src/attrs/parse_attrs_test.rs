@@ -67,7 +67,7 @@ mod message {
     #[test]
     fn message_to_todo() {
         let attrs = parse(quote! {
-            #[rid::message(Todo)]
+            #[rid::message(Todo, Reply)]
             fn noop(){}
         });
         let attrs = format!("{:?}", attrs);

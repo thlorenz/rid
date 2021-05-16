@@ -10,7 +10,7 @@ use syn::{
 
 use crate::common::abort;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum RidAttr {
     // rid specific
     Structs(Ident, Vec<syn::Ident>),
@@ -66,6 +66,12 @@ fn validate_single(attr_ident: &Ident, idents: &[Ident], error_msg: &str) {
     }
 }
 
+fn validate_two(attr_ident: &Ident, idents: &[Ident], error_msg: &str) {
+    if idents.len() != 2 {
+        abort!(attr_ident.span(), error_msg)
+    }
+}
+
 fn validate_empty(attr_ident: &Ident, idents: &[Ident], error_msg: &str) {
     if !idents.is_empty() {
         abort!(attr_ident.span(), error_msg)
@@ -109,7 +115,7 @@ fn parse_segments(
                         Some(RidAttr::Enums(second.clone(), idents))
                     }
                     "message" => {
-                        validate_single(&second, &idents, "rid::message attributes need to specify one recipient struct, i.e. #[rid::message(Model)]");
+                        validate_two(&second, &idents, "rid::message attributes need to specify a recipient struct and a reply enum, i.e. #[rid::message(Store, Reply)]");
                         Some(RidAttr::Message(
                             second.clone(),
                             idents[0].clone(),

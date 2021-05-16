@@ -5,9 +5,11 @@ use quote::quote;
 
 use crate::{
     attrs::{self, FunctionConfig, TypeInfo, TypeInfoMap},
+    common::dump_tokens,
     parse::ParsedFunction,
     render_common::{
-        render_vec_accesses, RenderFunctionExportConfig, TypeAlias, VecAccess,
+        render_vec_accesses, PointerTypeAlias, RenderFunctionExportConfig,
+        VecAccess,
     },
 };
 
@@ -15,7 +17,7 @@ use super::{
     render_function_export::render_function_export, RenderedFunctionExport,
 };
 
-fn stringify_type_aliases(type_aliases: &[TypeAlias]) -> String {
+fn stringify_type_aliases(type_aliases: &[PointerTypeAlias]) -> String {
     let mut names: Vec<String> =
         type_aliases.iter().map(|x| x.alias.to_string()).collect();
     names.dedup();
@@ -24,17 +26,20 @@ fn stringify_type_aliases(type_aliases: &[TypeAlias]) -> String {
 }
 
 fn render_vec_access(vec_access: Option<VecAccess>) -> (TokenStream, String) {
+    let type_infos = TypeInfoMap::default();
     match vec_access {
         Some(access) => {
             let rust = access.render_rust().tokens;
-            let dart = access.render_dart("");
+            let dart = access.render_dart(&type_infos, "");
             (rust, dart)
         }
         None => (TokenStream::new(), "".to_string()),
     }
 }
 
-fn render_frees(type_aliases: &[TypeAlias]) -> Vec<(TokenStream, String)> {
+fn render_frees(
+    type_aliases: &[PointerTypeAlias],
+) -> Vec<(TokenStream, String)> {
     type_aliases
         .iter()
         .filter(|alias| alias.needs_free)
@@ -49,10 +54,13 @@ fn render_frees(type_aliases: &[TypeAlias]) -> Vec<(TokenStream, String)> {
 fn compare_strings_by_line(s1: &str, s2: &str) {
     let lines1: Vec<&str> = s1.lines().collect();
     let lines2: Vec<&str> = s2.lines().collect();
+    if lines1.len() != lines2.len() {
+        eprintln!("{}", s1);
+    }
     assert_eq!(
         lines1.len(),
         lines2.len(),
-        "strints should have same amount of lines"
+        "strings should have same amount of lines"
     );
 
     for (idx, l1) in lines1.into_iter().enumerate() {
@@ -79,7 +87,7 @@ fn parse(
         syn::Item::Fn(syn::ItemFn { attrs, sig, .. }) => {
             let rid_attrs = attrs::parse_rid_attrs(&attrs);
             let config = FunctionConfig::new(&rid_attrs, owner);
-            ParsedFunction::new(sig, &config, owner)
+            ParsedFunction::new(sig, config, owner)
         }
         _ => panic!("Unexpected item, we're trying to parse functions here"),
     }
@@ -98,11 +106,12 @@ fn render_full(
     let config = Some(RenderFunctionExportConfig::bare());
     let RenderedFunctionExport {
         tokens,
-        type_aliases,
+        ptr_type_aliases,
         vec_access,
+        ..
     } = render_function_export(&parsed_function, None, config);
     let (rust_vec_access, dart_vec_access) = render_vec_access(vec_access);
-    let frees = render_frees(&type_aliases);
+    let frees = render_frees(&ptr_type_aliases);
     // TODO: dart strings
     let free_tokens = frees.into_iter().map(|(tokens, _)| tokens);
 
@@ -114,7 +123,7 @@ fn render_full(
     RenderedFunctionExportSimplified {
         tokens,
         dart_vec_access,
-        type_aliases: stringify_type_aliases(&type_aliases),
+        type_aliases: stringify_type_aliases(&ptr_type_aliases),
     }
 }
 
@@ -139,8 +148,9 @@ fn render_impl(
 
     let RenderedFunctionExport {
         tokens,
-        type_aliases,
+        ptr_type_aliases,
         vec_access,
+        ..
     } = render_function_export(
         &parsed_function,
         Some(type_info.key.clone()),
@@ -148,7 +158,7 @@ fn render_impl(
     );
     let (rust_vec_access, dart_vec_access) = render_vec_access(vec_access);
     let free_tokens = if full {
-        let frees = render_frees(&type_aliases);
+        let frees = render_frees(&ptr_type_aliases);
         // TODO: dart strings
         frees.into_iter().map(|(tokens, _)| tokens).collect()
     } else {
@@ -162,7 +172,7 @@ fn render_impl(
     RenderedFunctionExportSimplified {
         tokens,
         dart_vec_access,
-        type_aliases: stringify_type_aliases(&type_aliases),
+        type_aliases: stringify_type_aliases(&ptr_type_aliases),
     }
 }
 
@@ -240,10 +250,10 @@ mod no_args_composite_vec_return_full {
                 let ret_ptr = rid::RidVec::from(ret);
                 ret_ptr
             }
-            fn rid_free_vec_Vec(arg: rid::RidVec<u8>) {
+            fn rid_free_vec_RawVec(arg: rid::RidVec<u8>) {
                 arg.free();
             }
-            fn rid_get_item_Vec(vec: rid::RidVec<u8>, idx: usize) -> u8 {
+            fn rid_get_item_RawVec(vec: rid::RidVec<u8>, idx: usize) -> u8 {
                 vec[idx]
             }
         };
@@ -268,26 +278,26 @@ mod no_args_composite_vec_return_full {
         });
 
         let expected = quote! {
-            fn rid_export_filter_items() -> rid::RidVec<Pointer_MyStruct> {
+            fn rid_export_filter_items() -> rid::RidVec<Pointer_RawMyStruct> {
                 let ret = filter_items();
-                let vec_with_pointers: Vec<Pointer_MyStruct> =
-                    ret.into_iter().map(|x| &*x as Pointer_MyStruct).collect();
+                let vec_with_pointers: Vec<Pointer_RawMyStruct> =
+                    ret.into_iter().map(|x| &*x as Pointer_RawMyStruct).collect();
                 let ret_ptr = rid::RidVec::from(vec_with_pointers);
                 ret_ptr
             }
-            fn rid_free_vec_Pointer_MyStruct(arg: rid::RidVec<Pointer_MyStruct>) {
+            fn rid_free_vec_Pointer_RawMyStruct(arg: rid::RidVec<Pointer_RawMyStruct>) {
                 arg.free();
             }
-            fn rid_get_item_Pointer_MyStruct(
-                vec: rid::RidVec<Pointer_MyStruct>,
+            fn rid_get_item_Pointer_RawMyStruct(
+                vec: rid::RidVec<Pointer_RawMyStruct>,
                 idx: usize
-            ) -> Pointer_MyStruct {
+            ) -> Pointer_RawMyStruct {
                 vec[idx]
             }
         };
 
         assert_eq!(res.tokens.to_string(), expected.to_string());
-        assert_eq!(res.type_aliases, "Pointer_MyStruct");
+        assert_eq!(res.type_aliases, "Pointer_RawMyStruct");
 
         let expected_dart = include_str!(
             "./fixtures/function_export.return_vec_struct_ref.dart.snapshot"
@@ -338,7 +348,7 @@ mod impl_instance_methods {
             false,
         );
         let expected = quote! {
-            fn rid_export_Model_id(ptr: Pointer_Model) -> u32 {
+            fn rid_export_Model_id(ptr: Pointer_RawModel) -> u32 {
                 let receiver: &Model = unsafe {
                     assert!(!ptr.is_null());
                     ptr.as_ref().unwrap()
@@ -348,11 +358,16 @@ mod impl_instance_methods {
                 ret_ptr
             }
         };
+
         assert_eq!(res.tokens.to_string(), expected.to_string());
-        assert_eq!(res.type_aliases, "Pointer_Model");
+        assert_eq!(res.type_aliases, "Pointer_RawModel");
     }
 
-    /* TODO: Should not export Rust method that returns nothing (at least for now)
+    /* TODO: Should not export Rust method that returns nothing since that could only be for side
+     * effects which should be done via a message.
+     * Need to note that clearly in the abort!() message
+     */
+    /*
     #[test]
     fn no_args_mut_receiver_return_void() {
         let res = render_impl(
@@ -362,19 +377,6 @@ mod impl_instance_methods {
             },
             "Model",
         );
-        let expected = quote! {
-            fn rid_export_Model_inc_id(ptr: PointerMut_Model) -> () {
-                let receiver: &mut Model = unsafe {
-                    assert!(!ptr.is_null());
-                    ptr.as_mut().unwrap()
-                };
-                let ret = Model::inc_id(receiver);
-                let ret_ptr = ret;
-                ret_ptr
-            }
-        };
-        assert_eq!(res.tokens.to_string(), expected.to_string());
-        assert_eq!(res.type_aliases, "PointerMut_Model");
     }
      */
 
@@ -390,7 +392,7 @@ mod impl_instance_methods {
             false,
         );
         let expected = quote! {
-            fn rid_export_Model_first(ptr: Pointer_Model) -> Pointer_Item {
+            fn rid_export_Model_first(ptr: Pointer_RawModel) -> Pointer_RawItem {
                 let receiver: &Model = unsafe {
                     assert!(!ptr.is_null());
                     ptr.as_ref().unwrap()
@@ -401,10 +403,14 @@ mod impl_instance_methods {
             }
         };
         assert_eq!(res.tokens.to_string(), expected.to_string());
-        assert_eq!(res.type_aliases, "Pointer_Item, Pointer_Model");
+        assert_eq!(res.type_aliases, "Pointer_RawItem, Pointer_RawModel");
     }
 }
-mod impl_static_methods {
+
+// -----------------
+// Impl static Methods no args
+// -----------------
+mod impl_static_methods_no_args {
     use super::*;
     #[test]
     fn no_args_return_receiver_owned_by_name() {
@@ -417,15 +423,15 @@ mod impl_static_methods {
             true,
         );
         let expected = quote! {
-            fn rid_export_Model_new() -> PointerMut_Model {
+            fn rid_export_Model_new() -> PointerMut_RawModel {
                 let ret = Model::new();
                 let ret_ptr = std::boxed::Box::into_raw(std::boxed::Box::new(ret));
                 ret_ptr
             }
-            fn rid_free_Model(ptr: PointerMut_Model) {
+            fn rid_free_RawModel(ptr: PointerMut_RawModel) {
                 let instance = unsafe {
                     assert!(!ptr.is_null());
-                    let ptr: PointerMut_Model = &mut *ptr;
+                    let ptr: PointerMut_RawModel = &mut *ptr;
                     let ptr = ptr.as_mut().unwrap();
                     Box::from_raw(ptr)
                 };
@@ -435,5 +441,152 @@ mod impl_static_methods {
 
         assert_eq!(res.tokens.to_string(), expected.to_string());
         // TODO: verify rendered dart
+    }
+}
+
+// -----------------
+// Impl static Methods with args
+// -----------------
+mod impl_static_methods_with_args {
+    use super::*;
+
+    #[test]
+    fn u8_arg_returning_u8() {
+        let _attrs = TokenStream::new();
+        let input: TokenStream = quote! {
+            #[rid::export]
+            pub fn add_one(n: u8) -> u8 { todo!() }
+        };
+
+        let expected = quote! {
+            fn rid_export_Model_add_one(arg0: u8) -> u8 {
+                let ret = Model::add_one(arg0);
+                let ret_ptr = ret;
+                ret_ptr
+            }
+        };
+        let res = render_impl(input, "Model", false);
+
+        assert_eq!(res.tokens.to_string(), expected.to_string());
+    }
+
+    #[test]
+    fn u8_u32_string_args_returning_u8() {
+        let _attrs = TokenStream::new();
+        let input: TokenStream = quote! {
+            #[rid::export]
+            pub fn run(n: u8, x: u32, s: String) -> u8 { todo!() }
+        };
+
+        let expected = quote! {
+            fn rid_export_Model_run(
+                arg0: u8,
+                arg1: u32,
+                arg2: *mut ::std::os::raw::c_char
+            ) -> u8 {
+                let arg2 = unsafe { ::std::ffi::CString::from_raw(arg2) }
+                    .to_str()
+                    .expect("Received String that wasn't valid UTF-8.")
+                    .to_string();
+                let ret = Model::run(arg0, arg1, arg2);
+                let ret_ptr = ret;
+                ret_ptr
+        }
+        };
+        let res = render_impl(input, "Model", false);
+
+        assert_eq!(res.tokens.to_string(), expected.to_string());
+    }
+}
+//
+// -----------------
+// Impl instance Methods with args
+// -----------------
+mod impl_instance_methods_with_args {
+    use super::*;
+
+    #[test]
+    fn self_ref_u8_arg_returning_u8() {
+        let _attrs = TokenStream::new();
+        let input: TokenStream = quote! {
+            #[rid::export]
+            pub fn add_one(&self, n: u8) -> u8 { todo!() }
+        };
+
+        let expected = quote! {
+            fn rid_export_Model_add_one(ptr: Pointer_RawModel, arg0: u8) -> u8 {
+                let receiver: &Model = unsafe {
+                    assert!(!ptr.is_null());
+                    ptr.as_ref().unwrap()
+                };
+                let ret = Model::add_one(receiver, arg0);
+                let ret_ptr = ret;
+                ret_ptr
+            }
+        };
+        let res = render_impl(input, "Model", false);
+
+        assert_eq!(res.tokens.to_string(), expected.to_string());
+    }
+
+    #[test]
+    fn self_u8_u32_string_args_returning_u8() {
+        let _attrs = TokenStream::new();
+        let input: TokenStream = quote! {
+            #[rid::export]
+            pub fn run(self, n: u8, x: u32, s: String) -> u8 { todo!() }
+        };
+
+        let expected = quote! {
+            fn rid_export_Model_run(
+                ptr: PointerMut_RawModel,
+                arg0: u8,
+                arg1: u32,
+                arg2: *mut ::std::os::raw::c_char
+            ) -> u8 {
+                let receiver: Model = unsafe {
+                    assert!(!ptr.is_null());
+                    ptr.unwrap()
+                };
+                let arg2 = unsafe { ::std::ffi::CString::from_raw(arg2) }
+                    .to_str()
+                    .expect("Received String that wasn't valid UTF-8.")
+                    .to_string();
+                let ret = Model::run(receiver, arg0, arg1, arg2);
+                let ret_ptr = ret;
+                ret_ptr
+            }
+        };
+        let res = render_impl(input, "Model", false);
+
+        assert_eq!(res.tokens.to_string(), expected.to_string());
+    }
+}
+
+// -----------------
+// Standalone Functions Special Returns
+// -----------------
+mod standalone_special_returns {
+    use super::*;
+
+    #[test]
+    fn u32_arg_returning_option_ref_todo() {
+        let input: TokenStream = quote! {
+            #[rid::export]
+            #[rid::structs(Todo)]
+            fn todo_by_id(id: u32) -> Option<&Todo> {
+                todo!()
+            }
+        };
+
+        let expected = quote! {
+            fn rid_export_todo_by_id(arg0: u32) -> Pointer_RawTodo {
+                let ret = todo_by_id(arg0);
+                let ret_ptr = rid::_option_ref_to_pointer(ret);
+                ret_ptr
+            }
+        };
+        let res = render(input);
+        assert_eq!(res.tokens.to_string(), expected.to_string());
     }
 }

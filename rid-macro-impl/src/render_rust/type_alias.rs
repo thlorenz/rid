@@ -2,14 +2,14 @@ use proc_macro2::TokenStream;
 use quote::{format_ident, quote_spanned};
 use syn::Ident;
 
-use crate::render_common::TypeAlias;
+use crate::render_common::PointerTypeAlias;
 
 pub struct RenderedTypeAliasInfo {
     pub alias: String,
     pub fn_ident: Ident,
 }
 
-impl TypeAlias {
+impl PointerTypeAlias {
     pub const POINTER_ALIAS_PREFIX: &'static str = "Pointer_";
     pub const POINTER_MUT_ALIAS_PREFIX: &'static str = "PointerMut_";
 
