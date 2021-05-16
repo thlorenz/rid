@@ -11,7 +11,8 @@ members=[
   "rid-ffi",
   "rid-macro",
   "rid-macro-impl",
-  "examples/dart/todo"
+  "examples/dart/todo",
+  "examples/dart/clock"
 ]
 
 [dependencies]

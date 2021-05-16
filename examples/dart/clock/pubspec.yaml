@@ -1,0 +1,15 @@
+name: clock 
+version: 0.0.0
+environment:
+  sdk: '>=2.12.0 <=3.0.0'
+
+#  pub run ffigen --verbose severe (optional) --config <outside.config>
+ffigen:
+  output: 'lib/generated/ffigen_binding.dart'
+  headers:
+    entry-points:
+      - 'lib/generated/bindings.h'
+
+dependencies: 
+  ffi: ^1.0.0
+  ffigen: ^2.2.4
