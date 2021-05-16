@@ -19,9 +19,8 @@ path = "rid_build.rs"
 rid = { path = "../../../" }
 rid_build = { path = "../../../rid-build" }
 lazy_static = "1.4.0"
-# TODO upgrade and adapt to new API
-tokio = { version = "0.2", features = ["rt-threaded"] }
 allo-isolate = "0.1.7"
+tokio = { version = "1.2.0", features = [ "rt-multi-thread" ] }
 
 [build-dependencies]
 rid_build = { path = "../../../rid-build" }

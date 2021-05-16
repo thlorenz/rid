@@ -20,12 +20,11 @@ impl Error for TestError {}
 // Tokio Runtime
 // -----------------
 lazy_static! {
-    static ref RUNTIME: ::std::io::Result<Runtime> = Builder::new()
-        .threaded_scheduler()
-        .enable_all()
-        .core_threads(4)
-        .thread_name("flutterust")
-        .build();
+    static ref RUNTIME: ::std::io::Result<Runtime> =
+        Builder::new_multi_thread()
+            .thread_name("rid_isolate")
+            .worker_threads(2)
+            .build();
 }
 
 // -----------------
@@ -47,7 +46,7 @@ pub extern "C" fn load_page(
     port: i64,
     url: *const ::std::os::raw::c_char,
 ) -> i32 {
-    let runtime = match RUNTIME.as_ref() {
+    let runtime: &Runtime = match RUNTIME.as_ref() {
         Ok(x) => x,
         Err(err) => {
             eprintln!("Err: {:?}", err);
@@ -56,7 +55,8 @@ pub extern "C" fn load_page(
     };
     let url = unsafe { CStr::from_ptr(url).to_str().unwrap() };
 
-    let t = Isolate::new(port).task(load_page_impl(url));
-    runtime.spawn(t);
+    let isolate = Isolate::new(port).task(load_page_impl(url));
+    runtime.spawn(isolate);
+
     1
 }
