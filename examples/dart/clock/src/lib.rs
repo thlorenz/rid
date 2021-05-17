@@ -32,7 +32,7 @@ lazy_static! {
 // -----------------
 pub async fn load_page_impl(url: &str) -> Result<String, TestError> {
     let mut c = 0;
-    for _ in 1..=20_000_000 {
+    for _ in 1..=100_000_000 {
         c += 1;
     }
     Ok(format!("loaded {} after {} iterations", url, c))

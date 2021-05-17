@@ -1,21 +1,21 @@
 import 'dart:async';
 import 'dart:isolate';
-import 'package:clock/event_channel.dart';
 import 'package:clock/generated/rid_generated.dart';
+import 'package:clock/stream_channel.dart';
 
 ///
 /// App
 ///
 class Test {
-  final EventChannel<String> eventChannel;
-  Test(this.eventChannel) {
-    this.eventChannel.subscribe(onLoadedPage);
+  final StreamChannel<String> streamChannel;
+  Test(this.streamChannel) {
+    this.streamChannel.stream.listen(onLoadedPage);
   }
 
   void loadPage(String url) {
     // defined in package:ffi/ffi.dart
     final urlPtr = url.toNativeInt8();
-    final res = rid_ffi.load_page(eventChannel.nativePort, urlPtr);
+    final res = rid_ffi.load_page(streamChannel.nativePort, urlPtr);
     if (res != 1) {
       print("ERROR when initializing page load");
     }
@@ -33,9 +33,9 @@ Timer wait() {
 }
 
 Future<void> main() async {
-  EventChannel.setup();
-  final eventChannel = EventChannel<String>();
-  final test = Test(eventChannel);
+  StreamChannel.setup();
+  final streamChannel = StreamChannel<String>();
+  final test = Test(streamChannel);
   final _ = wait();
   test.loadPage("https://github.com");
 

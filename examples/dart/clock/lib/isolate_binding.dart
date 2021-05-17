@@ -23,10 +23,15 @@ final rid_ffi = NativeLibrary(_dl);
 ///
 /// Binding to `allo-isolate` crate
 ///
+bool _initializedStoreDartPostObject = false;
+
 void store_dart_post_cobject(
   Pointer<NativeFunction<Int8 Function(Int64, Pointer<Dart_CObject>)>> ptr,
 ) {
-  _store_dart_post_cobject(ptr);
+  if (!_initializedStoreDartPostObject) {
+    _initializedStoreDartPostObject = true;
+    _store_dart_post_cobject(ptr);
+  }
 }
 
 final _store_dart_post_cobject_Dart _store_dart_post_cobject = _dl
