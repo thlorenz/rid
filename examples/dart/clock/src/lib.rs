@@ -32,7 +32,7 @@ lazy_static! {
 // -----------------
 pub async fn load_page_impl(url: &str) -> Result<String, TestError> {
     let mut c = 0;
-    for _ in 1..=200_000_000 {
+    for _ in 1..=20_000_000 {
         c += 1;
     }
     Ok(format!("loaded {} after {} iterations", url, c))
@@ -55,8 +55,11 @@ pub extern "C" fn load_page(
     };
     let url = unsafe { CStr::from_ptr(url).to_str().unwrap() };
 
-    let isolate = Isolate::new(port).task(load_page_impl(url));
-    runtime.spawn(isolate);
+    let isolate = Isolate::new(port);
+    let task = isolate.task(load_page_impl(url));
+    runtime.spawn(task);
+    isolate.post("hello world");
+    isolate.post("hola  mundo");
 
     1
 }

@@ -77,3 +77,18 @@ SendPort singleCompletePort<R, P>(Completer<R> completer,
   }
   return responsePort.sendPort;
 }
+
+SendPort singleCallbackPortShort<P>(void Function(P? response) callback) {
+  var responsePort = RawReceivePort();
+  responsePort.handler = (response) {
+    print('response $response');
+  };
+  return responsePort.sendPort;
+}
+
+SendPort singleCompletePortShort<R, P>(Completer<R> completer) {
+  return singleCallbackPortShort<Object>((response) {
+    print('completing');
+    _castComplete<R>(completer, response);
+  });
+}
