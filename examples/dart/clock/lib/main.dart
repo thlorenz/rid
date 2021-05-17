@@ -7,15 +7,14 @@ import 'package:clock/stream_channel.dart';
 /// App
 ///
 class Test {
-  final StreamChannel<String> streamChannel;
-  Test(this.streamChannel) {
-    this.streamChannel.stream.listen(onLoadedPage);
+  Test() {
+    StreamChannel.instance.stream.listen(onLoadedPage);
   }
 
   void loadPage(String url) {
     // defined in package:ffi/ffi.dart
     final urlPtr = url.toNativeInt8();
-    final res = rid_ffi.load_page(streamChannel.nativePort, urlPtr);
+    final res = rid_ffi.load_page(urlPtr);
     if (res != 1) {
       print("ERROR when initializing page load");
     }
@@ -33,9 +32,7 @@ Timer wait() {
 }
 
 Future<void> main() async {
-  StreamChannel.setup();
-  final streamChannel = StreamChannel<String>();
-  final test = Test(streamChannel);
+  final test = Test();
   final _ = wait();
   test.loadPage("https://github.com");
 

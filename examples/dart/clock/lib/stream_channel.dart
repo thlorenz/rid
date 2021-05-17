@@ -4,14 +4,17 @@ import 'dart:isolate';
 import 'package:clock/isolate_binding.dart';
 
 // TODO: error handling
+// TODO: rename to ResponseChannel?
 class StreamChannel<T> {
   final _zone = Zone.current;
   final StreamController<T> _sink;
   late final RawReceivePort _receivePort;
   late final _zonedAdd;
 
-  StreamChannel() : _sink = StreamController.broadcast() {
-    _receivePort = RawReceivePort(_onReceivedResponse);
+  StreamChannel._() : _sink = StreamController.broadcast() {
+    _receivePort =
+        RawReceivePort(_onReceivedResponse, 'rid::stream_channel::port');
+    rid_ffi.init_isolate(_receivePort.sendPort.nativePort);
     _zonedAdd = _zone.registerUnaryCallback(_add);
   }
 
@@ -31,14 +34,19 @@ class StreamChannel<T> {
     return _receivePort.sendPort.nativePort;
   }
 
-  void trythings() {}
-
-  void dispose() {
+  // TODO: do we need this? We should never dispose this singleton
+  void _dispose() {
     _receivePort.close();
     _sink.close();
   }
 
-  static setup() {
-    store_dart_post_cobject(NativeApi.postCObject);
+  // TODO: for now we're assuming our messages are strings but that may change
+  static StreamChannel<String>? _instance;
+  static StreamChannel<String> get instance {
+    if (_instance == null) {
+      store_dart_post_cobject(NativeApi.postCObject);
+      _instance = StreamChannel<String>._();
+    }
+    return _instance!;
   }
 }

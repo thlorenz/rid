@@ -1,4 +1,3 @@
-use allo_isolate::Isolate;
 use std::{error::Error, ffi::CStr, fmt};
 
 use lazy_static::lazy_static;
@@ -28,6 +27,66 @@ lazy_static! {
 }
 
 // -----------------
+// Isolate
+// -----------------
+static mut RID_ISOLATE: Option<Isolate> = None;
+
+pub struct Isolate {
+    _port: i64,
+    _isolate: ::allo_isolate::Isolate,
+}
+
+impl Isolate {
+    fn new(port: i64) -> Self {
+        let isolate = ::allo_isolate::Isolate::new(port);
+        Self {
+            _port: port,
+            _isolate: isolate,
+        }
+    }
+
+    #[allow(unused)]
+    fn get<'a>() -> &'a Self {
+        unsafe { RID_ISOLATE.as_ref().expect("Need to `init_isolate` first") }
+    }
+
+    #[allow(unused)]
+    fn port() -> i64 {
+        unsafe {
+            RID_ISOLATE
+                .as_ref()
+                .expect("Need to `init_isolate` first")
+                ._port
+        }
+    }
+
+    pub fn isolate<'a>() -> &'a ::allo_isolate::Isolate {
+        unsafe {
+            &RID_ISOLATE
+                .as_ref()
+                .expect("Need to `init_isolate` first")
+                ._isolate
+        }
+    }
+
+    pub fn post(msg: impl ::allo_isolate::IntoDart) {
+        Isolate::isolate().post(msg);
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn init_isolate(port: i64) {
+    // SAFETY: called once from the main dart thread
+    unsafe {
+        if RID_ISOLATE.is_some() {
+            // TODO: could also just ignore
+            panic!("Isolate already initialized, only do this once!");
+        }
+        RID_ISOLATE = Some(Isolate::new(port));
+    }
+}
+
+// -----------------
 // Load Page Impl
 // -----------------
 pub async fn load_page_impl(url: &str) -> Result<String, TestError> {
@@ -42,10 +101,7 @@ pub async fn load_page_impl(url: &str) -> Result<String, TestError> {
 // load_page ffi wrapper
 // -----------------
 #[no_mangle]
-pub extern "C" fn load_page(
-    port: i64,
-    url: *const ::std::os::raw::c_char,
-) -> i32 {
+pub extern "C" fn load_page(url: *const ::std::os::raw::c_char) -> i32 {
     let runtime: &Runtime = match RUNTIME.as_ref() {
         Ok(x) => x,
         Err(err) => {
@@ -55,11 +111,10 @@ pub extern "C" fn load_page(
     };
     let url = unsafe { CStr::from_ptr(url).to_str().unwrap() };
 
-    let isolate = Isolate::new(port);
-    let task = isolate.task(load_page_impl(url));
+    let task = Isolate::isolate().task(load_page_impl(url));
     runtime.spawn(task);
-    isolate.post("hello world");
-    isolate.post("hola  mundo");
+    Isolate::post("hello world");
+    Isolate::post("hola  mundo");
 
     1
 }
