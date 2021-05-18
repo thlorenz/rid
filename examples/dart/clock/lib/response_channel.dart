@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:ffi';
 import 'dart:isolate';
-import 'package:clock/isolate_binding.dart';
+import 'package:clock/isolate_binding.dart' show initIsolate;
 
 // -----------------
 // Response Type (will be generated from Rust enum)
@@ -46,7 +46,6 @@ Response decode(int packed) {
 // -----------------
 
 // TODO: error handling
-// TODO: rename to ResponseChannel?
 class ResponseChannel {
   final _zone = Zone.current;
   final StreamController<Response> _sink;
@@ -57,7 +56,7 @@ class ResponseChannel {
   ResponseChannel._() : _sink = StreamController.broadcast() {
     _receivePort =
         RawReceivePort(_onReceivedResponse, 'rid::stream_channel::port');
-    rid_ffi.init_isolate(_receivePort.sendPort.nativePort);
+    initIsolate(_receivePort.sendPort.nativePort);
     _zonedAdd = _zone.registerUnaryCallback(_add);
   }
 
@@ -73,11 +72,7 @@ class ResponseChannel {
 
   Stream<Response> get stream => _sink.stream;
   Future<Response> response(int reqID) {
-    // TODO: we could query the error from Rust here and put it onto the stream
-    // or have an onError subscription or similar
-    assert(reqID != 0,
-        "Invalid requestID, maybe the message wasn't handled correctly");
-
+    assert(reqID != 0, "Invalid requestID ");
     return stream.where((res) => res.id == reqID).first;
   }
 
@@ -96,11 +91,9 @@ class ResponseChannel {
     _sink.close();
   }
 
-  // TODO: for now we're assuming our messages are strings but that may change
   static ResponseChannel? _instance;
   static ResponseChannel get instance {
     if (_instance == null) {
-      store_dart_post_cobject(NativeApi.postCObject);
       _instance = ResponseChannel._();
     }
     return _instance!;

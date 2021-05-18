@@ -1,7 +1,4 @@
-use isolate::Isolate;
 use std::{thread, time};
-
-mod isolate;
 
 // -----------------
 // Model
@@ -38,7 +35,7 @@ impl Model {
             while self.running {
                 thread::sleep(time::Duration::from_secs(1));
                 self.elapsed_secs += 1;
-                Isolate::post(Topic::Tick);
+                rid::post(Topic::Tick);
             }
         });
     }
@@ -53,17 +50,17 @@ impl Model {
 
     fn handle_start(&'static mut self, req_id: u64) {
         self.start();
-        Isolate::post(Topic::Started(req_id));
+        rid::post(Topic::Started(req_id));
     }
 
     fn handle_stop(&mut self, req_id: u64) {
         self.stop();
-        Isolate::post(Topic::Stopped(req_id));
+        rid::post(Topic::Stopped(req_id));
     }
 
     fn handle_reset(&mut self, req_id: u64) {
         self.reset();
-        Isolate::post(Topic::Reset(req_id));
+        rid::post(Topic::Reset(req_id));
     }
 }
 
