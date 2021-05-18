@@ -9,6 +9,7 @@ doctest = false
 
 [dependencies]
 rid_common = { path = "../rid-common" }
+allo-isolate = "0.1.7"
 
 [[bin]]
 name = "main"
