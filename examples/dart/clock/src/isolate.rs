@@ -3,6 +3,9 @@ static mut RID_ISOLATE: Option<Isolate> = None;
 pub struct Isolate {
     _port: i64,
     _isolate: ::allo_isolate::Isolate,
+    // NOTE: we essentially downcast this to a u48 when packing into an i64
+    // NOTE: this doesn't have to hang off the isolate, it was just convenient
+    _last_id: u64,
 }
 
 impl Isolate {
@@ -11,6 +14,7 @@ impl Isolate {
         Self {
             _port: port,
             _isolate: isolate,
+            _last_id: 0,
         }
     }
 
@@ -40,6 +44,14 @@ impl Isolate {
 
     pub fn post(msg: impl ::allo_isolate::IntoDart) {
         Isolate::isolate().post(msg);
+    }
+
+    pub fn next_id() -> u64 {
+        let mut isolate = &mut unsafe {
+            RID_ISOLATE.as_mut().expect("Need to `init_isolate` first")
+        };
+        isolate._last_id += 1;
+        isolate._last_id
     }
 }
 

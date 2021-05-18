@@ -3,13 +3,15 @@ import 'dart:ffi';
 import 'dart:isolate';
 import 'package:clock/isolate_binding.dart';
 
-//
+// -----------------
 // Response Type (will be generated from Rust enum)
-//
+// -----------------
 
 enum Topic {
-  Hello,
-  Loaded,
+  Started,
+  Stopped,
+  Reset,
+  Tick,
 }
 
 class Response {
@@ -20,7 +22,11 @@ class Response {
 
   @override
   String toString() {
-    return 'topic: ${this.topic.toString()}, id: $id';
+    return '''Response {
+  topic: ${this.topic.toString().substring('Topic.'.length)}
+  id:    $id
+}
+''';
   }
 }
 
@@ -35,19 +41,19 @@ Response decode(int packed) {
   return Response(topic, id);
 }
 
-//
-// Channel
-//
+// -----------------
+// Stream Channel
+// -----------------
 
 // TODO: error handling
 // TODO: rename to ResponseChannel?
-class StreamChannel {
+class ResponseChannel {
   final _zone = Zone.current;
   final StreamController<Response> _sink;
   late final RawReceivePort _receivePort;
   late final _zonedAdd;
 
-  StreamChannel._() : _sink = StreamController.broadcast() {
+  ResponseChannel._() : _sink = StreamController.broadcast() {
     _receivePort =
         RawReceivePort(_onReceivedResponse, 'rid::stream_channel::port');
     rid_ffi.init_isolate(_receivePort.sendPort.nativePort);
@@ -65,6 +71,14 @@ class StreamChannel {
   }
 
   Stream<Response> get stream => _sink.stream;
+  Future<Response> response(int reqID) {
+    // TODO: we could query the error from Rust here and put it onto the stream
+    // or have an onError subscription or similar
+    assert(reqID != 0,
+        "Invalid requestID, maybe the message wasn't handled correctly");
+
+    return stream.where((res) => res.id == reqID).first;
+  }
 
   int get nativePort {
     return _receivePort.sendPort.nativePort;
@@ -77,11 +91,11 @@ class StreamChannel {
   }
 
   // TODO: for now we're assuming our messages are strings but that may change
-  static StreamChannel? _instance;
-  static StreamChannel instance<T>() {
+  static ResponseChannel? _instance;
+  static ResponseChannel get instance {
     if (_instance == null) {
       store_dart_post_cobject(NativeApi.postCObject);
-      _instance = StreamChannel._();
+      _instance = ResponseChannel._();
     }
     return _instance!;
   }
