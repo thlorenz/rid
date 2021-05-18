@@ -1,7 +1,56 @@
 use isolate::Isolate;
-use std::thread;
+use std::{thread, time};
 
 mod isolate;
+
+// -----------------
+// Model
+// -----------------
+#[rid::model]
+#[derive(Debug, rid::Debug)]
+pub struct Model {
+    running: bool,
+    elapsed_secs: u32,
+}
+
+#[rid::export]
+impl Model {
+    #[rid::export(initModel)]
+    pub fn new() -> Self {
+        Self {
+            running: false,
+            elapsed_secs: 0,
+        }
+    }
+
+    // TODO: multiple methods can get a hold of the mutable model via different
+    // FFI entry points. Assignments/reads are not synced and thus this code is not
+    // thread safe.
+    // Here we are dealing with primitive values, but modifying vecs like this would
+    // be a problem.
+    // Messages all would come from the Dart UI thread and thus never run in parallel,
+    // however we're creating threads for each which could race.
+    // Also dedicated threads which tick like the below pose a problem.
+    // We may need to look into a proper runtime or similar ...
+    fn start(&'static mut self) {
+        thread::spawn(move || {
+            self.running = true;
+            while self.running {
+                thread::sleep(time::Duration::from_secs(1));
+                self.elapsed_secs += 1;
+                Isolate::post(Topic::Tick);
+            }
+        });
+    }
+
+    fn stop(&'static mut self) {
+        self.running = false;
+    }
+
+    fn reset(&'static mut self) {
+        self.elapsed_secs = 0;
+    }
+}
 
 // -----------------
 // Response
@@ -53,35 +102,66 @@ impl ::allo_isolate::IntoDart for Topic {
     }
 }
 
-pub fn handle_start(req_id: u64) {
-    thread::spawn(move || Isolate::post(Topic::Started(req_id)));
+pub fn handle_start(req_id: u64, model: &'static mut Model) {
+    thread::spawn(move || {
+        model.start();
+        Isolate::post(Topic::Started(req_id));
+    });
 }
 
-pub fn handle_stop(req_id: u64) {
-    thread::spawn(move || Isolate::post(Topic::Stopped(req_id)));
+pub fn handle_stop(req_id: u64, model: &'static mut Model) {
+    thread::spawn(move || {
+        model.stop();
+        Isolate::post(Topic::Stopped(req_id));
+    });
 }
 
-pub fn handle_reset(req_id: u64) {
-    thread::spawn(move || Isolate::post(Topic::Reset(req_id)));
+pub fn handle_reset(req_id: u64, model: &'static mut Model) {
+    thread::spawn(move || {
+        model.reset();
+        Isolate::post(Topic::Reset(req_id));
+    });
 }
 
 #[no_mangle]
-pub extern "C" fn msgStart() -> u64 {
+pub extern "C" fn msgStart(ptr: *mut Model) -> u64 {
+    let model = unsafe {
+        if !!ptr.is_null() {
+            panic!("assertion failed: !ptr.is_null()")
+        };
+        let ptr: *mut Model = &mut *ptr;
+        ptr.as_mut().unwrap()
+    };
+
     let req_id = Isolate::next_id();
-    handle_start(req_id);
+    handle_start(req_id, model);
     req_id
 }
 
 #[no_mangle]
-pub extern "C" fn msgStop() -> u64 {
+pub extern "C" fn msgStop(ptr: *mut Model) -> u64 {
+    let model = unsafe {
+        if !!ptr.is_null() {
+            panic!("assertion failed: !ptr.is_null()")
+        };
+        let ptr: *mut Model = &mut *ptr;
+        ptr.as_mut().unwrap()
+    };
     let req_id = Isolate::next_id();
-    handle_stop(req_id);
+    handle_stop(req_id, model);
     req_id
 }
 
 #[no_mangle]
-pub extern "C" fn msgReset() -> u64 {
+pub extern "C" fn msgReset(ptr: *mut Model) -> u64 {
+    let model = unsafe {
+        if !!ptr.is_null() {
+            panic!("assertion failed: !ptr.is_null()")
+        };
+        let ptr: *mut Model = &mut *ptr;
+        ptr.as_mut().unwrap()
+    };
     let req_id = Isolate::next_id();
-    handle_reset(req_id);
+    handle_reset(req_id, model);
     req_id
 }

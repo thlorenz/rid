@@ -4,20 +4,24 @@ import 'package:clock/response_channel.dart';
 class StopWatch {
   final chan = ResponseChannel.instance;
 
+  final Pointer<Model> model;
+
+  StopWatch(this.model);
+
   void startTimer() async {
-    final reqID = rid_ffi.msgStart();
+    final reqID = rid_ffi.msgStart(model);
     final res = await chan.response(reqID);
     print('$res');
   }
 
   void stopTimer() async {
-    final reqID = rid_ffi.msgStop();
+    final reqID = rid_ffi.msgStop(model);
     final res = await chan.response(reqID);
     print('$res');
   }
 
   void resetTimer() async {
-    final reqID = rid_ffi.msgReset();
+    final reqID = rid_ffi.msgReset(model);
     final res = await chan.response(reqID);
     print('$res');
   }

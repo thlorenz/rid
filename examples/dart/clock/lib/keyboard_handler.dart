@@ -1,11 +1,18 @@
 import 'dart:io';
 
+import 'package:clock/generated/rid_generated.dart';
+import 'package:clock/response_channel.dart';
 import 'package:clock/stop_watch.dart';
 
 class KeyboardHandler {
   final StopWatch stopWatch;
+  final Pointer<Model> model;
 
-  KeyboardHandler(this.stopWatch);
+  KeyboardHandler(this.model, this.stopWatch);
+
+  printStatus() {
+    print('${model.debug(true)}');
+  }
 
   void printCommands() {
     print("\nPlease select one of the below:\n");
@@ -35,12 +42,18 @@ class KeyboardHandler {
 
   void resetScreen() {
     print("\x1B[2J\x1B[0;0H");
+    printStatus();
     printCommands();
     stdout.write("\n> ");
   }
 
   void start() async {
     resetScreen();
+    ResponseChannel.instance.stream
+        .where((res) => res.topic == Topic.Tick)
+        .listen((_) {
+      resetScreen();
+    });
     stdin.listen((bytes) {
       final cmd = String.fromCharCode(bytes.first);
       final ok = handleCommand(cmd);
