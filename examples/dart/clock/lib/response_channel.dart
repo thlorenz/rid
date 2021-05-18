@@ -52,6 +52,7 @@ class ResponseChannel {
   final StreamController<Response> _sink;
   late final RawReceivePort _receivePort;
   late final _zonedAdd;
+  int _lastReqId = 0;
 
   ResponseChannel._() : _sink = StreamController.broadcast() {
     _receivePort =
@@ -82,6 +83,11 @@ class ResponseChannel {
 
   int get nativePort {
     return _receivePort.sendPort.nativePort;
+  }
+
+  int get reqId {
+    _lastReqId++;
+    return _lastReqId;
   }
 
   // TODO: do we need this? We should never dispose this singleton

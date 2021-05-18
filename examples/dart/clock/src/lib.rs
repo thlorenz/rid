@@ -43,12 +43,27 @@ impl Model {
         });
     }
 
-    fn stop(&'static mut self) {
+    fn stop(&mut self) {
         self.running = false;
     }
 
-    fn reset(&'static mut self) {
+    fn reset(&mut self) {
         self.elapsed_secs = 0;
+    }
+
+    fn handle_start(&'static mut self, req_id: u64) {
+        self.start();
+        Isolate::post(Topic::Started(req_id));
+    }
+
+    fn handle_stop(&mut self, req_id: u64) {
+        self.stop();
+        Isolate::post(Topic::Stopped(req_id));
+    }
+
+    fn handle_reset(&mut self, req_id: u64) {
+        self.reset();
+        Isolate::post(Topic::Reset(req_id));
     }
 }
 
@@ -102,29 +117,8 @@ impl ::allo_isolate::IntoDart for Topic {
     }
 }
 
-pub fn handle_start(req_id: u64, model: &'static mut Model) {
-    thread::spawn(move || {
-        model.start();
-        Isolate::post(Topic::Started(req_id));
-    });
-}
-
-pub fn handle_stop(req_id: u64, model: &'static mut Model) {
-    thread::spawn(move || {
-        model.stop();
-        Isolate::post(Topic::Stopped(req_id));
-    });
-}
-
-pub fn handle_reset(req_id: u64, model: &'static mut Model) {
-    thread::spawn(move || {
-        model.reset();
-        Isolate::post(Topic::Reset(req_id));
-    });
-}
-
 #[no_mangle]
-pub extern "C" fn msgStart(ptr: *mut Model) -> u64 {
+pub extern "C" fn msgStart(req_id: u64, ptr: *mut Model) {
     let model = unsafe {
         if !!ptr.is_null() {
             panic!("assertion failed: !ptr.is_null()")
@@ -132,14 +126,11 @@ pub extern "C" fn msgStart(ptr: *mut Model) -> u64 {
         let ptr: *mut Model = &mut *ptr;
         ptr.as_mut().unwrap()
     };
-
-    let req_id = Isolate::next_id();
-    handle_start(req_id, model);
-    req_id
+    model.handle_start(req_id);
 }
 
 #[no_mangle]
-pub extern "C" fn msgStop(ptr: *mut Model) -> u64 {
+pub extern "C" fn msgStop(req_id: u64, ptr: *mut Model) {
     let model = unsafe {
         if !!ptr.is_null() {
             panic!("assertion failed: !ptr.is_null()")
@@ -147,13 +138,11 @@ pub extern "C" fn msgStop(ptr: *mut Model) -> u64 {
         let ptr: *mut Model = &mut *ptr;
         ptr.as_mut().unwrap()
     };
-    let req_id = Isolate::next_id();
-    handle_stop(req_id, model);
-    req_id
+    model.handle_stop(req_id);
 }
 
 #[no_mangle]
-pub extern "C" fn msgReset(ptr: *mut Model) -> u64 {
+pub extern "C" fn msgReset(req_id: u64, ptr: *mut Model) {
     let model = unsafe {
         if !!ptr.is_null() {
             panic!("assertion failed: !ptr.is_null()")
@@ -161,7 +150,5 @@ pub extern "C" fn msgReset(ptr: *mut Model) -> u64 {
         let ptr: *mut Model = &mut *ptr;
         ptr.as_mut().unwrap()
     };
-    let req_id = Isolate::next_id();
-    handle_reset(req_id, model);
-    req_id
+    model.handle_reset(req_id);
 }
