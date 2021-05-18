@@ -8,7 +8,11 @@ import 'package:clock/stream_channel.dart';
 ///
 class Test {
   Test() {
-    StreamChannel.instance.stream.listen(onLoadedPage);
+    StreamChannel.instance<Topic>().stream.listen(onResponse);
+  }
+
+  void onResponse(Response res) {
+    print('loaded: $res on ${Isolate.current.debugName} thread');
   }
 
   void loadPage(String url) {
@@ -18,10 +22,6 @@ class Test {
     if (res != 1) {
       print("ERROR when initializing page load");
     }
-  }
-
-  void onLoadedPage(String res) {
-    print('loaded: $res on ${Isolate.current.debugName} thread');
   }
 }
 

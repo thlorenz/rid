@@ -1,4 +1,4 @@
-use std::{error::Error, ffi::CStr, fmt};
+use std::{error::Error, fmt};
 
 use lazy_static::lazy_static;
 use tokio::runtime::{Builder, Runtime};
@@ -97,11 +97,50 @@ pub async fn load_page_impl(url: &str) -> Result<String, TestError> {
     Ok(format!("loaded {} after {} iterations", url, c))
 }
 
+//
+// Reponse Mapping
+//
+#[repr(C)]
+#[allow(unused)]
+enum Topic {
+    Hello(u64),
+    Loaded(u64),
+}
+
+fn encode(topic: i64, id: u64) -> i64 {
+    let val: i128 = (i64::MIN + (id << 16) as i64) as i128;
+    let val = (val | topic as i128) as i64;
+    val
+}
+
+/* Implemented in Dart
+fn decode(val: i64) -> (i64, u64) {
+    let mask: i64 = 0x00_00_00_00_00_00_ff_ff;
+    let n = val & mask;
+    let id: i128 = (val as i128 - i64::MIN as i128) >> 16;
+    (id as i64, n as u64)
+}
+*/
+
+impl ::allo_isolate::IntoDart for Topic {
+    fn into_dart(self) -> ::allo_isolate::ffi::DartCObject {
+        let val = match self {
+            Topic::Hello(id) => encode(0, id),
+            Topic::Loaded(id) => encode(1, id),
+        };
+        ::allo_isolate::ffi::DartCObject {
+            ty: ::allo_isolate::ffi::DartCObjectType::DartInt64,
+            value: ::allo_isolate::ffi::DartCObjectValue { as_int64: val },
+        }
+    }
+}
+
 // -----------------
 // load_page ffi wrapper
 // -----------------
 #[no_mangle]
-pub extern "C" fn load_page(url: *const ::std::os::raw::c_char) -> i32 {
+pub extern "C" fn load_page(_url: *const ::std::os::raw::c_char) -> i32 {
+    /*
     let runtime: &Runtime = match RUNTIME.as_ref() {
         Ok(x) => x,
         Err(err) => {
@@ -110,11 +149,13 @@ pub extern "C" fn load_page(url: *const ::std::os::raw::c_char) -> i32 {
         }
     };
     let url = unsafe { CStr::from_ptr(url).to_str().unwrap() };
-
     let task = Isolate::isolate().task(load_page_impl(url));
     runtime.spawn(task);
-    Isolate::post("hello world");
-    Isolate::post("hola  mundo");
+    */
+
+    Isolate::post(Topic::Hello(1));
+    Isolate::post(Topic::Hello(2));
+    Isolate::post(Topic::Loaded(2222));
 
     1
 }
