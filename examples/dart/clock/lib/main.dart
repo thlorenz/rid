@@ -5,9 +5,9 @@ import 'package:clock/keyboard_handler.dart';
 import 'package:clock/stop_watch.dart';
 
 Future<void> main() async {
-  final model = rid_ffi.initModel();
-  final stopWatch = StopWatch(model);
-  final handler = new KeyboardHandler(model, stopWatch);
+  final store = rid_ffi.createStore();
+  final stopWatch = StopWatch(store);
+  final handler = new KeyboardHandler(store, stopWatch);
   handler.start();
   print("Waiting for the response, but life goes on\n");
 }

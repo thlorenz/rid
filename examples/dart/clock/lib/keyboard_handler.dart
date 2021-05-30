@@ -6,12 +6,12 @@ import 'package:clock/stop_watch.dart';
 
 class KeyboardHandler {
   final StopWatch stopWatch;
-  final Pointer<Model> model;
+  final Pointer<StoreAccess> store;
 
-  KeyboardHandler(this.model, this.stopWatch);
+  KeyboardHandler(this.store, this.stopWatch);
 
   printStatus() {
-    print('${model.debug(true)}');
+    print('${store.debug(true)}');
   }
 
   void printCommands() {

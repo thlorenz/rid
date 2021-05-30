@@ -1,84 +1,143 @@
 use std::{thread, time};
 
 // -----------------
-// Model
+// Store
 // -----------------
+
+// #[rid::store]
 #[rid::model]
 #[derive(Debug, rid::Debug)]
-pub struct Model {
+pub struct Store {
     running: bool,
     elapsed_secs: u32,
 }
 
-#[rid::export]
-impl Model {
-    #[rid::export(initModel)]
-    pub fn new() -> Self {
+impl Store {
+    pub fn create_store() -> Self {
         Self {
             running: false,
             elapsed_secs: 0,
         }
     }
 
-    // TODO: multiple methods can get a hold of the mutable model via different
-    // FFI entry points. Assignments/reads are not synced and thus this code is not
-    // thread safe.
-    // Here we are dealing with primitive values, but modifying vecs like this would
-    // be a problem.
-    // Messages all would come from the Dart UI thread and thus never run in parallel,
-    // however we're creating threads for each which could race.
-    // Also dedicated threads which tick like the below pose a problem.
-    // We may need to look into a proper runtime or similar ...
-    fn start(&'static mut self) {
+    pub fn update(&mut self, req_id: u64, msg: Msg) {
+        match msg {
+            Msg::Start => {
+                self.start();
+                rid::post(Topic::Started(req_id));
+            }
+            Msg::Stop => {
+                self.running = false;
+                rid::post(Topic::Stopped(req_id));
+            }
+            Msg::Reset => {
+                self.elapsed_secs = 0;
+                rid::post(Topic::Reset(req_id));
+            }
+        }
+    }
+
+    fn start(&mut self) {
+        self.running = true;
         thread::spawn(move || {
-            self.running = true;
-            while self.running {
+            while store::state().running {
                 thread::sleep(time::Duration::from_secs(1));
-                self.elapsed_secs += 1;
+                store::state().elapsed_secs += 1;
                 rid::post(Topic::Tick);
             }
         });
     }
+}
 
-    fn stop(&mut self) {
-        self.running = false;
+// -----------------
+// #[rid::store] attr will cause the below to be generated
+// -----------------
+pub mod store {
+    use super::*;
+    use std::sync::{Mutex, MutexGuard, Once};
+
+    #[derive(rid::Debug)]
+    pub struct StoreAccess {}
+
+    /// cbindgen:ignore
+    static mut STORE_ACCESS: Option<StoreAccess> = None;
+    /// cbindgen:ignore
+    static INIT_STORE: Once = Once::new();
+
+    #[no_mangle]
+    pub extern "C" fn createStore() -> *mut StoreAccess {
+        unsafe {
+            INIT_STORE.call_once(|| {
+                STORE_ACCESS = Some(StoreAccess {});
+            })
+        }
+        let acc = unsafe { STORE_ACCESS.as_ref().unwrap() };
+        &acc as *const _ as *mut StoreAccess
     }
 
-    fn reset(&mut self) {
-        self.elapsed_secs = 0;
+    // Generated when `rid::Debug` is present on Store along with the rid method
+    // to expose it to Dart
+    impl std::fmt::Debug for StoreAccess {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            let state = &*state();
+            state.fmt(f)
+        }
     }
 
-    fn handle_start(&'static mut self, req_id: u64) {
-        self.start();
-        rid::post(Topic::Started(req_id));
+    /// cbindgen:ignore
+    static mut MUTEX: Option<Mutex<Store>> = None;
+    /// cbindgen:ignore
+    static INIT_MUTEX: Once = Once::new();
+
+    fn init() {
+        unsafe {
+            INIT_MUTEX.call_once(|| {
+                MUTEX = Some(Mutex::new(Store::create_store()));
+            })
+        }
     }
 
-    fn handle_stop(&mut self, req_id: u64) {
-        self.stop();
-        rid::post(Topic::Stopped(req_id));
+    unsafe fn mutex() -> &'static Mutex<Store> {
+        init();
+        MUTEX.as_ref().unwrap()
     }
 
-    fn handle_reset(&mut self, req_id: u64) {
-        self.reset();
-        rid::post(Topic::Reset(req_id));
+    pub fn state() -> MutexGuard<'static, Store> {
+        unsafe { mutex().lock().unwrap() }
+    }
+
+    // -----------------
+    // Message handling
+    // -----------------
+    #[no_mangle]
+    pub extern "C" fn msgStart(req_id: u64) {
+        state().update(req_id, Msg::Start);
+    }
+
+    #[no_mangle]
+    pub extern "C" fn msgStop(req_id: u64) {
+        state().update(req_id, Msg::Stop);
+    }
+
+    #[no_mangle]
+    pub extern "C" fn msgReset(req_id: u64) {
+        state().update(req_id, Msg::Reset);
     }
 }
 
 // -----------------
-// Response
+// Msg
 // -----------------
+#[repr(C)]
+pub enum Msg {
+    Start,
+    Stop,
+    Reset,
+}
 
-// Variants with an id are responses for Dart initiated messages.
-//   - that id is returned to Dart synchronously when the message is sent
-//   - a subscription for that topic:id is then made via the StreamChannel in
-//     order to wait for a response from Rust
-// Variants without and id are events generated from inside Rust.
-//   - subscriptions are only for the topic since ids would have no meaning
-//     on the Dart side
-//
-// An Error(id) variant could be used to transmit errors that occur when handling
-// a message. The StreamChannel would subscribe to that and someone pass it along
-// to subscribers.
+// -----------------
+// Response Topic
+// -----------------
 #[repr(C)]
 #[allow(unused)]
 enum Topic {
@@ -88,64 +147,20 @@ enum Topic {
     Tick,
 }
 
-fn encode_with_id(topic: i64, id: u64) -> i64 {
-    let val: i128 = (i64::MIN + (id << 16) as i64) as i128;
-    let val = (val | topic as i128) as i64;
-    val
-}
-fn encode_without_id(topic: i64) -> i64 {
-    let val: i128 = i64::MIN as i128;
-    let val = (val | topic as i128) as i64;
-    val
-}
-
+// -----------------
+// Topic helper function that will be generated
+// -----------------
 impl ::allo_isolate::IntoDart for Topic {
     fn into_dart(self) -> ::allo_isolate::ffi::DartCObject {
         let val = match self {
-            Topic::Started(id) => encode_with_id(0, id),
-            Topic::Stopped(id) => encode_with_id(1, id),
-            Topic::Reset(id) => encode_with_id(2, id),
-            Topic::Tick => encode_without_id(3),
+            Topic::Started(id) => rid::_encode_with_id(0, id),
+            Topic::Stopped(id) => rid::_encode_with_id(1, id),
+            Topic::Reset(id) => rid::_encode_with_id(2, id),
+            Topic::Tick => rid::_encode_without_id(3),
         };
         ::allo_isolate::ffi::DartCObject {
             ty: ::allo_isolate::ffi::DartCObjectType::DartInt64,
             value: ::allo_isolate::ffi::DartCObjectValue { as_int64: val },
         }
     }
-}
-
-#[no_mangle]
-pub extern "C" fn msgStart(req_id: u64, ptr: *mut Model) {
-    let model = unsafe {
-        if !!ptr.is_null() {
-            panic!("assertion failed: !ptr.is_null()")
-        };
-        let ptr: *mut Model = &mut *ptr;
-        ptr.as_mut().unwrap()
-    };
-    model.handle_start(req_id);
-}
-
-#[no_mangle]
-pub extern "C" fn msgStop(req_id: u64, ptr: *mut Model) {
-    let model = unsafe {
-        if !!ptr.is_null() {
-            panic!("assertion failed: !ptr.is_null()")
-        };
-        let ptr: *mut Model = &mut *ptr;
-        ptr.as_mut().unwrap()
-    };
-    model.handle_stop(req_id);
-}
-
-#[no_mangle]
-pub extern "C" fn msgReset(req_id: u64, ptr: *mut Model) {
-    let model = unsafe {
-        if !!ptr.is_null() {
-            panic!("assertion failed: !ptr.is_null()")
-        };
-        let ptr: *mut Model = &mut *ptr;
-        ptr.as_mut().unwrap()
-    };
-    model.handle_reset(req_id);
 }
