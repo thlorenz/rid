@@ -50,7 +50,7 @@ class KeyboardHandler {
   void start() async {
     resetScreen();
     ResponseChannel.instance.stream
-        .where((res) => res.topic == Topic.Tick)
+        .where((res) => res.post == Post.Tick)
         .listen((_) {
       resetScreen();
     });

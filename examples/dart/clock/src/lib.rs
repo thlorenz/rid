@@ -24,15 +24,15 @@ impl Store {
         match msg {
             Msg::Start => {
                 self.start();
-                rid::post(Topic::Started(req_id));
+                rid::post(Post::Started(req_id));
             }
             Msg::Stop => {
                 self.running = false;
-                rid::post(Topic::Stopped(req_id));
+                rid::post(Post::Stopped(req_id));
             }
             Msg::Reset => {
                 self.elapsed_secs = 0;
-                rid::post(Topic::Reset(req_id));
+                rid::post(Post::Reset(req_id));
             }
         }
     }
@@ -43,7 +43,7 @@ impl Store {
             while store::state().running {
                 thread::sleep(time::Duration::from_secs(1));
                 store::state().elapsed_secs += 1;
-                rid::post(Topic::Tick);
+                rid::post(Post::Tick);
             }
         });
     }
@@ -130,11 +130,10 @@ pub enum Msg {
 }
 
 // -----------------
-// Response Topic
+// Response
 // -----------------
 #[repr(C)]
-#[allow(unused)]
-enum Topic {
+enum Post {
     Started(u64),
     Stopped(u64),
     Reset(u64),
@@ -144,13 +143,13 @@ enum Topic {
 // -----------------
 // Topic helper function that will be generated
 // -----------------
-impl ::allo_isolate::IntoDart for Topic {
+impl ::allo_isolate::IntoDart for Post {
     fn into_dart(self) -> ::allo_isolate::ffi::DartCObject {
         let val = match self {
-            Topic::Started(id) => rid::_encode_with_id(0, id),
-            Topic::Stopped(id) => rid::_encode_with_id(1, id),
-            Topic::Reset(id) => rid::_encode_with_id(2, id),
-            Topic::Tick => rid::_encode_without_id(3),
+            Post::Started(id) => rid::_encode_with_id(0, id),
+            Post::Stopped(id) => rid::_encode_with_id(1, id),
+            Post::Reset(id) => rid::_encode_with_id(2, id),
+            Post::Tick => rid::_encode_without_id(3),
         };
         ::allo_isolate::ffi::DartCObject {
             ty: ::allo_isolate::ffi::DartCObjectType::DartInt64,

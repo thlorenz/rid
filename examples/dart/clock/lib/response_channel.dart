@@ -7,7 +7,7 @@ import 'package:clock/isolate_binding.dart' show initIsolate;
 // Response Type (will be generated from Rust enum)
 // -----------------
 
-enum Topic {
+enum Post {
   Started,
   Stopped,
   Reset,
@@ -15,29 +15,29 @@ enum Topic {
 }
 
 class Response {
-  final Topic topic;
+  final Post post;
   final int id;
 
-  Response(this.topic, this.id);
+  Response(this.post, this.id);
 
   @override
   String toString() {
     return '''Response {
-  topic: ${this.topic.toString().substring('Topic.'.length)}
+  post: ${this.post.toString().substring('Post.'.length)}
   id:    $id
 }
 ''';
   }
 }
 
-const int _TOPIC_MASK = 0x000000000000ffff;
+const int _POST_MASK = 0x000000000000ffff;
 const int _I64_MIN = -9223372036854775808;
 
 Response decode(int packed) {
-  final ntopic = packed & _TOPIC_MASK;
+  final ntopic = packed & _POST_MASK;
   final id = (packed - _I64_MIN) >> 16;
 
-  final topic = Topic.values[ntopic];
+  final topic = Post.values[ntopic];
   return Response(topic, id);
 }
 
@@ -45,7 +45,7 @@ Response decode(int packed) {
 // Stream Channel
 // -----------------
 
-// TODO: error handling
+// TODO: error handling (could be part of Post data)
 class ResponseChannel {
   final _zone = Zone.current;
   final StreamController<Response> _sink;
