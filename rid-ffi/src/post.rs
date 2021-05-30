@@ -39,6 +39,20 @@ impl Isolate {
     }
 }
 
+/// Used by rid internally to post request results with associated topic
+pub fn _encode_with_id(enum_idx: i64, id: u64) -> i64 {
+    let val: i128 = (i64::MIN + (id << 16) as i64) as i128;
+    let val = (val | enum_idx as i128) as i64;
+    val
+}
+
+/// Used by rid internally to post request results with associated topic
+pub fn _encode_without_id(enum_idx: i64) -> i64 {
+    let val: i128 = i64::MIN as i128;
+    let val = (val | enum_idx as i128) as i64;
+    val
+}
+
 #[no_mangle]
 pub extern "C" fn rid_init_isolate(port: i64) {
     // SAFETY: called once from the main dart thread
