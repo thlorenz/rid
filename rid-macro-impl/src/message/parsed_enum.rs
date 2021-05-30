@@ -10,7 +10,9 @@ use crate::{
 };
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote, quote_spanned};
-use rid_common::{DART_FFI, FFI_GEN_BIND, RID_FFI, STRING_TO_NATIVE_INT8};
+use rid_common::{
+    DART_FFI, FFI_GEN_BIND, RID_FFI, STORE_ACCESS, STRING_TO_NATIVE_INT8,
+};
 use std::collections::HashMap;
 use syn::{punctuated::Punctuated, token::Comma, Ident, Variant};
 
@@ -89,7 +91,6 @@ impl ParsedEnum {
 
         let fn_ident = &variant.method_ident;
         let struct_ident = &self.struct_ident;
-        let struct_instance_ident = instance_ident(&struct_ident);
         let resolve_struct_ptr = resolve_ptr(&struct_ident);
 
         let enum_ident = &self.ident;
@@ -152,28 +153,30 @@ impl ParsedEnum {
             .iter()
             .map(|Arg { arg, .. }| quote_spanned! { fn_ident.span() => #arg });
 
+        let req_id_ident = format_ident!("__rid_req_id");
+        let msg_ident = format_ident!("__rid_msg");
+
         // TODO: getting error in the right place if the model struct doesn't implement udpate at
         // all, however when it is implemented incorrectly then the error doesn't even mention the
         // method name
         let update_method = quote_spanned! { self.struct_ident.span() =>
-            #struct_instance_ident.update(msg);
+            store::state().update(#req_id_ident, #msg_ident);
         };
 
         let msg = if msg_args.len() == 0 {
             quote_spanned! { variant_ident.span() =>
-                let msg = #enum_ident::#variant_ident;
+                let #msg_ident = #enum_ident::#variant_ident;
             }
         } else {
             quote_spanned! { variant_ident.span() =>
-                let msg = #enum_ident::#variant_ident(#(#msg_args,)*);
+                let #msg_ident = #enum_ident::#variant_ident(#(#msg_args,)*);
             }
         };
 
         quote_spanned! { variant_ident.span() =>
             #[no_mangle]
             #[allow(non_snake_case)]
-            pub extern "C" fn #fn_ident(ptr: *mut #struct_ident, #(#args,)* ) {
-                let #struct_instance_ident = #resolve_struct_ptr;
+            pub extern "C" fn #fn_ident(#req_id_ident: u64, #(#args,)* ) {
                 #(#args_resolvers)*
                 #msg
                 #update_method
@@ -198,11 +201,12 @@ impl ParsedEnum {
 /// ```dart
 /// extension Rid_Message_ExtOnPointer{struct_ident}For{enum_ident} on {dart_ffi}.Pointer<{ffigen_bind}.{struct_ident}> {{
 {methods}
+  {methods}
 /// }}
 /// ```
         "###,
             enum_ident = self.ident,
-            struct_ident = self.struct_ident,
+            struct_ident = STORE_ACCESS,
             dart_ffi = DART_FFI,
             ffigen_bind = FFI_GEN_BIND,
             methods = methods.join("\n")
@@ -298,7 +302,13 @@ impl ParsedEnum {
         );
 
         format!(
-            "///   void {dart_method_name}({args_decl}) => {rid_ffi}.{method_name}(this, {args_call});",
+            r###"
+///   Future<Response> {dart_method_name}({args_decl}) {{
+///     final reqId = responseChannel.reqId;
+///     {rid_ffi}.{method_name}(reqId, {args_call});
+///     return responseChannel.response(reqId);
+///   }}
+/// "###,
             dart_method_name = self.dart_method_name(&fn_ident.to_string()),
             method_name = fn_ident.to_string(),
             args_decl = args_decl,

@@ -19,3 +19,6 @@ pub const STRING_TO_NATIVE_INT8: &str = "toNativeInt8";
 
 /// Method invoked to free a CString by resolving and dropping it.
 pub const CSTRING_FREE: &str = "rid_cstring_free";
+
+/// Name of the struct wrapping the Store to provide access behind a mutex.
+pub const STORE_ACCESS: &str = "StoreAccess";
