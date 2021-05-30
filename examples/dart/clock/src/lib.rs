@@ -50,7 +50,7 @@ impl Store {
 }
 
 // -----------------
-// #[rid::store] attr will cause the below to be generated
+// #[rid::store] combined with #[rid::message(Store)] causes below to be generated
 // -----------------
 pub mod store {
     use super::*;
@@ -99,24 +99,6 @@ pub mod store {
     pub fn state() -> MutexGuard<'static, Store> {
         StoreAccess::instance().mutex.lock().unwrap()
     }
-
-    // -----------------
-    // Message handling
-    // -----------------
-    #[no_mangle]
-    pub extern "C" fn msgStart(req_id: u64) {
-        state().update(req_id, Msg::Start);
-    }
-
-    #[no_mangle]
-    pub extern "C" fn msgStop(req_id: u64) {
-        state().update(req_id, Msg::Stop);
-    }
-
-    #[no_mangle]
-    pub extern "C" fn msgReset(req_id: u64) {
-        state().update(req_id, Msg::Reset);
-    }
 }
 
 // -----------------
@@ -127,6 +109,28 @@ pub enum Msg {
     Start,
     Stop,
     Reset,
+}
+
+// -----------------
+// Message handling
+// -----------------
+mod _rid_messages {
+    use super::*;
+
+    #[no_mangle]
+    pub extern "C" fn msgStart(req_id: u64) {
+        store::state().update(req_id, Msg::Start);
+    }
+
+    #[no_mangle]
+    pub extern "C" fn msgStop(req_id: u64) {
+        store::state().update(req_id, Msg::Stop);
+    }
+
+    #[no_mangle]
+    pub extern "C" fn msgReset(req_id: u64) {
+        store::state().update(req_id, Msg::Reset);
+    }
 }
 
 // -----------------
