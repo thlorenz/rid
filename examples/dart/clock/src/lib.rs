@@ -56,23 +56,16 @@ pub mod store {
     use super::*;
     use std::sync::{Mutex, MutexGuard, Once};
 
-    #[derive(rid::Debug)]
-    pub struct StoreAccess {}
-
+    /// cbindgen:ignore
+    static mut STORE_MUTEX: Option<Mutex<Store>> = None;
     /// cbindgen:ignore
     static mut STORE_ACCESS: Option<StoreAccess> = None;
     /// cbindgen:ignore
     static INIT_STORE: Once = Once::new();
 
-    #[no_mangle]
-    pub extern "C" fn createStore() -> *mut StoreAccess {
-        unsafe {
-            INIT_STORE.call_once(|| {
-                STORE_ACCESS = Some(StoreAccess {});
-            })
-        }
-        let acc = unsafe { STORE_ACCESS.as_ref().unwrap() };
-        &acc as *const _ as *mut StoreAccess
+    #[derive(rid::Debug)]
+    pub struct StoreAccess {
+        mutex: &'static Mutex<Store>,
     }
 
     // Generated when `rid::Debug` is present on Store along with the rid method
@@ -84,26 +77,27 @@ pub mod store {
         }
     }
 
-    /// cbindgen:ignore
-    static mut MUTEX: Option<Mutex<Store>> = None;
-    /// cbindgen:ignore
-    static INIT_MUTEX: Once = Once::new();
-
-    fn init() {
-        unsafe {
-            INIT_MUTEX.call_once(|| {
-                MUTEX = Some(Mutex::new(Store::create_store()));
-            })
+    impl StoreAccess {
+        fn instance() -> &'static StoreAccess {
+            unsafe {
+                INIT_STORE.call_once(|| {
+                    STORE_MUTEX = Some(Mutex::new(Store::create_store()));
+                    STORE_ACCESS = Some(StoreAccess {
+                        mutex: &STORE_MUTEX.as_ref().unwrap(),
+                    });
+                });
+                STORE_ACCESS.as_ref().unwrap()
+            }
         }
     }
 
-    unsafe fn mutex() -> &'static Mutex<Store> {
-        init();
-        MUTEX.as_ref().unwrap()
+    #[no_mangle]
+    pub extern "C" fn createStore() -> *const StoreAccess {
+        StoreAccess::instance()
     }
 
     pub fn state() -> MutexGuard<'static, Store> {
-        unsafe { mutex().lock().unwrap() }
+        StoreAccess::instance().mutex.lock().unwrap()
     }
 
     // -----------------
