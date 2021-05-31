@@ -3,59 +3,22 @@ import 'dart:ffi';
 import 'dart:isolate';
 import 'package:clock/isolate_binding.dart' show initIsolate;
 
-// -----------------
-// Response Type (will be generated from Rust enum)
-// -----------------
-
-enum Post {
-  Started,
-  Stopped,
-  Reset,
-  Tick,
+abstract class IResponse {
+  int get id;
 }
-
-class Response {
-  final Post post;
-  final int id;
-
-  Response(this.post, this.id);
-
-  @override
-  String toString() {
-    return '''Response {
-  post: ${this.post.toString().substring('Post.'.length)}
-  id:    $id
-}
-''';
-  }
-}
-
-const int _POST_MASK = 0x000000000000ffff;
-const int _I64_MIN = -9223372036854775808;
-
-Response decode(int packed) {
-  final ntopic = packed & _POST_MASK;
-  final id = (packed - _I64_MIN) >> 16;
-
-  final topic = Post.values[ntopic];
-  return Response(topic, id);
-}
-
-// -----------------
-// Stream Channel
-// -----------------
 
 // TODO: error handling (could be part of Post data)
-class ResponseChannel {
+class ResponseChannel<TResponse extends IResponse> {
   final _zone = Zone.current;
-  final StreamController<Response> _sink;
+  final StreamController<TResponse> _sink;
+  final TResponse Function(int packed) _decode;
   late final RawReceivePort _receivePort;
   late final _zonedAdd;
   int _lastReqId = 0;
 
-  ResponseChannel._() : _sink = StreamController.broadcast() {
+  ResponseChannel._(this._decode) : _sink = StreamController.broadcast() {
     _receivePort =
-        RawReceivePort(_onReceivedResponse, 'rid::stream_channel::port');
+        RawReceivePort(_onReceivedResponse, 'rid::response_channel::port');
     initIsolate(_receivePort.sendPort.nativePort);
     _zonedAdd = _zone.registerUnaryCallback(_add);
   }
@@ -66,12 +29,12 @@ class ResponseChannel {
 
   void _add(int response) {
     if (!_sink.isClosed) {
-      _sink.add(decode(response));
+      _sink.add(_decode(response));
     }
   }
 
-  Stream<Response> get stream => _sink.stream;
-  Future<Response> response(int reqID) {
+  Stream<TResponse> get stream => _sink.stream;
+  Future<TResponse> response(int reqID) {
     assert(reqID != 0, "Invalid requestID ");
     return stream.where((res) => res.id == reqID).first;
   }
@@ -85,17 +48,11 @@ class ResponseChannel {
     return _lastReqId;
   }
 
-  // TODO: do we need this? We should never dispose this singleton
-  void _dispose() {
-    _receivePort.close();
-    _sink.close();
-  }
-
-  static ResponseChannel? _instance;
-  static ResponseChannel get instance {
-    if (_instance == null) {
-      _instance = ResponseChannel._();
-    }
-    return _instance!;
+  static bool _initialized = false;
+  static ResponseChannel<TResponse> instance<TResponse extends IResponse>(
+      TResponse Function(int packed) decode) {
+    assert(!_initialized, 'Can only initialize one ResponseChannel once');
+    _initialized = true;
+    return ResponseChannel<TResponse>._(decode);
   }
 }

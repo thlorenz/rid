@@ -1,7 +1,7 @@
 import 'dart:io';
 
 import 'package:clock/generated/rid_generated.dart';
-import 'package:clock/response_channel.dart';
+import 'package:clock/response.dart';
 import 'package:clock/stop_watch.dart';
 
 class KeyboardHandler {
@@ -49,9 +49,7 @@ class KeyboardHandler {
 
   void start() async {
     resetScreen();
-    ResponseChannel.instance.stream
-        .where((res) => res.post == Post.Tick)
-        .listen((_) {
+    responseChannel.stream.where((res) => res.post == Post.Tick).listen((_) {
       resetScreen();
     });
     stdin.listen((bytes) {
