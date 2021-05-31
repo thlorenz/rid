@@ -1,7 +1,6 @@
 import 'dart:io';
 
 import 'package:clock/generated/rid_generated.dart';
-import 'package:clock/response.dart';
 import 'package:clock/stop_watch.dart';
 
 class KeyboardHandler {

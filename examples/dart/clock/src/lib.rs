@@ -41,9 +41,9 @@ impl Store {
         self.running = true;
         thread::spawn(move || {
             while store::state().running {
-                thread::sleep(time::Duration::from_secs(1));
                 store::state().elapsed_secs += 1;
                 rid::post(Post::Tick);
+                thread::sleep(time::Duration::from_secs(1));
             }
         });
     }
@@ -104,33 +104,11 @@ pub mod store {
 // -----------------
 // Msg
 // -----------------
-#[repr(C)]
+#[rid::message(Store)]
 pub enum Msg {
     Start,
     Stop,
     Reset,
-}
-
-// -----------------
-// Message handling
-// -----------------
-mod _rid_messages {
-    use super::*;
-
-    #[no_mangle]
-    pub extern "C" fn msgStart(req_id: u64) {
-        store::state().update(req_id, Msg::Start);
-    }
-
-    #[no_mangle]
-    pub extern "C" fn msgStop(req_id: u64) {
-        store::state().update(req_id, Msg::Stop);
-    }
-
-    #[no_mangle]
-    pub extern "C" fn msgReset(req_id: u64) {
-        store::state().update(req_id, Msg::Reset);
-    }
 }
 
 // -----------------
@@ -145,7 +123,7 @@ enum Post {
 }
 
 // -----------------
-// Topic helper function that will be generated
+// Response helper function that will be generated
 // -----------------
 impl ::allo_isolate::IntoDart for Post {
     fn into_dart(self) -> ::allo_isolate::ffi::DartCObject {
