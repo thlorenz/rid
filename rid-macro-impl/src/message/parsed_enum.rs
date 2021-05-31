@@ -194,17 +194,59 @@ impl ParsedEnum {
             .map(|x| self.dart_method(x))
             .collect();
 
+        // TODO: generate via #rid::post
+        let response_impl = r###"
+/// 
+/// enum Post {
+///   Started,
+///   Stopped,
+///   Reset,
+///   Tick,
+/// }
+/// 
+/// class Response extends IResponse {
+///   final Post post;
+///   final int id;
+/// 
+///   Response(this.post, this.id);
+/// 
+///   @override
+///   String toString() {
+///     return '''Response {
+///   post: ${this.post.toString().substring('Post.'.length)}
+///   id:    $id
+/// }
+/// ''';
+///   }
+/// }
+/// 
+/// const int _POST_MASK = 0x000000000000ffff;
+/// const int _I64_MIN = -9223372036854775808;
+/// 
+/// Response decode(int packed) {
+///   final npost = packed & _POST_MASK;
+///   final id = (packed - _I64_MIN) >> 16;
+/// 
+///   final post = Post.values[npost];
+///   return Response(post, id);
+/// }
+/// 
+/// final ResponseChannel<Response> responseChannel =
+///     ResponseChannel.instance(_dl, decode);
+        "###;
+
         let s = format!(
             r###"
 /// The below extension provides convenience methods to send messages to rust.
 ///
 /// ```dart
+{response_impl}
 /// extension Rid_Message_ExtOnPointer{struct_ident}For{enum_ident} on {dart_ffi}.Pointer<{ffigen_bind}.{struct_ident}> {{
-{methods}
   {methods}
 /// }}
 /// ```
         "###,
+            response_impl = response_impl,
             enum_ident = self.ident,
             struct_ident = STORE_ACCESS,
             dart_ffi = DART_FFI,
