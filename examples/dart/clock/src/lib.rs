@@ -40,8 +40,8 @@ impl Store {
     fn start(&mut self) {
         self.running = true;
         thread::spawn(move || {
-            while store::state().running {
-                store::state().elapsed_secs += 1;
+            while store::read().running {
+                store::write().elapsed_secs += 1;
                 rid::post(Post::Tick);
                 thread::sleep(time::Duration::from_secs(1));
             }
@@ -54,10 +54,10 @@ impl Store {
 // -----------------
 pub mod store {
     use super::*;
-    use std::sync::{Mutex, MutexGuard, Once};
+    use std::sync::{Once, RwLock, RwLockReadGuard, RwLockWriteGuard};
 
     /// cbindgen:ignore
-    static mut STORE_MUTEX: Option<Mutex<Store>> = None;
+    static mut STORE_LOCK: Option<RwLock<Store>> = None;
     /// cbindgen:ignore
     static mut STORE_ACCESS: Option<StoreAccess> = None;
     /// cbindgen:ignore
@@ -65,7 +65,7 @@ pub mod store {
 
     #[derive(rid::Debug)]
     pub struct StoreAccess {
-        mutex: &'static Mutex<Store>,
+        lock: &'static RwLock<Store>,
     }
 
     // Generated when `rid::Debug` is present on Store along with the rid method
@@ -81,9 +81,9 @@ pub mod store {
         fn instance() -> &'static StoreAccess {
             unsafe {
                 INIT_STORE.call_once(|| {
-                    STORE_MUTEX = Some(Mutex::new(Store::create_store()));
+                    STORE_LOCK = Some(RwLock::new(Store::create_store()));
                     STORE_ACCESS = Some(StoreAccess {
-                        mutex: &STORE_MUTEX.as_ref().unwrap(),
+                        lock: STORE_LOCK.as_ref().unwrap(),
                     });
                 });
                 STORE_ACCESS.as_ref().unwrap()
@@ -96,8 +96,12 @@ pub mod store {
         StoreAccess::instance()
     }
 
-    pub fn state() -> MutexGuard<'static, Store> {
-        StoreAccess::instance().mutex.lock().unwrap()
+    pub fn read() -> RwLockReadGuard<'static, Store> {
+        StoreAccess::instance().lock.read().unwrap()
+    }
+
+    pub fn write() -> RwLockWriteGuard<'static, Store> {
+        StoreAccess::instance().lock.write().unwrap()
     }
 }
 
