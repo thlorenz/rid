@@ -10,9 +10,7 @@ use crate::{
 };
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote, quote_spanned};
-use rid_common::{
-    DART_FFI, FFI_GEN_BIND, RID_FFI, STORE_ACCESS, STRING_TO_NATIVE_INT8,
-};
+use rid_common::{DART_FFI, FFI_GEN_BIND, RID_FFI, STRING_TO_NATIVE_INT8};
 use std::collections::HashMap;
 use syn::{punctuated::Punctuated, token::Comma, Ident, Variant};
 
@@ -248,7 +246,7 @@ impl ParsedEnum {
         "###,
             response_impl = response_impl,
             enum_ident = self.ident,
-            struct_ident = STORE_ACCESS,
+            struct_ident = self.struct_ident,
             dart_ffi = DART_FFI,
             ffigen_bind = FFI_GEN_BIND,
             methods = methods.join("\n")
