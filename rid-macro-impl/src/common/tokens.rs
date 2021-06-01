@@ -1,7 +1,7 @@
 use crate::common::state::ImplementationType;
 
 use super::state::get_state;
-use quote::{format_ident, quote_spanned};
+use quote::{format_ident, quote, quote_spanned};
 use rid_common::CSTRING_FREE;
 
 use proc_macro2::TokenStream;
@@ -41,6 +41,13 @@ pub fn resolve_string_ptr(arg: &syn::Ident, reassign: bool) -> TokenStream {
                 .expect("Received String that wasn't valid UTF-8.")
                 .to_string()
         }
+    }
+}
+
+pub fn store_read_lock() -> TokenStream {
+    // TODO(thlorenz): will have to be rid::store::...
+    quote! {
+        let __rid_store_read_lock = store::read();
     }
 }
 
