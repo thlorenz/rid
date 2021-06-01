@@ -160,7 +160,7 @@ impl ParsedEnum {
         // all, however when it is implemented incorrectly then the error doesn't even mention the
         // method name
         let update_method = quote_spanned! { self.struct_ident.span() =>
-            store::state().update(#req_id_ident, #msg_ident);
+            store::write().update(#req_id_ident, #msg_ident);
         };
 
         let msg = if msg_args.len() == 0 {
