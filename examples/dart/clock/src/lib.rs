@@ -61,6 +61,8 @@ pub mod store {
     static mut STORE_ACCESS: Option<StoreAccess> = None;
     /// cbindgen:ignore
     static INIT_STORE: Once = Once::new();
+    /// cbindgen:ignore
+    static mut LOCK_READ_GUARD: Option<RwLockReadGuard<'static, Store>> = None;
 
     pub struct StoreAccess {
         lock: &'static RwLock<Store>,
@@ -84,6 +86,28 @@ pub mod store {
     pub extern "C" fn createStore() -> *const Store {
         let store = StoreAccess::instance().lock.read().unwrap();
         &*store as *const Store
+    }
+
+    #[no_mangle]
+    pub extern "C" fn rid_store_lock() {
+        if unsafe { LOCK_READ_GUARD.is_some() } {
+            eprintln!("WARN trying to lock already locked store");
+        } else {
+            unsafe {
+                LOCK_READ_GUARD = Some(read());
+            }
+        }
+    }
+
+    #[no_mangle]
+    pub extern "C" fn rid_store_unlock() {
+        if unsafe { LOCK_READ_GUARD.is_none() } {
+            eprintln!("WARN trying to unlock already unlocked store");
+        } else {
+            unsafe {
+                LOCK_READ_GUARD = None;
+            }
+        }
     }
 
     pub fn read() -> RwLockReadGuard<'static, Store> {
