@@ -4,7 +4,6 @@ use std::{thread, time};
 // Store
 // -----------------
 
-// #[rid::store]
 #[rid::model]
 #[derive(Debug, rid::Debug)]
 pub struct Store {
@@ -50,7 +49,7 @@ impl Store {
 }
 
 // -----------------
-// #[rid::store] combined with #[rid::message(Store)] causes below to be generated
+// #[rid::message(Store)] causes below to be generated
 // -----------------
 pub mod store {
     use super::*;
@@ -63,18 +62,8 @@ pub mod store {
     /// cbindgen:ignore
     static INIT_STORE: Once = Once::new();
 
-    #[derive(rid::Debug)]
     pub struct StoreAccess {
         lock: &'static RwLock<Store>,
-    }
-
-    // Generated when `rid::Debug` is present on Store along with the rid method
-    // to expose it to Dart
-    impl std::fmt::Debug for StoreAccess {
-        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-            let state = &*state();
-            state.fmt(f)
-        }
     }
 
     impl StoreAccess {
@@ -92,8 +81,9 @@ pub mod store {
     }
 
     #[no_mangle]
-    pub extern "C" fn createStore() -> *const StoreAccess {
-        StoreAccess::instance()
+    pub extern "C" fn createStore() -> *const Store {
+        let store = StoreAccess::instance().lock.read().unwrap();
+        &*store as *const Store
     }
 
     pub fn read() -> RwLockReadGuard<'static, Store> {

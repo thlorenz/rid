@@ -5,7 +5,7 @@ import 'package:clock/stop_watch.dart';
 
 class KeyboardHandler {
   final StopWatch stopWatch;
-  final Pointer<StoreAccess> store;
+  final Pointer<Store> store;
 
   KeyboardHandler(this.store, this.stopWatch);
 

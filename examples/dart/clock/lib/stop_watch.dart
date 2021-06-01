@@ -1,7 +1,7 @@
 import 'package:clock/generated/rid_generated.dart';
 
 class StopWatch {
-  final Pointer<StoreAccess> store;
+  final Pointer<Store> store;
 
   StopWatch(this.store);
 
@@ -11,7 +11,12 @@ class StopWatch {
   }
 
   void stopTimer() async {
-    final res = await store.msgStop();
+    // final res = await store.msgStop();
+
+    final reqId = responseChannel.reqId;
+    rid_ffi.rid_msg_Stop(reqId);
+    final res = await responseChannel.response(reqId);
+
     print('$res');
   }
 
