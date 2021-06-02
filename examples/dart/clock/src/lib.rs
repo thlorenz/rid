@@ -3,7 +3,6 @@ use std::{thread, time};
 // -----------------
 // Store
 // -----------------
-
 #[rid::model]
 #[derive(Debug, rid::Debug)]
 pub struct Store {
@@ -12,14 +11,14 @@ pub struct Store {
 }
 
 impl Store {
-    pub fn create_store() -> Self {
+    fn create_store() -> Self {
         Self {
             running: false,
             elapsed_secs: 0,
         }
     }
 
-    pub fn update(&mut self, req_id: u64, msg: Msg) {
+    fn update(&mut self, req_id: u64, msg: Msg) {
         match msg {
             Msg::Start => {
                 self.start();
@@ -45,79 +44,6 @@ impl Store {
                 thread::sleep(time::Duration::from_secs(1));
             }
         });
-    }
-}
-
-// -----------------
-// #[rid::message(Store)] causes below to be generated
-// -----------------
-pub mod store {
-    use super::*;
-
-    /// cbindgen:ignore
-    static mut STORE_LOCK: Option<::std::sync::RwLock<Store>> = None;
-    /// cbindgen:ignore
-    static mut STORE_ACCESS: Option<StoreAccess> = None;
-    /// cbindgen:ignore
-    static INIT_STORE: ::std::sync::Once = ::std::sync::Once::new();
-    /// cbindgen:ignore
-    static mut LOCK_READ_GUARD: Option<
-        ::std::sync::RwLockReadGuard<'static, Store>,
-    > = None;
-
-    pub struct StoreAccess {
-        lock: &'static ::std::sync::RwLock<Store>,
-    }
-
-    impl StoreAccess {
-        fn instance() -> &'static StoreAccess {
-            unsafe {
-                INIT_STORE.call_once(|| {
-                    STORE_LOCK =
-                        Some(::std::sync::RwLock::new(Store::create_store()));
-                    STORE_ACCESS = Some(StoreAccess {
-                        lock: STORE_LOCK.as_ref().unwrap(),
-                    });
-                });
-                STORE_ACCESS.as_ref().unwrap()
-            }
-        }
-    }
-
-    #[no_mangle]
-    pub extern "C" fn createStore() -> *const Store {
-        let store = StoreAccess::instance().lock.read().unwrap();
-        &*store as *const Store
-    }
-
-    #[no_mangle]
-    pub extern "C" fn rid_store_lock() {
-        if unsafe { LOCK_READ_GUARD.is_some() } {
-            eprintln!("WARN trying to lock already locked store");
-        } else {
-            unsafe {
-                LOCK_READ_GUARD = Some(store::read());
-            }
-        }
-    }
-
-    #[no_mangle]
-    pub extern "C" fn rid_store_unlock() {
-        if unsafe { LOCK_READ_GUARD.is_none() } {
-            eprintln!("WARN trying to unlock already unlocked store");
-        } else {
-            unsafe {
-                LOCK_READ_GUARD = None;
-            }
-        }
-    }
-
-    pub fn read() -> ::std::sync::RwLockReadGuard<'static, Store> {
-        StoreAccess::instance().lock.read().unwrap()
-    }
-
-    pub fn write() -> ::std::sync::RwLockWriteGuard<'static, Store> {
-        StoreAccess::instance().lock.write().unwrap()
     }
 }
 
