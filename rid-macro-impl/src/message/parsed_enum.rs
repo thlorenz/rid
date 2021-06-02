@@ -1,4 +1,4 @@
-use super::parsed_variant::ParsedVariant;
+use super::{parsed_variant::ParsedVariant, store::code_store_module};
 use crate::{
     attrs::{self, EnumConfig, TypeInfoMap},
     common::{
@@ -17,11 +17,21 @@ use syn::{punctuated::Punctuated, token::Comma, Ident, Variant};
 type Tokens = proc_macro2::TokenStream;
 
 pub struct ParsedEnum {
+    /// The enum itself, i.e. Msg
     pub ident: syn::Ident,
+
+    /// The enum variants, i.e. AddTodo(String)
     pub parsed_variants: Vec<ParsedVariant>,
+
+    /// Prefix used for all message methods, i.e. rid_msg
     pub method_prefix: String,
+
+    /// The identifier of the struct receiving the message, i.e. Store
     struct_ident: syn::Ident,
+
+    /// Identifier of the module into which the hidden code is wrapped
     module_ident: syn::Ident,
+
     ident_lower_camel: String,
     config: EnumConfig,
 }
@@ -30,6 +40,7 @@ impl ParsedEnum {
     pub fn new(
         ident: &Ident,
         variants: Punctuated<Variant, Comma>,
+
         config: EnumConfig,
     ) -> Self {
         let ident_str = ident.to_string();
@@ -61,7 +72,10 @@ impl ParsedEnum {
         let dart_comment = self.dart_extension();
         let module_ident = &self.module_ident;
 
+        let store_module = code_store_module(&self.ident, &self.struct_ident);
+
         quote_spanned! { self.ident.span() =>
+            #store_module
             mod #module_ident {
               use super::*;
               #dart_comment
