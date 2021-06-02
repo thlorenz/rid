@@ -53,26 +53,28 @@ impl Store {
 // -----------------
 pub mod store {
     use super::*;
-    use std::sync::{Once, RwLock, RwLockReadGuard, RwLockWriteGuard};
 
     /// cbindgen:ignore
-    static mut STORE_LOCK: Option<RwLock<Store>> = None;
+    static mut STORE_LOCK: Option<::std::sync::RwLock<Store>> = None;
     /// cbindgen:ignore
     static mut STORE_ACCESS: Option<StoreAccess> = None;
     /// cbindgen:ignore
-    static INIT_STORE: Once = Once::new();
+    static INIT_STORE: ::std::sync::Once = ::std::sync::Once::new();
     /// cbindgen:ignore
-    static mut LOCK_READ_GUARD: Option<RwLockReadGuard<'static, Store>> = None;
+    static mut LOCK_READ_GUARD: Option<
+        ::std::sync::RwLockReadGuard<'static, Store>,
+    > = None;
 
     pub struct StoreAccess {
-        lock: &'static RwLock<Store>,
+        lock: &'static ::std::sync::RwLock<Store>,
     }
 
     impl StoreAccess {
         fn instance() -> &'static StoreAccess {
             unsafe {
                 INIT_STORE.call_once(|| {
-                    STORE_LOCK = Some(RwLock::new(Store::create_store()));
+                    STORE_LOCK =
+                        Some(::std::sync::RwLock::new(Store::create_store()));
                     STORE_ACCESS = Some(StoreAccess {
                         lock: STORE_LOCK.as_ref().unwrap(),
                     });
@@ -94,7 +96,7 @@ pub mod store {
             eprintln!("WARN trying to lock already locked store");
         } else {
             unsafe {
-                LOCK_READ_GUARD = Some(read());
+                LOCK_READ_GUARD = Some(store::read());
             }
         }
     }
@@ -110,11 +112,11 @@ pub mod store {
         }
     }
 
-    pub fn read() -> RwLockReadGuard<'static, Store> {
+    pub fn read() -> ::std::sync::RwLockReadGuard<'static, Store> {
         StoreAccess::instance().lock.read().unwrap()
     }
 
-    pub fn write() -> RwLockWriteGuard<'static, Store> {
+    pub fn write() -> ::std::sync::RwLockWriteGuard<'static, Store> {
         StoreAccess::instance().lock.write().unwrap()
     }
 }
