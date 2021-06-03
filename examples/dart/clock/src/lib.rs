@@ -29,8 +29,9 @@ impl Store {
                 rid::post(Post::Stopped(req_id));
             }
             Msg::Reset => {
+                let current_elapsed = format!("Elapsed: {}", self.elapsed_secs);
                 self.elapsed_secs = 0;
-                rid::post(Post::Reset(req_id));
+                rid::post(Post::Reset(req_id, current_elapsed));
             }
         }
     }
@@ -64,24 +65,22 @@ pub enum Msg {
 enum Post {
     Started(u64),
     Stopped(u64),
-    Reset(u64),
+    Reset(u64, String),
     Tick,
 }
 
 // -----------------
 // Response helper function that will be generated
 // -----------------
+const POST_PAYLOAD_SEP: &str = "^"; // defined in rid::common::constants
 impl ::allo_isolate::IntoDart for Post {
     fn into_dart(self) -> ::allo_isolate::ffi::DartCObject {
-        let val = match self {
-            Post::Started(id) => rid::_encode_with_id(0, id),
-            Post::Stopped(id) => rid::_encode_with_id(1, id),
-            Post::Reset(id) => rid::_encode_with_id(2, id),
-            Post::Tick => rid::_encode_without_id(3),
+        let (base, data): (i64, String) = match self {
+            Post::Started(id) => (rid::_encode_with_id(0, id), "".into()),
+            Post::Stopped(id) => (rid::_encode_with_id(1, id), "".into()),
+            Post::Reset(id, s) => (rid::_encode_with_id(2, id), s.into()),
+            Post::Tick => (rid::_encode_without_id(3), "".into()),
         };
-        ::allo_isolate::ffi::DartCObject {
-            ty: ::allo_isolate::ffi::DartCObjectType::DartInt64,
-            value: ::allo_isolate::ffi::DartCObjectValue { as_int64: val },
-        }
+        format!("{}{}{}", base, POST_PAYLOAD_SEP, data).into_dart()
     }
 }
