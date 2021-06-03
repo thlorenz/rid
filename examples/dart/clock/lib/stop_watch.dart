@@ -5,17 +5,17 @@ class StopWatch {
 
   StopWatch(this.store);
 
-  void startTimer() async {
+  Future<void> startTimer() async {
     final res = await store.msgStart();
     print('$res');
   }
 
-  void stopTimer() async {
+  Future<void> stopTimer() async {
     final res = await store.msgStop();
     print('$res');
   }
 
-  void resetTimer() async {
+  Future<void> resetTimer() async {
     final res = await store.msgReset();
     print('$res');
   }

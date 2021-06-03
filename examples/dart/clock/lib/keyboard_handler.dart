@@ -21,17 +21,19 @@ class KeyboardHandler {
     print("  q       -- to quit");
   }
 
-  bool handleCommand(String cmd) {
+  Future<bool> handleCommand(String cmd) async {
     switch (cmd) {
       case "a":
-        stopWatch.startTimer();
+        await stopWatch.startTimer();
         break;
       case "o":
-        stopWatch.stopTimer();
+        await stopWatch.stopTimer();
         break;
       case "r":
-        stopWatch.resetTimer();
+        await stopWatch.resetTimer();
         break;
+      case "q":
+        return false;
       default:
         print("\nUnknown command '$cmd'\n");
         return false;
@@ -53,9 +55,9 @@ class KeyboardHandler {
       resetScreen();
       rid_ffi.rid_store_unlock();
     });
-    stdin.listen((bytes) {
+    stdin.listen((bytes) async {
       final cmd = String.fromCharCode(bytes.first);
-      final ok = handleCommand(cmd);
+      final ok = await handleCommand(cmd);
       if (!ok || cmd == "q") {
         exit(0);
       }
