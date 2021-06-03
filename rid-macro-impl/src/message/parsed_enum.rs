@@ -207,7 +207,7 @@ impl ParsedEnum {
             .collect();
 
         // TODO: generate via #rid::post
-        let response_impl = r###"
+        let reply_impl = r###"
 /// 
 /// enum Post {
 ///   Started,
@@ -216,16 +216,16 @@ impl ParsedEnum {
 ///   Tick,
 /// }
 /// 
-/// class Response extends IResponse {
+/// class Reply extends IReply {
 ///   final Post post;
 ///   final int? reqId;
 ///   final String? data; 
 /// 
-///   Response(this.post, this.reqId, this.data);
+///   Reply(this.post, this.reqId, this.data);
 /// 
 ///   @override
 ///   String toString() {
-///     return '''Response {
+///     return '''Reply {
 ///   post:  ${this.post.toString().substring('Post.'.length)}
 ///   reqId: $reqId
 ///   data:  $data
@@ -237,17 +237,17 @@ impl ParsedEnum {
 /// const int _POST_MASK = 0x000000000000ffff;
 /// const int _I64_MIN = -9223372036854775808;
 /// 
-/// Response decode(int packed, String? data) {
+/// Reply decode(int packed, String? data) {
 ///   final npost = packed & _POST_MASK;
 ///   final id = (packed - _I64_MIN) >> 16;
 ///   final reqId = id > 0 ? id : null;
 /// 
 ///   final post = Post.values[npost];
-///   return Response(post, reqId, data);
+///   return Reply(post, reqId, data);
 /// }
 /// 
-/// final ResponseChannel<Response> responseChannel =
-///     ResponseChannel.instance(_dl, decode);
+/// final ReplyChannel<Reply> replyChannel =
+///     ReplyChannel.instance(_dl, decode);
         "###;
 
         let s = format!(
@@ -255,13 +255,13 @@ impl ParsedEnum {
 /// The below extension provides convenience methods to send messages to rust.
 ///
 /// ```dart
-{response_impl}
+{reply_impl}
 /// extension Rid_Message_ExtOnPointer{struct_ident}For{enum_ident} on {dart_ffi}.Pointer<{ffigen_bind}.{struct_ident}> {{
   {methods}
 /// }}
 /// ```
         "###,
-            response_impl = response_impl,
+            reply_impl = reply_impl,
             enum_ident = self.ident,
             struct_ident = self.struct_ident,
             dart_ffi = DART_FFI,
@@ -360,10 +360,10 @@ impl ParsedEnum {
 
         format!(
             r###"
-///   Future<Response> {dart_method_name}({args_decl}) {{
-///     final reqId = responseChannel.reqId;
+///   Future<Reply> {dart_method_name}({args_decl}) {{
+///     final reqId = replyChannel.reqId;
 ///     {rid_ffi}.{method_name}(reqId, {args_call});
-///     return responseChannel.response(reqId);
+///     return replyChannel.reply(reqId);
 ///   }}
 /// "###,
             dart_method_name = self.dart_method_name(&fn_ident.to_string()),

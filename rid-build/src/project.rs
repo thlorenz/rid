@@ -86,12 +86,12 @@ impl Project {
             .to_path_buf()
     }
 
-    pub(crate) fn path_to_response_channel_dart(
+    pub(crate) fn path_to_reply_channel_dart(
         &self,
         project_root: &Path,
     ) -> PathBuf {
         self.path_to_generated_dir(project_root)
-            .join("response_channel.dart")
+            .join("reply_channel.dart")
             .to_path_buf()
     }
 

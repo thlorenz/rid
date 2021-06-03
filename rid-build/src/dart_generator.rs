@@ -69,8 +69,8 @@ pub(crate) struct DartGenerator<'a> {
     /// generated here.
     pub(crate) ffigen_binding: &'a str,
 
-    /// Relative path to the response_channel Dart implementation
-    pub(crate) response_channel: &'a str,
+    /// Relative path to the reply_channel Dart implementation
+    pub(crate) reply_channel: &'a str,
 
     /// Path to the 'target' directory of Rust binaries where we load the dynamic library from.
     pub(crate) path_to_target: &'a str,
@@ -136,12 +136,12 @@ import 'dart:io' as dart_io;
 import 'dart:collection' as {dart_collection};
 import 'package:ffi/ffi.dart' as {pack_ffi};
 import '{ffigen_binding}' as {ffigen_bind};
-import '{response_channel}';
+import '{reply_channel}';
 "###,
             dart_ffi = DART_FFI,
             dart_collection = DART_COLLECTION,
             ffigen_binding = self.ffigen_binding,
-            response_channel = self.response_channel,
+            reply_channel = self.reply_channel,
             pack_ffi = PACKAGE_FFI,
             ffigen_bind = FFI_GEN_BIND
         )

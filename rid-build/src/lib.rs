@@ -22,7 +22,7 @@ pub use project::{FlutterConfig, FlutterPlatform, Project};
 use crate::{parsed_bindings::ParsedBindings, swift_injector::SwiftInjector};
 
 static ISOLATE_BINDING: &str = include_str!("../dart/isolate_binding.dart");
-static RESPONSE_CHANNEL: &str = include_str!("../dart/response_channel.dart");
+static REPLY_CHANNEL: &str = include_str!("../dart/reply_channel.dart");
 
 pub struct BuildConfig<'a> {
     pub project_root: &'a str,
@@ -46,7 +46,7 @@ pub struct BuildResult {
     isolate_binding_dart_path: String,
 
     /// Path to Dart that provides ResponseChannel through which Rust posts messages to Dart.
-    response_channel_dart_path: String,
+    reply_channel_dart_path: String,
 
     /// Path at which the Dart/Flutter app expects the generated Dart code to be and from which the
     /// generated code imports the darg ffigen generated bindings.
@@ -72,13 +72,13 @@ Rid Build Result
 Path to generated bindings:    {generated_bindings_h_path}
 Path to Dart exposing Rid FFI: {generated_dart_path}
 Path to Dart Isolate Binding:  {isolate_binding_dart_path}
-Path to Dart Response Channel: {response_channel_dart_path}
+Path to Dart Response Channel: {reply_channel_dart_path}
 Paths to modified Swift:       [{swift_plugin_files}]
 ",
             generated_bindings_h_path = self.generated_bindings_h_path,
             generated_dart_path = self.generated_dart_path,
             isolate_binding_dart_path = self.isolate_binding_dart_path,
-            response_channel_dart_path = self.response_channel_dart_path,
+            reply_channel_dart_path = self.reply_channel_dart_path,
             swift_plugin_files = self.swift_plugin_files.join(", "),
         )
     }
@@ -122,17 +122,17 @@ fn generate(
         project.path_to_rid_generated_dart(project_root);
     let isolate_binding_dart_path =
         project.path_to_isolate_binding_dart(project_root);
-    let response_channel_dart_path =
-        project.path_to_response_channel_dart(project_root);
+    let reply_channel_dart_path =
+        project.path_to_reply_channel_dart(project_root);
 
     // TODO: determine this as relative path from  'generated_dart_path' -> 'ffigen_generated_path'
     let ffigen_binding = &format!(
         "{}",
         ffigen_generated_path.file_name().unwrap().to_string_lossy()
     );
-    let response_channel = &format!(
+    let reply_channel = &format!(
         "{}",
-        response_channel_dart_path
+        reply_channel_dart_path
             .file_name()
             .unwrap()
             .to_string_lossy()
@@ -149,7 +149,7 @@ fn generate(
         lib_name,
         target,
         ffigen_binding,
-        response_channel,
+        reply_channel,
         path_to_target,
         code_sections: &parsed_bindings,
         project: &project,
@@ -172,9 +172,9 @@ fn generate(
             "{}",
             isolate_binding_dart_path.display()
         ),
-        response_channel_dart_path: format!(
+        reply_channel_dart_path: format!(
             "{}",
-            response_channel_dart_path.display()
+            reply_channel_dart_path.display()
         ),
         generated_bindings_h_path: format!("{}", bindings_h_path.display()),
         swift_plugin_files,
@@ -189,14 +189,14 @@ pub fn build(build_config: &BuildConfig) -> Result<BuildResult> {
         generated_dart,
         generated_dart_path,
         isolate_binding_dart_path,
-        response_channel_dart_path,
+        reply_channel_dart_path,
         ..
     } = &generate_result;
 
     // NOTE: the directory to hold the file is recursively created if it doesn't exist yet
     fs::write(generated_dart_path, generated_dart)?;
     fs::write(isolate_binding_dart_path, ISOLATE_BINDING)?;
-    fs::write(response_channel_dart_path, RESPONSE_CHANNEL)?;
+    fs::write(reply_channel_dart_path, REPLY_CHANNEL)?;
 
     Ok(generate_result)
 }
