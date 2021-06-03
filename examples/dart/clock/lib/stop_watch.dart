@@ -11,12 +11,7 @@ class StopWatch {
   }
 
   void stopTimer() async {
-    // final res = await store.msgStop();
-
-    final reqId = responseChannel.reqId;
-    rid_ffi.rid_msg_Stop(reqId);
-    final res = await responseChannel.response(reqId);
-
+    final res = await store.msgStop();
     print('$res');
   }
 
