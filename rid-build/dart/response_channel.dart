@@ -6,7 +6,7 @@ import 'isolate_binding.dart' show initIsolate;
 const String RESPONSE_SEPARATOR = '^';
 
 abstract class IResponse {
-  int get id;
+  int? get reqId;
   String? get data;
 }
 
@@ -45,9 +45,9 @@ class ResponseChannel<TResponse extends IResponse> {
   }
 
   Stream<TResponse> get stream => _sink.stream;
-  Future<TResponse> response(int reqID) {
-    assert(reqID != 0, "Invalid requestID ");
-    return stream.where((res) => res.id == reqID).first;
+  Future<TResponse> response(int reqId) {
+    assert(reqId != 0, "Invalid requestID ");
+    return stream.where((res) => res.reqId == reqId).first;
   }
 
   int get nativePort {
