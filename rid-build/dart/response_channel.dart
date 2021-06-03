@@ -3,15 +3,20 @@ import 'dart:ffi';
 import 'dart:isolate';
 import 'isolate_binding.dart' show initIsolate;
 
+const String RESPONSE_SEPARATOR = '^';
+
 abstract class IResponse {
   int get id;
+  String? get data;
 }
+
+typedef Decode<TResponse> = TResponse Function(int packedBase, String? data);
 
 // TODO: error handling (could be part of Post data)
 class ResponseChannel<TResponse extends IResponse> {
   final _zone = Zone.current;
   final StreamController<TResponse> _sink;
-  final TResponse Function(int packed) _decode;
+  final Decode<TResponse> _decode;
   final DynamicLibrary _dl;
   late final RawReceivePort _receivePort;
   late final _zonedAdd;
@@ -25,13 +30,17 @@ class ResponseChannel<TResponse extends IResponse> {
     _zonedAdd = _zone.registerUnaryCallback(_add);
   }
 
-  void _onReceivedResponse(int response) {
+  void _onReceivedResponse(String response) {
     _zone.runUnary(_zonedAdd, response);
   }
 
-  void _add(int response) {
+  void _add(String response) {
     if (!_sink.isClosed) {
-      _sink.add(_decode(response));
+      final sepIdx = response.indexOf(RESPONSE_SEPARATOR);
+      final base = int.parse(response.substring(0, sepIdx));
+      final String? data =
+          response.length > sepIdx ? response.substring(sepIdx + 1) : null;
+      _sink.add(_decode(base, data));
     }
   }
 
@@ -52,7 +61,7 @@ class ResponseChannel<TResponse extends IResponse> {
 
   static bool _initialized = false;
   static ResponseChannel<TResponse> instance<TResponse extends IResponse>(
-      DynamicLibrary dl, TResponse Function(int packed) decode) {
+      DynamicLibrary dl, Decode<TResponse> decode) {
     assert(!_initialized, 'Can only initialize one ResponseChannel once');
     _initialized = true;
     return ResponseChannel<TResponse>._(dl, decode);
