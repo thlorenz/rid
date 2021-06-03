@@ -299,6 +299,10 @@ impl RustType {
     pub fn from_type(ty: &Type, type_infos: &TypeInfoMap) -> Option<RustType> {
         resolve_rust_ty(ty, type_infos)
     }
+
+    pub fn from_plain_type(ty: &Type) -> Option<RustType> {
+        resolve_rust_ty(ty, &TypeInfoMap::default())
+    }
 }
 
 fn resolve_rust_ty(ty: &Type, type_infos: &TypeInfoMap) -> Option<RustType> {

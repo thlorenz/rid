@@ -7,13 +7,17 @@ use proc_macro_error::proc_macro_error;
 
 use rid_macro_impl::{
     rid_debug_impl, rid_display_impl, rid_export_impl, rid_ffi_message_impl,
-    rid_ffi_model_impl,
+    rid_ffi_model_impl, rid_ffi_reply_impl,
 };
 use syn::{self, parse_macro_input};
 
 const RID_PRINT_MODEL: &str = "RID_PRINT_MODEL";
 const RID_PRINT_MESSAGE: &str = "RID_PRINT_MESSAGE";
+const RID_PRINT_REPLY: &str = "RID_PRINT_REPLY";
 
+// -----------------
+// #[rid::model]
+// -----------------
 #[proc_macro_attribute]
 #[proc_macro_error]
 pub fn model(_attrs: TokenStream, input: TokenStream) -> TokenStream {
@@ -32,6 +36,9 @@ pub fn model(_attrs: TokenStream, input: TokenStream) -> TokenStream {
     }
 }
 
+// -----------------
+// #[rid::message]
+// -----------------
 #[proc_macro_attribute]
 #[proc_macro_error]
 pub fn message(attrs: TokenStream, input: TokenStream) -> TokenStream {
@@ -53,20 +60,33 @@ pub fn message(attrs: TokenStream, input: TokenStream) -> TokenStream {
     }
 }
 
-#[proc_macro_derive(Display)]
+// -----------------
+// #[rid::reply]
+// -----------------
+#[proc_macro_attribute]
 #[proc_macro_error]
-pub fn display(input: TokenStream) -> TokenStream {
-    let item = parse_macro_input!(input as syn::DeriveInput);
-    rid_display_impl(&item, Default::default()).into()
+pub fn reply(attrs: TokenStream, input: TokenStream) -> TokenStream {
+    let item = parse_macro_input!(input as syn::Item);
+    let args = parse_macro_input!(attrs as syn::AttributeArgs);
+    if let Ok(_) = env::var(RID_PRINT_REPLY) {
+        eprintln!("input: {:#?}", &item);
+        eprintln!("args: {:#?}", &args);
+        rid_ffi_reply_impl(&item, &args);
+        process::exit(0)
+    } else {
+        let impls = rid_ffi_reply_impl(&item, &args);
+        let q = quote! {
+            #[repr(C)]
+            #item
+            #impls
+        };
+        q.into()
+    }
 }
 
-#[proc_macro_derive(Debug)]
-#[proc_macro_error]
-pub fn debug(input: TokenStream) -> TokenStream {
-    let item = parse_macro_input!(input as syn::DeriveInput);
-    rid_debug_impl(&item, Default::default()).into()
-}
-
+// -----------------
+// #[rid::export]
+// -----------------
 #[proc_macro_attribute]
 #[proc_macro_error]
 pub fn export(attrs: TokenStream, input: TokenStream) -> TokenStream {
@@ -81,20 +101,40 @@ pub fn export(attrs: TokenStream, input: TokenStream) -> TokenStream {
     q.into()
 }
 
-#[proc_macro_attribute]
-#[proc_macro_error]
-pub fn types(_attrs: TokenStream, input: TokenStream) -> TokenStream {
-    input
-}
-
+// -----------------
+// #[rid::structs]
+// -----------------
 #[proc_macro_attribute]
 #[proc_macro_error]
 pub fn structs(_attrs: TokenStream, input: TokenStream) -> TokenStream {
     input
 }
 
+// -----------------
+// #[rid::enums]
+// -----------------
 #[proc_macro_attribute]
 #[proc_macro_error]
 pub fn enums(_attrs: TokenStream, input: TokenStream) -> TokenStream {
     input
+}
+
+// -----------------
+// #[derive(rid::Display)]
+// -----------------
+#[proc_macro_derive(Display)]
+#[proc_macro_error]
+pub fn display(input: TokenStream) -> TokenStream {
+    let item = parse_macro_input!(input as syn::DeriveInput);
+    rid_display_impl(&item, Default::default()).into()
+}
+
+// -----------------
+// #[derive(rid::Debug)]
+// -----------------
+#[proc_macro_derive(Debug)]
+#[proc_macro_error]
+pub fn debug(input: TokenStream) -> TokenStream {
+    let item = parse_macro_input!(input as syn::DeriveInput);
+    rid_debug_impl(&item, Default::default()).into()
 }
