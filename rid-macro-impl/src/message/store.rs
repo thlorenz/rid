@@ -29,7 +29,7 @@ pub fn code_store_module(
                     unsafe {
                         INIT_STORE.call_once(|| {
                             STORE_LOCK = Some(::std::sync::RwLock::new(
-                                #store_ident::create_store(),
+                                #store_ident::create(),
                             ));
                             STORE_ACCESS = Some(RidStoreAccess {
                                 lock: STORE_LOCK.as_ref().unwrap(),
