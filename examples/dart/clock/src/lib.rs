@@ -11,7 +11,7 @@ pub struct Store {
 }
 
 impl Store {
-    fn create_store() -> Self {
+    fn create() -> Self {
         Self {
             running: false,
             elapsed_secs: 0,
