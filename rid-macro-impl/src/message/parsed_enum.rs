@@ -218,16 +218,16 @@ impl ParsedEnum {
 /// 
 /// class Response extends IResponse {
 ///   final Post post;
-///   final int id;
+///   final int? reqId;
 ///   final String? data; 
 /// 
-///   Response(this.post, this.id, this.data);
+///   Response(this.post, this.reqId, this.data);
 /// 
 ///   @override
 ///   String toString() {
 ///     return '''Response {
-///   post: ${this.post.toString().substring('Post.'.length)}
-///   id:    $id
+///   post:  ${this.post.toString().substring('Post.'.length)}
+///   reqId: $reqId
 ///   data:  $data
 /// }
 /// ''';
@@ -240,9 +240,10 @@ impl ParsedEnum {
 /// Response decode(int packed, String? data) {
 ///   final npost = packed & _POST_MASK;
 ///   final id = (packed - _I64_MIN) >> 16;
+///   final reqId = id > 0 ? id : null;
 /// 
 ///   final post = Post.values[npost];
-///   return Response(post, id, data);
+///   return Response(post, reqId, data);
 /// }
 /// 
 /// final ResponseChannel<Response> responseChannel =
