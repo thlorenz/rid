@@ -51,7 +51,8 @@ impl Store {
 // -----------------
 // Msg
 // -----------------
-#[rid::message(Store)]
+
+#[rid::message(Store, Reply)]
 pub enum Msg {
     Start,
     Stop,

@@ -50,7 +50,7 @@ class KeyboardHandler {
 
   void start() async {
     resetScreen();
-    replyChannel.stream.where((res) => res.post == Post.Tick).listen((_) {
+    replyChannel.stream.where((res) => res.type == Reply.Tick).listen((_) {
       rid_ffi.rid_store_lock();
       resetScreen();
       rid_ffi.rid_store_unlock();
