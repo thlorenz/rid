@@ -1,4 +1,3 @@
-import 'generated/ffigen_binding.dart';
 import 'generated/rid_generated.dart';
 import 'dart:io';
 import 'dart:async';
@@ -107,6 +106,8 @@ interactive() async {
         print("\x1B[2J\x1B[0;0H");
       }
 
+      // Not strictly necessary to run this locked since no threads are
+      // updating our store in the background, but good practice.
       store.runLocked(printStatus);
 
       printCommands();
