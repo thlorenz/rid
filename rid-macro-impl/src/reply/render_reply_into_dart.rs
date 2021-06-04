@@ -10,8 +10,8 @@ pub fn render_reply_into_dart(
     let variant_tokens = variants.iter().map(render_variant);
 
     quote_spanned! { enum_ident.span() =>
-        impl ::allo_isolate::IntoDart for #enum_ident {
-            fn into_dart(self) -> ::allo_isolate::ffi::DartCObject {
+        impl rid::_allo_isolate::IntoDart for #enum_ident {
+            fn into_dart(self) -> rid::_allo_isolate::ffi::DartCObject {
                 use #enum_ident::*;
                 let (base, data): (i64, String) = match self {
                     #(#variant_tokens)*
