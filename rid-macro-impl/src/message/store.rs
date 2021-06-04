@@ -1,10 +1,30 @@
 use proc_macro2::TokenStream;
 use quote::quote_spanned;
 
+use crate::common::state::{get_state, ImplementationType};
+use rid_common::{DART_FFI, FFI_GEN_BIND, RID_FFI};
+
 pub fn code_store_module(
     msg_ident: &syn::Ident,
     store_ident: &syn::Ident,
 ) -> TokenStream {
+    let store_dispose_dart: TokenStream = format!(
+        r###"
+/// ```dart
+/// extension rid_store_dispose on {dart_ffi}.Pointer<{ffigen_bind}.{store}> {{
+///   Future<void> dispose() {{
+///     return replyChannel.dispose();
+///   }}
+/// }}
+/// ```
+    "###,
+        dart_ffi = DART_FFI,
+        ffigen_bind = FFI_GEN_BIND,
+        store = store_ident
+    )
+    .parse()
+    .unwrap();
+
     quote_spanned! {msg_ident.span() =>
         pub mod store {
             use super::*;
@@ -87,6 +107,16 @@ pub fn code_store_module(
                         LOCK_READ_GUARD = None;
                     }
                 }
+            }
+
+            #store_dispose_dart
+            #[no_mangle]
+            pub extern "C" fn rid_store_free() {
+                // We may want to figure out a way to drop the store here in the future, even
+                // though that isn't necessary as the app will exit after the store was freed.
+                // For now we just make sure we wait for any thread that as a read or write lock
+                // to complete before we return from this method.
+                let _write_lock = write();
             }
         }
     }
