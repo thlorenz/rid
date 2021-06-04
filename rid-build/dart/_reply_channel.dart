@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:ffi';
 import 'dart:isolate';
-import 'isolate_binding.dart' show initIsolate;
+import '_isolate_binding.dart' show initIsolate;
 
 const String RESPONSE_SEPARATOR = '^';
 

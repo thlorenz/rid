@@ -82,7 +82,7 @@ impl Project {
         project_root: &Path,
     ) -> PathBuf {
         self.path_to_generated_dir(project_root)
-            .join("isolate_binding.dart")
+            .join("_isolate_binding.dart")
             .to_path_buf()
     }
 
@@ -91,7 +91,7 @@ impl Project {
         project_root: &Path,
     ) -> PathBuf {
         self.path_to_generated_dir(project_root)
-            .join("reply_channel.dart")
+            .join("_reply_channel.dart")
             .to_path_buf()
     }
 

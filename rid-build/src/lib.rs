@@ -21,8 +21,8 @@ pub use project::{FlutterConfig, FlutterPlatform, Project};
 
 use crate::{parsed_bindings::ParsedBindings, swift_injector::SwiftInjector};
 
-static ISOLATE_BINDING: &str = include_str!("../dart/isolate_binding.dart");
-static REPLY_CHANNEL: &str = include_str!("../dart/reply_channel.dart");
+static ISOLATE_BINDING: &str = include_str!("../dart/_isolate_binding.dart");
+static REPLY_CHANNEL: &str = include_str!("../dart/_reply_channel.dart");
 
 pub struct BuildConfig<'a> {
     pub project_root: &'a str,
