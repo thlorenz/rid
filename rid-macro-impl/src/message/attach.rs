@@ -13,8 +13,9 @@ pub fn rid_ffi_message_impl(item: &Item, args: &[NestedMeta]) -> TokenStream {
         Item::Enum(item) => {
             let rid_attrs = attrs::parse_rid_attrs(&item.attrs);
             let rid_args = parse_rid_args(args);
-            if rid_args.len() == 1 {
-                let enum_config = EnumConfig::new(&rid_attrs, &rid_args[0]);
+            if rid_args.len() == 2 {
+                let enum_config =
+                    EnumConfig::new(&rid_attrs, &rid_args[0], &rid_args[1]);
                 let parsed_enum = ParsedEnum::new(
                     &item.ident,
                     item.variants.clone(),
@@ -25,9 +26,9 @@ pub fn rid_ffi_message_impl(item: &Item, args: &[NestedMeta]) -> TokenStream {
                 abort!(
                     item,
                     "\
-                Please specify exactly one model struct which this\n\
-                #[rid::message] updates.\n\
-                Example: #[rid::message(Model)]"
+                Please specify exactly one store struct which this message\n\
+                updates and a reply enum with which it responds.\n\
+                Example: #[rid::message(Store, Reply)]"
                 )
             }
         }

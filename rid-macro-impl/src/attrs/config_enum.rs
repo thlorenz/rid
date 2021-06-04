@@ -12,11 +12,15 @@ pub struct EnumConfig {
     pub debug: bool,
     pub type_infos: TypeInfoMap,
     pub to: Ident,
+    pub reply: Ident,
 }
 
 impl EnumConfig {
-    pub fn new(attrs: &[RidAttr], model_ident: &Ident) -> Self {
-        // TODO: very much duplicated from ./config_struct.rs
+    pub fn new(
+        attrs: &[RidAttr],
+        model_ident: &Ident,
+        reply_ident: &Ident,
+    ) -> Self {
         let mut debug = false;
         let mut type_infos: TypeInfoMap = TypeInfoMap(HashMap::new());
         for attr in attrs {
@@ -50,6 +54,7 @@ impl EnumConfig {
             debug,
             type_infos,
             to: model_ident.clone(),
+            reply: reply_ident.clone(),
         }
     }
 }

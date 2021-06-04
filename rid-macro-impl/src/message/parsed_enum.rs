@@ -3,6 +3,7 @@ use crate::{
     attrs::{self, EnumConfig, TypeInfoMap},
     common::{
         errors::derive_error,
+        prefixes::reply_class_name_for_enum,
         rust::RustType,
         tokens::{instance_ident, resolve_ptr, resolve_string_ptr},
     },
@@ -32,6 +33,9 @@ pub struct ParsedEnum {
     /// Identifier of the module into which the hidden code is wrapped
     module_ident: syn::Ident,
 
+    /// The name of the enum used to reply to messages
+    reply_dart_enum_name: String,
+
     ident_lower_camel: String,
     config: EnumConfig,
 }
@@ -40,7 +44,6 @@ impl ParsedEnum {
     pub fn new(
         ident: &Ident,
         variants: Punctuated<Variant, Comma>,
-
         config: EnumConfig,
     ) -> Self {
         let ident_str = ident.to_string();
@@ -52,8 +55,13 @@ impl ParsedEnum {
         let parsed_variants =
             parse_variants(variants, &method_prefix, &config.type_infos);
         let struct_ident = format_ident!("{}", config.to);
+        let reply_ident =
+            crate::parse::rust_type::RustType::from_owned_enum(&config.reply);
+        let reply_dart_enum_name = reply_ident.dart_ident(false).to_string();
+
         Self {
             ident: ident.clone(),
+            reply_dart_enum_name,
             parsed_variants,
             method_prefix,
             struct_ident,
@@ -73,6 +81,9 @@ impl ParsedEnum {
         let module_ident = &self.module_ident;
 
         let store_module = code_store_module(&self.ident, &self.struct_ident);
+        let reply_ident = &self.config.reply;
+        let reply_mod_ident =
+            format_ident!("__rid_ensuring_{}_is_defined", reply_ident);
 
         quote_spanned! { self.ident.span() =>
             #store_module
@@ -80,6 +91,11 @@ impl ParsedEnum {
               use super::*;
               #dart_comment
               #(#method_tokens)*
+            }
+            #[allow(non_snake_case, unused_imports, unused_variables)]
+            mod #reply_mod_ident {
+                use super::*;
+                fn __(verify_reply_enum_exists: #reply_ident) {}
             }
         }
     }
@@ -206,62 +222,16 @@ impl ParsedEnum {
             .map(|x| self.dart_method(x))
             .collect();
 
-        // TODO: generate via #rid::post
-        let reply_impl = r###"
-/// 
-/// enum Post {
-///   Started,
-///   Stopped,
-///   Reset,
-///   Tick,
-/// }
-/// 
-/// class Reply extends IReply {
-///   final Post post;
-///   final int? reqId;
-///   final String? data; 
-/// 
-///   Reply(this.post, this.reqId, this.data);
-/// 
-///   @override
-///   String toString() {
-///     return '''Reply {
-///   post:  ${this.post.toString().substring('Post.'.length)}
-///   reqId: $reqId
-///   data:  $data
-/// }
-/// ''';
-///   }
-/// }
-/// 
-/// const int _POST_MASK = 0x000000000000ffff;
-/// const int _I64_MIN = -9223372036854775808;
-/// 
-/// Reply decode(int packed, String? data) {
-///   final npost = packed & _POST_MASK;
-///   final id = (packed - _I64_MIN) >> 16;
-///   final reqId = id > 0 ? id : null;
-/// 
-///   final post = Post.values[npost];
-///   return Reply(post, reqId, data);
-/// }
-/// 
-/// final ReplyChannel<Reply> replyChannel =
-///     ReplyChannel.instance(_dl, decode);
-        "###;
-
         let s = format!(
             r###"
 /// The below extension provides convenience methods to send messages to rust.
 ///
 /// ```dart
-{reply_impl}
 /// extension Rid_Message_ExtOnPointer{struct_ident}For{enum_ident} on {dart_ffi}.Pointer<{ffigen_bind}.{struct_ident}> {{
   {methods}
 /// }}
 /// ```
         "###,
-            reply_impl = reply_impl,
             enum_ident = self.ident,
             struct_ident = self.struct_ident,
             dart_ffi = DART_FFI,
@@ -358,14 +328,16 @@ impl ParsedEnum {
             },
         );
 
+        let class_name = reply_class_name_for_enum(&self.reply_dart_enum_name);
         format!(
             r###"
-///   Future<Reply> {dart_method_name}({args_decl}) {{
+///   Future<{class_name}> {dart_method_name}({args_decl}) {{
 ///     final reqId = replyChannel.reqId;
 ///     {rid_ffi}.{method_name}(reqId, {args_call});
 ///     return replyChannel.reply(reqId);
 ///   }}
 /// "###,
+            class_name = class_name,
             dart_method_name = self.dart_method_name(&fn_ident.to_string()),
             method_name = fn_ident.to_string(),
             args_decl = args_decl,

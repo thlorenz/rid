@@ -31,8 +31,12 @@ impl RustType {
     }
 
     /// Used at this point only to name Dart presentations of Rust enums
-    pub fn dart_ident(&self) -> Ident {
-        format_ident!("Rid{}", self.ident)
+    pub fn dart_ident(&self, prefix: bool) -> Ident {
+        if prefix {
+            format_ident!("Rid{}", self.ident)
+        } else {
+            self.ident.clone()
+        }
     }
 
     pub fn from_owned_struct(ident: &Ident) -> Self {
