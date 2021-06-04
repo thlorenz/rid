@@ -106,7 +106,9 @@ interactive() async {
       if (ok) {
         print("\x1B[2J\x1B[0;0H");
       }
-      printStatus(store);
+
+      store.runLocked(printStatus);
+
       printCommands();
       stdout.write("\n> ");
       input = stdin.readLineSync();
