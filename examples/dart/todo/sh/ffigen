@@ -1,3 +1,0 @@
-#!/usr/bin/env bash
-
-pub run ffigen --verbose severe

@@ -6,22 +6,21 @@ use std::fmt::Display;
 extern crate log;
 
 // -----------------
-// Main Model
+// Store
 // -----------------
 #[rid::model]
 #[rid::structs(Todo)]
 #[rid::enums(Filter)]
 #[derive(Debug, rid::Debug)]
-pub struct Model {
+pub struct Store {
     last_added_id: u32,
     todos: Vec<Todo>,
     filter: Filter,
 }
 
 #[rid::export]
-impl Model {
-    #[rid::export(initModel)]
-    fn new() -> Self {
+impl Store {
+    fn create() -> Self {
         Self {
             last_added_id: 0,
             todos: vec![],
@@ -29,7 +28,7 @@ impl Model {
         }
     }
 
-    fn update(&mut self, msg: Msg) {
+    fn update(&mut self, req_id: u64, msg: Msg) {
         info!("Msg: {:?}", msg);
         use Msg::*;
         match msg {
@@ -41,6 +40,10 @@ impl Model {
                     completed: false,
                 };
                 self.todos.push(todo);
+                rid::post(Reply::AddedTodo(
+                    req_id,
+                    self.last_added_id.to_string(),
+                ));
             }
             RemoveTodo(id) => {
                 let mut enumerated = self.todos.iter().enumerate();
@@ -51,28 +54,43 @@ impl Model {
                     }
                 };
                 self.todos.remove(idx);
+                rid::post(Reply::RemovedTodo(
+                    req_id,
+                    self.last_added_id.to_string(),
+                ));
             }
 
-            RemoveCompleted => self.todos.retain(|todo| !todo.completed),
+            RemoveCompleted => {
+                self.todos.retain(|todo| !todo.completed);
+                rid::post(Reply::RemovedCompleted(req_id));
+            }
 
             CompleteTodo(id) => {
-                self.update_todo(id, |todo| todo.completed = true)
+                self.update_todo(id, |todo| todo.completed = true);
+                rid::post(Reply::CompletedTodo(req_id, id.to_string()));
             }
             RestartTodo(id) => {
-                self.update_todo(id, |todo| todo.completed = false)
+                self.update_todo(id, |todo| todo.completed = false);
+                rid::post(Reply::RestartedTodo(req_id, id.to_string()));
             }
             ToggleTodo(id) => {
-                self.update_todo(id, |todo| todo.completed = !todo.completed)
+                self.update_todo(id, |todo| todo.completed = !todo.completed);
+                rid::post(Reply::ToggledTodo(req_id, id.to_string()));
             }
 
             CompleteAll => {
-                self.todos.iter_mut().for_each(|x| x.completed = true)
+                self.todos.iter_mut().for_each(|x| x.completed = true);
+                rid::post(Reply::CompletedAll(req_id));
             }
             RestartAll => {
-                self.todos.iter_mut().for_each(|x| x.completed = false)
+                self.todos.iter_mut().for_each(|x| x.completed = false);
+                rid::post(Reply::RestartedAll(req_id));
             }
 
-            SetFilter(filter) => self.filter = filter,
+            SetFilter(filter) => {
+                self.filter = filter;
+                rid::post(Reply::SetFilter(req_id));
+            }
         };
     }
 
@@ -148,7 +166,7 @@ impl Display for Filter {
 // -----------------
 // Msg
 // -----------------
-#[rid::message(Model)]
+#[rid::message(Store, Reply)]
 #[rid::enums(Filter)]
 #[derive(Debug)]
 pub enum Msg {
@@ -163,4 +181,22 @@ pub enum Msg {
     RestartAll,
 
     SetFilter(Filter),
+}
+
+// -----------------
+// Reply
+// -----------------
+#[rid::reply]
+pub enum Reply {
+    AddedTodo(u64, String),
+    RemovedTodo(u64, String),
+    RemovedCompleted(u64),
+
+    CompletedTodo(u64, String),
+    RestartedTodo(u64, String),
+    ToggledTodo(u64, String),
+    CompletedAll(u64),
+    RestartedAll(u64),
+
+    SetFilter(u64),
 }
