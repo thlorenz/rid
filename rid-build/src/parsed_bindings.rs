@@ -6,10 +6,14 @@ use crate::{
 const TYPEDEF_STRUCT: &str = "typedef struct ";
 const TYPEDEF_STRUCT_LEN: usize = TYPEDEF_STRUCT.len();
 
+const TYPEDEF_ENUM: &str = "typedef enum ";
+const TYPEDEF_ENUM_LEN: usize = TYPEDEF_ENUM.len();
+
 pub struct ParsedBindings {
     pub dart_code: String,
     pub swift_code: String,
     pub structs: Vec<String>,
+    pub enums: Vec<String>,
 }
 
 enum Section {
@@ -28,6 +32,7 @@ impl ParsedBindings {
         let mut current_section: Vec<String> = vec![];
 
         let mut structs: Vec<String> = vec![];
+        let mut enums: Vec<String> = vec![];
 
         let mut function_headers: Vec<FunctionHeader> = vec![];
 
@@ -65,6 +70,14 @@ impl ParsedBindings {
                                 &trimmed
                             ));
                         structs.push(struct_name.to_string());
+                    } else if trimmed.starts_with(TYPEDEF_ENUM) {
+                        let (enum_name, _) = trimmed[TYPEDEF_ENUM_LEN..]
+                            .split_once(" ")
+                            .expect(&format!(
+                                "Invalid enum definition {}",
+                                &trimmed
+                            ));
+                        enums.push(enum_name.to_string());
                     } else if let Some(header) = parse_function_header(trimmed)
                     {
                         function_headers.push(header);
@@ -98,6 +111,7 @@ impl ParsedBindings {
             dart_code,
             swift_code,
             structs,
+            enums,
         }
     }
 }

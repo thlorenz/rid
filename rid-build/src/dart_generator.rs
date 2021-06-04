@@ -91,6 +91,7 @@ impl<'a> DartGenerator<'a> {
     pub(crate) fn generate(&self) -> String {
         let extensions = &self.code_sections.dart_code;
         let structs = &self.code_sections.structs;
+        let enums = &self.code_sections.enums;
         let dynamic_library_constructor = match self.project {
             Project::Dart => "NativeLibrary",
             Project::Flutter(FlutterConfig { plugin_name, .. }) => plugin_name,
@@ -102,6 +103,8 @@ impl<'a> DartGenerator<'a> {
 {dart_ffi_exports}
 // Forwarding Dart Types for Rust structs
 {struct_exports}
+// Forwarding Dart Types for Rust enums
+{enum_exports}
 //
 // Open Dynamic Library
 //
@@ -118,7 +121,8 @@ impl<'a> DartGenerator<'a> {
 {native_export}"###,
             imports = self.dart_imports(),
             dart_ffi_exports = dart_ffi_reexports(),
-            struct_exports = self.dart_struct_reexports(&structs),
+            struct_exports = self.dart_rust_type_reexports(&structs),
+            enum_exports = self.dart_rust_type_reexports(&enums),
             open_dl = self.dart_open_dl(),
             extensions = extensions,
             string_from_pointer_extension = dart_string_from_pointer(),
@@ -189,15 +193,15 @@ import '{reply_channel}';
         }
     }
 
-    fn dart_struct_reexports(&self, structs: &Vec<String>) -> String {
-        if structs.len() == 0 {
+    fn dart_rust_type_reexports(&self, types: &Vec<String>) -> String {
+        if types.len() == 0 {
             "".to_string()
         } else {
-            let structs = structs.join(", ");
+            let types = types.join(", ");
             format!(
-                "export '{ffigen_binding}' show {structs};\n",
+                "export '{ffigen_binding}' show {types};\n",
                 ffigen_binding = self.ffigen_binding,
-                structs = structs
+                types = types
             )
         }
     }
