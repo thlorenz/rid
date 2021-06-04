@@ -58,6 +58,11 @@ class ReplyChannel<TReply extends IReply> {
     return _lastReqId;
   }
 
+  Future<void> dispose() {
+    _receivePort.close();
+    return _sink.close();
+  }
+
   static bool _initialized = false;
   static ReplyChannel<TReply> instance<TReply extends IReply>(
       DynamicLibrary dl, Decode<TReply> decode) {
