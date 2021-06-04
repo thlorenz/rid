@@ -44,9 +44,22 @@ class ReplyChannel<TReply extends IReply> {
   }
 
   Stream<TReply> get stream => _sink.stream;
+  // TODO: allow passing a timeout and possibly a default per store timeout
   Future<TReply> reply(int reqId) {
     assert(reqId != 0, "Invalid requestID ");
-    return stream.where((res) => res.reqId == reqId).first;
+    return stream
+        .firstWhere((res) => res.reqId == reqId)
+        .onError((error, stackTrace) {
+      print(
+          "The responseChannel was disposed while a message was waiting for a reply.\n"
+          "Did you forget to `await` the reply to the message with reqId: '$reqId'?\n"
+          "Ignore the message further down about type 'Null'.\n"
+          "The real problem is that no reply for the message was posted yet, but the reply \n"
+          "stream is being disposed most likely via `store.dispose()` causing the following:.\n");
+      print(error);
+      print(stackTrace);
+      return null as TReply;
+    });
   }
 
   int get nativePort {
