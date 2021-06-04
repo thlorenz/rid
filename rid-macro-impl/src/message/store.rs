@@ -8,10 +8,19 @@ pub fn code_store_module(
     msg_ident: &syn::Ident,
     store_ident: &syn::Ident,
 ) -> TokenStream {
-    let store_dispose_dart: TokenStream = format!(
+    let store_extension_dart: TokenStream = format!(
         r###"
 /// ```dart
-/// extension rid_store_dispose on {dart_ffi}.Pointer<{ffigen_bind}.{store}> {{
+/// extension rid_store_specific_extension on {dart_ffi}.Pointer<{ffigen_bind}.{store}> {{
+///   /// Executes the provided callback while locking the store to guarantee that the
+///   /// store is not modified while that callback runs.
+///   void runLocked(void Function({dart_ffi}.Pointer<{ffigen_bind}.{store}>) fn) {{
+///       {rid_ffi}.rid_store_lock();
+///       fn(this);
+///       {rid_ffi}.rid_store_unlock();
+///   }}
+///   /// Disposes the store and closes the Rust reply channel in order to allow the app
+///   /// to exit properly. This needs to be called when exiting a Dart application.
 ///   Future<void> dispose() {{
 ///     return replyChannel.dispose();
 ///   }}
@@ -20,6 +29,7 @@ pub fn code_store_module(
     "###,
         dart_ffi = DART_FFI,
         ffigen_bind = FFI_GEN_BIND,
+        rid_ffi = RID_FFI,
         store = store_ident
     )
     .parse()
@@ -109,7 +119,7 @@ pub fn code_store_module(
                 }
             }
 
-            #store_dispose_dart
+            #store_extension_dart
             #[no_mangle]
             pub extern "C" fn rid_store_free() {
                 // We may want to figure out a way to drop the store here in the future, even
