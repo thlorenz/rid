@@ -57,11 +57,13 @@ pub fn _encode_without_id(enum_idx: i64) -> i64 {
 pub extern "C" fn rid_init_isolate(port: i64) {
     // SAFETY: called once from the main dart thread
     unsafe {
-        if RID_ISOLATE.is_some() {
-            // TODO: could also just ignore
-            panic!("Isolate already initialized, only do this once!");
+        // Flutter hot reload may cause this to get called again.
+        // TODO(thlorenz): just ignoring causes dart app to get disconnected, i.e. posts don't go
+        // through after hot restart anymore.
+        // May be able to solve this via `reassemble`: https://stackoverflow.com/a/55282550/97443
+        if RID_ISOLATE.is_none() {
+            RID_ISOLATE = Some(Isolate::new(port));
         }
-        RID_ISOLATE = Some(Isolate::new(port));
     }
 }
 
