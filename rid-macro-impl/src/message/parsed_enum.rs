@@ -328,13 +328,17 @@ impl ParsedEnum {
             },
         );
 
+        // NOTE: related code rendered via src/reply/render_reply_dart.rs, i.e. RID_DEBUG_REPLY
         let class_name = reply_class_name_for_enum(&self.reply_dart_enum_name);
         format!(
             r###"
 ///   Future<{class_name}> {dart_method_name}({args_decl}) {{
 ///     final reqId = replyChannel.reqId;
 ///     {rid_ffi}.{method_name}(reqId, {args_call});
-///     return replyChannel.reply(reqId);
+///     return replyChannel.reply(reqId).then(({class_name} reply) {{
+///       if (RID_DEBUG_REPLY != null) RID_DEBUG_REPLY!(reply);
+///       return reply;
+///     }});
 ///   }}
 /// "###,
             class_name = class_name,

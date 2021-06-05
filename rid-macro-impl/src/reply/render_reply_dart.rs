@@ -25,12 +25,13 @@ pub fn render_reply_dart(
     let rendered_reply_class = format!(
         r###"
 {comment} ```dart
+{comment}
 {comment} class {class_name} extends IReply {{
 {comment}   final {enum} type;
 {comment}   final int? reqId;
 {comment}   final String? data; 
 {comment} 
-{comment}   {class_name}(this.type, this.reqId, this.data);
+{comment}   {class_name}._(this.type, this.reqId, this.data);
 {comment} 
 {comment}   @override
 {comment}   String toString() {{
@@ -43,6 +44,12 @@ pub fn render_reply_dart(
 {comment}   }}
 {comment} }}
 {comment} 
+{comment} void Function(PostedReply)? RID_DEBUG_REPLY = (PostedReply reply) {{
+{comment}   print(
+{comment}     'Set RID_DEBUG_REPLY to change if/how it is logged\n$reply',
+{comment}   );
+{comment} }};
+{comment}
 {comment} const int _TYPE_MASK= 0x000000000000ffff;
 {comment} const int _I64_MIN = -9223372036854775808;
 {comment} 
@@ -52,7 +59,7 @@ pub fn render_reply_dart(
 {comment}   final reqId = id > 0 ? id : null;
 {comment} 
 {comment}   final type = {enum}.values[ntype];
-{comment}   return {class_name}(type, reqId, data);
+{comment}   return {class_name}._(type, reqId, data);
 {comment} }}
 {comment} 
 {comment} final ReplyChannel<{class_name}> replyChannel = ReplyChannel.instance(_dl, decode);
