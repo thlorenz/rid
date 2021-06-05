@@ -67,6 +67,6 @@ pub extern "C" fn rid_init_isolate(port: i64) {
     }
 }
 
-pub fn post(msg: impl ::allo_isolate::IntoDart) {
-    Isolate::isolate().post(msg);
+pub fn post(reply: impl ::allo_isolate::IntoDart) {
+    Isolate::isolate().post(reply);
 }
