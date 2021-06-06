@@ -44,6 +44,28 @@ class RidStatefulElement extends StatefulElement {
   }
 }
 
+/// The [StateAsync] mixin adds the [setStateAsync] instance method to [State] which makes it
+/// easier to update state after a rid message reply was received.
+///
+/// Example
+/// ```dart
+/// IconButton(
+///   icon: Icon(Icons.all_inclusive),
+///   onPressed: () =>
+///       setStateAsync(() => _store.msgSetFilter(Filter.All)),
+/// )
+/// ```
+mixin StateAsync<T extends StatefulWidget> on State<T> {
+  /// Identical to [setState] except that it takes a function that returns a [Future].
+  /// It will call [setState] whenever the reply posted in response to the message is received
+  /// Note: that this function returns [void] to conform to the signature that most handlers
+  /// like [onTap] want. Therefore you cannot await its outcome, if you need that use
+  /// [setState] instead.
+  void setStateAsync<T>(Future<T> Function() sendMsg) {
+    sendMsg().whenComplete(() => setState(() {}));
+  }
+}
+
 /// [RidStatefulWidget] is identical to a [StatefulWidget] except that it ensures to lock the
 /// rid store during widget builds.
 abstract class RidStatefulWidget extends StatefulWidget {
