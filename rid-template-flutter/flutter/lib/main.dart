@@ -1,26 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:plugin/plugin.dart';
 
-/// Locks down the store while building widgets in order to prevent the
-/// application from modifying its state while we are reading it in order to
-/// render the widget.
-/// For this app this wouldn't be necessary since no background tasks that
-/// write to the store are running. However it is good practice to do this anyways.
-/// Note that when using StateManagement solutions like riverpod, rid will
-/// ensure the above by other means.
-void syncStoreAccess() {
-  final binding = WidgetsFlutterBinding.ensureInitialized();
-  binding.addPersistentFrameCallback((_) {
-    rid_ffi.rid_store_lock();
-    binding.addPostFrameCallback((_) {
-      rid_ffi.rid_store_unlock();
-    });
-  });
-}
-
 void main() {
-  final store = rid_ffi.createStore();
-  syncStoreAccess();
+  final store = createStore();
   runApp(MyApp(store));
 }
 

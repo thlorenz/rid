@@ -45,9 +45,7 @@ pub fn render_reply_dart(
 {comment} }}
 {comment} 
 {comment} void Function(PostedReply)? RID_DEBUG_REPLY = (PostedReply reply) {{
-{comment}   print(
-{comment}     'Set RID_DEBUG_REPLY to change if/how it is logged\n$reply',
-{comment}   );
+{comment}   print('$reply');
 {comment} }};
 {comment}
 {comment} const int _TYPE_MASK= 0x000000000000ffff;

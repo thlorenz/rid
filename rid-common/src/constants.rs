@@ -19,3 +19,9 @@ pub const STRING_TO_NATIVE_INT8: &str = "toNativeInt8";
 
 /// Method invoked to free a CString by resolving and dropping it.
 pub const CSTRING_FREE: &str = "rid_cstring_free";
+
+/// Function set to debug rid store locking
+pub const RID_DEBUG_LOCK: &str = "RID_DEBUG_LOCK";
+
+/// Function set to debug posted replies
+pub const RID_DEBUG_REPLY: &str = "RID_DEBUG_REPLY";

@@ -2,8 +2,9 @@ use proc_macro2::TokenStream;
 use quote::quote_spanned;
 
 use crate::common::state::{get_state, ImplementationType};
-use rid_common::{DART_FFI, FFI_GEN_BIND, RID_FFI};
-
+use rid_common::{
+    DART_FFI, FFI_GEN_BIND, RID_DEBUG_LOCK, RID_DEBUG_REPLY, RID_FFI,
+};
 pub fn code_store_module(
     msg_ident: &syn::Ident,
     store_ident: &syn::Ident,
@@ -14,10 +15,13 @@ pub fn code_store_module(
 /// extension rid_store_specific_extension on {dart_ffi}.Pointer<{ffigen_bind}.{store}> {{
 ///   /// Executes the provided callback while locking the store to guarantee that the
 ///   /// store is not modified while that callback runs.
-///   void runLocked(void Function({dart_ffi}.Pointer<{ffigen_bind}.{store}>) fn) {{
-///       {rid_ffi}.rid_store_lock();
-///       fn(this);
-///       {rid_ffi}.rid_store_unlock();
+///   T runLocked<T>(T Function({dart_ffi}.Pointer<{ffigen_bind}.{store}>) fn) {{
+///     try {{
+///       ridStoreLock();
+///       return fn(this);
+///     }} finally {{
+///       ridStoreUnlock();
+///     }}
 ///   }}
 ///   /// Disposes the store and closes the Rust reply channel in order to allow the app
 ///   /// to exit properly. This needs to be called when exiting a Dart application.
@@ -29,8 +33,67 @@ pub fn code_store_module(
     "###,
         dart_ffi = DART_FFI,
         ffigen_bind = FFI_GEN_BIND,
-        rid_ffi = RID_FFI,
         store = store_ident
+    )
+    .parse()
+    .unwrap();
+
+    let rid_store_lock_wrapper: TokenStream = format!(
+        r###"
+/// ```dart
+/// int _locks = 0;
+///
+/// void Function(bool, int)? RID_DEBUG_LOCK = (bool locking, int locks) {{
+///   String countIndicator = '';
+///   if (locking) {{
+///     for (int i = 1; i < locks; i++) countIndicator += '  ';
+///     final lock = _locks == 1 ? '🔐' : '  ';
+///     print('$lock $countIndicator{{');
+///   }} else {{
+///     for (int i = 0; i < locks; i++) countIndicator += '  ';
+///     final lock = _locks == 0 ? '🔓' : '  ';
+///     print('$countIndicator}} $lock');
+///   }}
+/// }};
+///
+/// void ridStoreLock() {{
+///   if (_locks == 0) {rid_ffi}.rid_store_lock();
+///   _locks++;
+///   if (RID_DEBUG_LOCK != null) RID_DEBUG_LOCK!(true, _locks);
+/// }}
+///
+/// void ridStoreUnlock() {{
+///   _locks--;
+///   if (RID_DEBUG_LOCK != null) RID_DEBUG_LOCK!(false, _locks);
+///   if (_locks == 0) {rid_ffi}.rid_store_unlock();
+/// }}
+/// ```
+"###,
+        rid_ffi = RID_FFI,
+    )
+    .parse()
+    .unwrap();
+
+    let rid_create_store_wrapper: TokenStream = format!(
+        r###"
+/// ```dart
+/// void _initRid() {{
+///   print('Set {rid_debug_lock} to change if/how locking the rid store is logged');
+///   print('Set {rid_debug_reply} to change if/how posted replies are logged');
+/// }}
+///
+/// {dart_ffi}.Pointer<{ffigen_bind}.{store_struct}> createStore() {{
+///   _initRid();
+///   return {rid_ffi}.create_store();
+/// }}
+/// ```
+"###, 
+    store_struct = store_ident,
+    rid_debug_lock = RID_DEBUG_LOCK,
+    rid_debug_reply = RID_DEBUG_REPLY,
+    rid_ffi = RID_FFI,
+    ffigen_bind = FFI_GEN_BIND,
+    dart_ffi = DART_FFI,
     )
     .parse()
     .unwrap();
@@ -91,12 +154,14 @@ pub fn code_store_module(
             // -----------------
             // Dart Access to create and lock/unlock store
             // -----------------
+            #rid_create_store_wrapper
             #[no_mangle]
-            pub extern "C" fn createStore() -> *const #store_ident {
+            pub extern "C" fn create_store() -> *const #store_ident {
                 let store = RidStoreAccess::instance().lock.read().unwrap();
                 &*store as *const #store_ident
             }
 
+            #rid_store_lock_wrapper
             #[no_mangle]
             pub extern "C" fn rid_store_lock() {
                 if unsafe { LOCK_READ_GUARD.is_some() } {
