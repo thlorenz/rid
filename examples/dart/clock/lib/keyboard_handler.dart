@@ -51,9 +51,9 @@ class KeyboardHandler {
   void start() async {
     resetScreen();
     replyChannel.stream.where((res) => res.type == Reply.Tick).listen((_) {
-      rid_ffi.rid_store_lock();
+      ridStoreLock();
       resetScreen();
-      rid_ffi.rid_store_unlock();
+      ridStoreUnlock();
     });
     stdin.listen((bytes) async {
       final cmd = String.fromCharCode(bytes.first);

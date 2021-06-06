@@ -5,7 +5,7 @@ import 'package:clock/keyboard_handler.dart';
 import 'package:clock/stop_watch.dart';
 
 Future<void> main() async {
-  final store = rid_ffi.createStore();
+  final store = createStore();
   final stopWatch = StopWatch(store);
   final handler = new KeyboardHandler(store, stopWatch);
   handler.start();

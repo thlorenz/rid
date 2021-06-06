@@ -5,12 +5,13 @@ import 'dart:async';
 import 'log.dart';
 
 messages() async {
-  final store = rid_ffi.createStore();
+  RID_DEBUG_REPLY = (reply) => log.d('$reply');
+
+  final store = createStore();
   await store.msgAddTodo("Hello");
   await store.msgAddTodo("World");
   await store.msgAddTodo("Hola");
-  final lastAddRes = await store.msgAddTodo("Mundo");
-  log.v(lastAddRes);
+  await store.msgAddTodo("Mundo");
 
   log.v(store.debug(LOG_VERBOSE));
 
@@ -24,12 +25,10 @@ messages() async {
   log.v(store.debug(LOG_VERBOSE));
 
   await store.msgToggleTodo(2);
-  final lastToggleRes = await store.msgToggleTodo(3);
-  log.d(lastToggleRes);
+  await store.msgToggleTodo(3);
   log.v(store.debug(LOG_VERBOSE));
 
-  final filterRes = await store.msgSetFilter(Filter.Completed);
-  log.d(filterRes);
+  await store.msgSetFilter(Filter.Completed);
   log.v(store.debug(LOG_VERBOSE));
 
   final filteredTodos = store.filtered_todos();
@@ -41,8 +40,7 @@ messages() async {
   log.v(secondFiltered.debug(LOG_VERBOSE));
   filteredTodos.dispose();
 
-  final completedRes = await store.msgRemoveCompleted();
-  log.d(completedRes);
+  await store.msgRemoveCompleted();
   log.v(store.debug(LOG_VERBOSE));
 
   await store.msgCompleteAll();

@@ -91,7 +91,7 @@ printCommands() {
 }
 
 interactive() async {
-  final store = rid_ffi.createStore();
+  final store = createStore();
   {
     await store.msgAddTodo("Complete this Todo via:     cmp 1");
     await store.msgAddTodo("Delete this Todo via:       del 2");
