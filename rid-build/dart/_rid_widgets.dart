@@ -19,10 +19,14 @@ class RidStatelessElement extends StatelessElement {
   }
 }
 
-/// [RidStatelessWidget] is identical to a [StatelessWidget] except that it ensures to lock the
-/// rid store during widget builds.
-abstract class RidStatelessWidget extends StatelessWidget {
-  const RidStatelessWidget({Key? key}) : super(key: key);
+/// The [StatelessLock] mixin ensures that the rid store is locked while the [StatelessWidget]
+/// builds.
+/// Simply add it to your [StatelessWidget] as shown below.
+///
+/// ```dart
+/// class TodoApp extends StatelessWidget with StatelessLock { ... }
+/// ```
+mixin StatelessLock on StatelessWidget {
   @override
   StatelessElement createElement() => RidStatelessElement(this);
 }
@@ -42,6 +46,18 @@ class RidStatefulElement extends StatefulElement {
       ridStoreUnlock();
     }
   }
+}
+
+/// The [StatefulLock] mixin ensures that the rid store is locked while the [StatefulWidget]
+/// builds.
+/// Simply add it to your [StatefulWidget] as shown below.
+///
+/// ```dart
+/// class TodoApp extends StatefulWidget with StatefulLock { ... }
+/// ```
+mixin StatefulLock on StatefulWidget {
+  @override
+  StatefulElement createElement() => RidStatefulElement(this);
 }
 
 /// The [StateAsync] mixin adds the [setStateAsync] instance method to [State] which makes it
@@ -64,13 +80,4 @@ mixin StateAsync<T extends StatefulWidget> on State<T> {
   void setStateAsync<T>(Future<T> Function() sendMsg) {
     sendMsg().whenComplete(() => setState(() {}));
   }
-}
-
-/// [RidStatefulWidget] is identical to a [StatefulWidget] except that it ensures to lock the
-/// rid store during widget builds.
-abstract class RidStatefulWidget extends StatefulWidget {
-  const RidStatefulWidget({Key? key}) : super(key: key);
-
-  @override
-  StatefulElement createElement() => RidStatefulElement(this);
 }
