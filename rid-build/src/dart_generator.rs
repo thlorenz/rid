@@ -5,6 +5,7 @@ use rid_common::{
 
 use crate::{parsed_bindings::ParsedBindings, FlutterConfig, Project};
 const PACKAGE_FFI: &str = "package_ffi";
+static RID_WIDGETS: &str = include_str!("../dart/_rid_widgets.dart");
 
 #[derive(Clone, Copy)]
 pub enum BuildTarget {
@@ -96,6 +97,10 @@ impl<'a> DartGenerator<'a> {
             Project::Dart => "NativeLibrary",
             Project::Flutter(FlutterConfig { plugin_name, .. }) => plugin_name,
         };
+        let flutter_widget_overrides = match self.project {
+            Project::Dart => "",
+            Project::Flutter(_) => RID_WIDGETS,
+        };
 
         format!(
             r###"{imports}
@@ -109,6 +114,7 @@ impl<'a> DartGenerator<'a> {
 // Open Dynamic Library
 //
 {open_dl}
+{flutter_widget_overrides}
 //
 // Extensions to provide an API for FFI calls into Rust
 //
@@ -124,6 +130,7 @@ impl<'a> DartGenerator<'a> {
             struct_exports = self.dart_rust_type_reexports(&structs),
             enum_exports = self.dart_rust_type_reexports(&enums),
             open_dl = self.dart_open_dl(),
+            flutter_widget_overrides = flutter_widget_overrides,
             extensions = extensions,
             string_from_pointer_extension = dart_string_from_pointer(),
             string_pointer_from_string_extension =
@@ -134,6 +141,10 @@ impl<'a> DartGenerator<'a> {
     }
 
     fn dart_imports(&self) -> String {
+        let import_flutter_widgets = match self.project {
+            Project::Dart => "",
+            Project::Flutter(_) => "import 'package:flutter/widgets.dart';",
+        };
         format!(
             r###"import 'dart:ffi' as {dart_ffi};
 import 'dart:io' as dart_io;
@@ -141,13 +152,15 @@ import 'dart:collection' as {dart_collection};
 import 'package:ffi/ffi.dart' as {pack_ffi};
 import '{ffigen_binding}' as {ffigen_bind};
 import '{reply_channel}';
+{import_flutter_widgets}
 "###,
             dart_ffi = DART_FFI,
             dart_collection = DART_COLLECTION,
             ffigen_binding = self.ffigen_binding,
             reply_channel = self.reply_channel,
             pack_ffi = PACKAGE_FFI,
-            ffigen_bind = FFI_GEN_BIND
+            ffigen_bind = FFI_GEN_BIND,
+            import_flutter_widgets = import_flutter_widgets,
         )
         .to_string()
     }
