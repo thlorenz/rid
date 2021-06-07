@@ -123,6 +123,8 @@ pub fn extract_path_segment(
         "i16" => Primitive(I16),
         "u32" => Primitive(U32),
         "i32" => Primitive(I32),
+        "u64" => Primitive(U64),
+        "i64" => Primitive(I64),
         "usize" => Primitive(USize),
         "bool" => Primitive(Bool),
         "Vec" => match arguments {
