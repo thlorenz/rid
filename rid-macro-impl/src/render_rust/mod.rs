@@ -1,4 +1,5 @@
 pub use ffi_prelude::ffi_prelude;
+pub use render_rust_arg::*;
 pub use render_access_item::*;
 pub use render_debug_impl::*;
 pub use render_display_impl::*;
@@ -13,6 +14,7 @@ pub use render_to_return_type::*;
 pub use type_alias::*;
 
 mod ffi_prelude;
+mod render_rust_arg;
 mod render_access_item;
 mod render_debug_impl;
 mod render_display_impl;

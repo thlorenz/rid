@@ -72,13 +72,13 @@ impl ParsedFunction {
                     match RustType::from_boxed_type(
                         ty.clone(),
                         &config.type_infos,
-                    ) {
+                        ) {
                         Some(rust_type) => args.push(rust_type),
                         None => abort!(
-                        ty,
-                        "[rid] Type not supported for exported functions {:#?}",
-                        *ty
-                    ),
+                            ty,
+                            "[rid] Type not supported for exported functions {:#?}",
+                            *ty
+                            ),
                     }
                 }
             };

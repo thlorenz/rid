@@ -8,9 +8,10 @@ use crate::{
         tokens::{instance_ident, resolve_ptr, resolve_string_ptr},
     },
     parse::rust_type,
+    render_rust::RustArg,
 };
 use proc_macro2::TokenStream;
-use quote::{format_ident, quote, quote_spanned};
+use quote::{format_ident, quote, quote_spanned, IdentFragment};
 use rid_common::{DART_FFI, FFI_GEN_BIND, RID_FFI, STRING_TO_NATIVE_INT8};
 use std::collections::HashMap;
 use syn::{punctuated::Punctuated, token::Comma, Ident, Variant};
@@ -123,63 +124,26 @@ impl ParsedEnum {
 
         let enum_ident = &self.ident;
 
-        struct Arg {
-            arg: syn::Ident,
-            ty: Tokens,
-            resolver: Tokens,
-        }
-
-        let arg_idents: Vec<Arg> = variant
+        let arg_idents: Vec<RustArg> = variant
             .fields
             .iter()
-            .map(|f| match &f.rust_ty {
-                RustType::Value(RString) => {
-                    let arg = format_ident!("arg{}", f.slot);
-                    let ty = quote_spanned! { arg.span() =>  *mut ::std::os::raw::c_char };
-                    let resolver = resolve_string_ptr(&arg, true);
-                    Arg { arg, ty, resolver }
-                }
-                RustType::Value(CString) => {
-                    todo!("ParsedEnum::rust_method::RustType::Value(CString)")
-                }
-                RustType::Value(RVec(_)) => {
-                    todo!("ParsedEnum::rust_method::RustType::Value(RVec(_))")
-                }
-                RustType::Value(RCustom(_, p)) => {
-                    let arg = format_ident!("arg{}", f.slot);
-                    let ty = format_ident!("{}", p);
-                    let ty = quote_spanned! { arg.span() => #ty };
-                    Arg {
-                        arg,
-                        ty,
-                        resolver: Tokens::new(),
-                    }
-                }
-                RustType::Primitive(p) => {
-                    let arg = format_ident!("arg{}", f.slot);
-                    let ty = format_ident!("{}", p.to_string());
-                    let ty = quote_spanned! { arg.span() => #ty };
-                    Arg {
-                        arg,
-                        ty,
-                        resolver: Tokens::new(),
-                    }
-                }
-                RustType::Unit => todo!("ParsedEnum::rust_method::RustType::Unit"),
-                RustType::Unknown => unimplemented!("RustType::Unknown"),
-            })
+            .enumerate()
+            .map(|(slot, f)| RustArg::from(&f.rust_ty, slot))
             .collect();
 
         let args = arg_idents
             .iter()
-            .map(|Arg { arg, ty, .. }| quote_spanned! { fn_ident.span() => #arg: #ty });
+            .map(|arg| arg.render_typed_parameter(Some(fn_ident.span())));
 
-        let args_resolvers =
-            arg_idents.iter().map(|Arg { resolver, .. }| resolver);
+        let args_resolvers_tokens = arg_idents.iter().map(
+            |RustArg {
+                 resolver_tokens, ..
+             }| resolver_tokens,
+        );
 
         let msg_args = arg_idents
             .iter()
-            .map(|Arg { arg, .. }| quote_spanned! { fn_ident.span() => #arg });
+            .map(|RustArg { arg_ident, .. }| quote_spanned! { fn_ident.span() => #arg_ident });
 
         let req_id_ident = format_ident!("__rid_req_id");
         let msg_ident = format_ident!("__rid_msg");
@@ -205,7 +169,7 @@ impl ParsedEnum {
             #[no_mangle]
             #[allow(non_snake_case)]
             pub extern "C" fn #fn_ident(#req_id_ident: u64, #(#args,)* ) {
-                #(#args_resolvers)*
+                #(#args_resolvers_tokens)*
                 #msg
                 #update_method
             }
@@ -244,57 +208,20 @@ impl ParsedEnum {
     fn dart_method(&self, variant: &ParsedVariant) -> String {
         use crate::common::rust::ValueType::*;
         let fn_ident = &variant.method_ident;
-        struct Arg {
+        struct DartArg {
             arg: String,
             ty: String,
             ffi_arg: String,
         }
 
-        let args_info: Vec<(usize, Arg)> = variant
+        let args_info: Vec<(usize, DartArg)> = variant
             .fields
             .iter()
             .map(|f| {
-                let ffi_arg = match f.rust_ty {
-                    RustType::Value(RString) => format!(
-                        "arg{slot}.{toNativeInt8}()",
-                        slot = f.slot,
-                        toNativeInt8 = STRING_TO_NATIVE_INT8
-                    ),
-                    RustType::Value(CString) => {
-                        todo!(
-                            "ParsedEnum::dart_method::RustType::Value(CString)"
-                        )
-                    }
-                    RustType::Value(RVec(_)) => {
-                        todo!(
-                            "ParsedEnum::dart_method::RustType::Value(RVec(_))"
-                        )
-                    }
-                    RustType::Primitive(_) => format!("arg{}", f.slot),
-                    RustType::Value(RCustom(_, _)) => format!("arg{}", f.slot),
-
-                    RustType::Unit => {
-                        todo!("ParsedEnum::dart_method::RustType::Unit")
-                    }
-                    RustType::Unknown => {
-                        unimplemented!(
-                            "ParsedEnum::dart_method::RustType::Unknown"
-                        )
-                    }
-                };
-                let ty = if let RustType::Value(RCustom(info, _)) = &f.rust_ty {
-                    use attrs::Category::*;
-                    match info.cat {
-                        Enum => "int".to_string(),
-                        Struct => todo!("parsed_enum::rust_method Struct"),
-                        Prim => todo!("parsed_enum::rust_method Prim"),
-                    }
-                } else {
-                    f.dart_ty.to_string()
-                };
-                Arg {
+                let ffi_arg = f.dart_ty.render_resolved_ffi_arg(f.slot);
+                DartArg {
                     arg: format!("arg{}", f.slot),
-                    ty,
+                    ty: f.rust_ty.render_dart_type(true),
                     ffi_arg,
                 }
             })
@@ -303,7 +230,7 @@ impl ParsedEnum {
 
         let args_decl = args_info.iter().fold(
             "".to_string(),
-            |acc, (idx, Arg { arg, ty, .. })| {
+            |acc, (idx, DartArg { arg, ty, .. })| {
                 let comma = if *idx == 0 { "" } else { ", " };
                 format!(
                     "{acc}{comma}{ty} {arg}",
@@ -317,7 +244,7 @@ impl ParsedEnum {
 
         let args_call = args_info.iter().fold(
             "".to_string(),
-            |acc, (idx, Arg { ffi_arg, .. })| {
+            |acc, (idx, DartArg { ffi_arg, .. })| {
                 let comma = if *idx == 0 { "" } else { ", " };
                 format!(
                     "{acc}{comma}{arg}",

@@ -1,3 +1,4 @@
+pub mod dart_type;
 mod parsed_function;
 mod parsed_impl_block;
 mod parsed_receiver;

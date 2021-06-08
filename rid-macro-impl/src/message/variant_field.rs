@@ -2,7 +2,7 @@ use syn::Field;
 
 use crate::{
     attrs::TypeInfoMap,
-    common::{DartType, RustType},
+    parse::{dart_type::DartType, rust_type::RustType},
 };
 
 #[derive(Debug)]
@@ -20,24 +20,14 @@ impl VariantField {
         types: &TypeInfoMap,
     ) -> Result<Self, String> {
         let ty = f.ty;
-        let rust_ty = RustType::try_from(&ty, types).map_err(|err| {
-            format!("Encountered invalid rust type {:#?}\n{}", ty, err)
-        })?;
-
-        let dart_ty = match &rust_ty {
-            (ident, ref rust_ty) => DartType::try_from(rust_ty, ident)
-                .map_err(|err| {
-                    format!(
-                        "RustType {:#?} cannot be used in dart\n{}",
-                        rust_ty, err
-                    )
-                })?,
-        };
+        let rust_ty = RustType::from_type(&ty, types)
+            .expect(&format!("Encountered invalid rust type {:#?}", ty));
+        let dart_ffi_ty = DartType::from(&rust_ty);
 
         Ok(Self {
             ty: ty.clone(),
-            rust_ty: rust_ty.1,
-            dart_ty,
+            rust_ty,
+            dart_ty: dart_ffi_ty,
             slot,
         })
     }

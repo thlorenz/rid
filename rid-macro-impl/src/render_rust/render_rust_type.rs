@@ -43,7 +43,7 @@ impl RustType {
 
 impl Primitive {
     // TODO: same as in ./render_pointer_type.rs
-    fn render_rust_type(&self) -> TokenStream {
+    pub fn render_rust_type(&self) -> TokenStream {
         use Primitive::*;
         match self {
             U8 => quote! { u8 },
