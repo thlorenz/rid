@@ -3,8 +3,8 @@ use quote::{format_ident, quote, quote_spanned};
 use syn::Ident;
 
 use crate::{
-    common::tokens::resolve_string_ptr,
-    parse::rust_type::{RustType, TypeKind},
+    common::tokens::{resolve_bool_from_u8, resolve_string_ptr},
+    parse::rust_type::{self, RustType, TypeKind},
     render_rust::render_rust_type,
 };
 
@@ -22,10 +22,16 @@ impl RustArg {
                 let arg_ident = format_ident!("arg{}", slot);
                 let ty = p.render_rust_type();
                 let type_tokens = quote_spanned! { arg_ident.span() => #ty };
+                let resolver_tokens = match p {
+                    rust_type::Primitive::Bool => {
+                        resolve_bool_from_u8(&arg_ident, true)
+                    }
+                    _ => TokenStream::new(),
+                };
                 RustArg {
                     arg_ident,
                     type_tokens,
-                    resolver_tokens: TokenStream::new(),
+                    resolver_tokens,
                 }
             }
             Value(value) => {

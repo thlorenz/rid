@@ -44,6 +44,14 @@ pub fn resolve_string_ptr(arg: &syn::Ident, reassign: bool) -> TokenStream {
     }
 }
 
+pub fn resolve_bool_from_u8(arg: &syn::Ident, reassign: bool) -> TokenStream {
+    if reassign {
+        quote_spanned! { arg.span() => let #arg = if #arg == 0 {  false } else { true }; }
+    } else {
+        quote_spanned! { arg.span() => if #arg == 0 {  false } else { true } }
+    }
+}
+
 pub fn cstring_free() -> TokenStream {
     let cstring_free_ident = format_ident!("{}", CSTRING_FREE);
     if get_state().needs_implementation(&ImplementationType::Free, CSTRING_FREE)

@@ -37,7 +37,7 @@ impl DartType {
     pub fn render_resolved_ffi_arg(&self, slot: usize) -> String {
         use DartType::*;
         match self {
-            Bool => format!("arg{} == 0 ? false : true", slot),
+            Bool => format!("arg{} ? 1 : 0", slot),
             String => format!(
                 "arg{slot}.{toNativeInt8}()",
                 slot = slot,

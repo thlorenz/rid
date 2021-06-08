@@ -55,7 +55,7 @@ impl Primitive {
             U64 => quote! { u64 },
             I64 => quote! { i64 },
             USize => quote! { usize },
-            Bool => quote! { bool },
+            Bool => quote! { u8 },
         }
     }
 }
