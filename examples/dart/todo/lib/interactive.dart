@@ -49,7 +49,7 @@ Future<bool> handleCommand(Pointer<Store> model, String line) async {
       await model.msgToggleTodo(int.parse(payload));
       break;
     case "rst":
-      model.msgRestartTodo(int.parse(payload));
+      await model.msgRestartTodo(int.parse(payload));
       break;
     case "fil":
       final filter = payload == "cmp"
@@ -121,7 +121,7 @@ interactive() async {
       }
     }
   }
-  store.dispose();
+  await store.dispose();
 }
 
 void main(List<String> args) async {
