@@ -26,11 +26,14 @@ fn render_variant(variant: &ReplyVariant) -> TokenStream {
     let ident = &variant.ident;
     let slot = variant.slot as i64;
     match (variant.has_req_id, variant.has_data) {
-        (true, true) => quote_spanned! {ident.span() =>
+        (true, true) => quote_spanned! { ident.span() =>
             #ident(id, s) => (rid::_encode_with_id(#slot, id), s.into()),
         },
-        (true, false) => quote_spanned! {ident.span() =>
+        (true, false) => quote_spanned! { ident.span() =>
             #ident(id) => (rid::_encode_with_id(#slot, id), "".into()),
+        },
+        (false, true) => quote_spanned! { ident.span() =>
+            #ident(s) => (rid::_encode_without_id(#slot), s.into()),
         },
         _ => quote_spanned! {ident.span() =>
             #ident => (rid::_encode_without_id(#slot), "".into()),

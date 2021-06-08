@@ -12,10 +12,11 @@ pub struct ReplyVariant {
     pub has_data: bool,
 }
 
-// There are only three versions of a reply variant which simplifies parsing a lot.
+// There are only four versions of a reply variant which simplifies parsing a lot.
 // No fields:                         Foo
 // With RequestId field:              Foo(u64)
 // With RequestId and data fields:    Foo(u64, String)
+// With data field:                   Foo(String)
 impl ReplyVariant {
     pub fn new(slot: usize, variant: &Variant) -> Self {
         let field_vec: Vec<&Field> = variant.fields.iter().collect();
@@ -28,16 +29,40 @@ impl ReplyVariant {
                 has_data: false,
             }
         } else if field_vec.len() == 1 {
-            verify_req_id_type(field_vec[0], &ident);
-            ReplyVariant {
-                ident,
-                slot,
-                has_req_id: true,
-                has_data: false,
+            if is_req_id_type(field_vec[0]) {
+                ReplyVariant {
+                    ident,
+                    slot,
+                    has_req_id: true,
+                    has_data: false,
+                }
+            } else if is_data_type(field_vec[0]) {
+                ReplyVariant {
+                    ident,
+                    slot,
+                    has_req_id: false,
+                    has_data: true,
+                }
+            } else {
+                abort!(
+                    ident,
+                    "For replies with a single field it needs to be a u64 or String, i.e. 'Started(u64) or Started(String)'"
+                )
             }
         } else if field_vec.len() == 2 {
-            verify_req_id_type(field_vec[0], &ident);
-            verify_data_type(field_vec[1], &ident);
+            if !is_req_id_type(field_vec[0]) {
+                abort!(
+                    ident,
+                    "For replies with two fields the first field needs to be a u64, i.e. 'Started(u64, String)'"
+                )
+            }
+            if !is_data_type(field_vec[1]) {
+                abort!(
+                    ident,
+                    "For reply with two fields the second field needs to be a String, i.e. 'Started(u64, String)'"
+                )
+            }
+
             ReplyVariant {
                 ident,
                 slot,
@@ -45,43 +70,29 @@ impl ReplyVariant {
                 has_data: true,
             }
         } else {
-            abort!(ident.span(), "Can only have reqId and data inside a reply, i.e. 'Started(u64, String)'")
+            abort!(ident.span(), "Only specific forms of reply are valid, i.e. 'Started | Started(u64) | Started(String) | Started(u64, String)'")
         }
     }
 }
 
-fn verify_req_id_type(req_id: &Field, variant_ident: &syn::Ident) {
+fn is_req_id_type(req_id: &Field) -> bool {
     let rust_type = RustType::from_plain_type(&req_id.ty);
     match rust_type {
         Some(RustType {
             kind: rust_type::TypeKind::Primitive(p),
             ..
-        }) if p == Primitive::U64 => {}
-        Some(RustType { ident, .. }) => abort!(
-            ident,
-            "First reply field needs to be a u64, i.e. 'Started(u64)'"
-        ),
-        None => abort!(
-            variant_ident,
-            "First reply field needs to be a u64, i.e. 'Started(u64)'"
-        ),
-    };
+        }) if p == Primitive::U64 => true,
+        _ => false,
+    }
 }
 
-fn verify_data_type(data: &Field, variant_ident: &syn::Ident) {
+fn is_data_type(data: &Field) -> bool {
     let rust_type = RustType::from_plain_type(&data.ty);
     match rust_type {
         Some(RustType {
             kind: rust_type::TypeKind::Value(v),
             ..
-        }) if v == Value::String => {}
-        Some (RustType { ident, .. }) => abort!(
-            ident,
-            "Second reply field needs to be a String, i.e. 'Started(u64, String)'"
-        ),
-        None => abort!(
-            variant_ident,
-            "Second reply field needs to be a String, i.e. 'Started(u64, String)'"
-        ),
-    };
+        }) if v == Value::String => true,
+        _ => false,
+    }
 }
