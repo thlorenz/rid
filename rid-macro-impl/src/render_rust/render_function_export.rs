@@ -12,12 +12,13 @@ use crate::{
         fn_ident_and_impl_ident_string, RenderFunctionExportConfig, TypeAlias,
         VecAccess,
     },
-    render_rust::{ffi_prelude, RenderedArgsPass},
+    render_rust::{ffi_prelude, render_rust_arg, RenderedReceiverArgPass},
 };
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote, quote_spanned};
 use render_access_item::RenderedAccessItem;
 use render_free::RenderedFree;
+use render_rust_arg::RustArg;
 use syn::Ident;
 
 pub struct RenderedFunctionExport {
@@ -70,26 +71,52 @@ pub fn render_function_export(
 
     let receiver_arg =
         receiver.as_ref().map(ParsedReceiver::render_receiver_arg);
-    let (arg_pass, arg_resolve, receiver_ident) = match receiver_arg {
-        Some(ReceiverArg {
-            arg_pass,
-            arg_resolve,
-            receiver_ident,
-        }) => (arg_pass, arg_resolve, Some(receiver_ident)),
-        None => (RenderedArgsPass::empty(), TokenStream::new(), None),
-    };
-    let fn_call = render_export_call(fn_ident, receiver_ident, args);
+    let (receiver_arg, receiver_arg_resolve, receiver_ident) =
+        match receiver_arg {
+            Some(ReceiverArg {
+                arg_pass,
+                arg_resolve,
+                receiver_ident,
+            }) => (Some(arg_pass), arg_resolve, Some(receiver_ident)),
+            None => (None, TokenStream::new(), None),
+        };
 
-    let RenderedArgsPass {
-        tokens: arg_pass,
-        type_alias,
-    } = arg_pass;
+    let arg_idents: Vec<RustArg> = args
+        .iter()
+        .enumerate()
+        .map(|(slot, arg)| RustArg::from(&arg, slot))
+        .collect();
+
+    let typed_arg_tokens = render_incoming_args(&fn_ident, &arg_idents);
+
+    let fn_call = render_export_call(fn_ident, receiver_ident, &arg_idents);
+
+    let call_args_resolvers_tokens = arg_idents.iter().map(
+        |RustArg {
+             resolver_tokens, ..
+         }| resolver_tokens,
+    );
+
+    let (receiver_arg, type_alias) = match receiver_arg {
+        Some(RenderedReceiverArgPass { tokens, type_alias }) => {
+            (Some(tokens), type_alias)
+        }
+        None => (None, None),
+    };
     type_alias.map(|x| type_aliases.push(x));
+
+    // insert comma after receiver arg
+    let receiver_arg = match receiver_arg {
+        Some(arg) if arg_idents.is_empty() => quote! { #arg },
+        Some(arg) => quote! { #arg, },
+        None => TokenStream::new(),
+    };
 
     let fn_export = quote_spanned! { fn_ident.span() =>
         #ffi_prelude
-        fn #rid_export_ident(#arg_pass) -> #ret_type {
-            #arg_resolve
+        fn #rid_export_ident(#receiver_arg #(#typed_arg_tokens)*) -> #ret_type {
+            #receiver_arg_resolve
+            #(#call_args_resolvers_tokens)*
             let #return_ident = #static_impl_call_tok#fn_call;
             #ret_to_pointer
             #return_pointer_ident
@@ -132,18 +159,65 @@ pub fn render_function_export(
 }
 
 // -----------------
+// Taking in function parameters
+// -----------------
+fn render_incoming_args(
+    fn_ident: &Ident,
+    arg_idents: &[RustArg],
+) -> Vec<TokenStream> {
+    if arg_idents.is_empty() {
+        vec![]
+    } else {
+        let last_slot = arg_idents.len() - 1;
+        arg_idents
+            .iter()
+            .enumerate()
+            .map(|(slot, x)| {
+                x.render_typed_parameter(
+                    Some(fn_ident.span()),
+                    slot != last_slot,
+                )
+            })
+            .collect()
+    }
+}
+
+// -----------------
 // Calling exported Function
 // -----------------
 fn render_export_call(
     fn_ident: &Ident,
-    receiver_ident: Option<syn::Ident>,
-    args: &[RustType],
+    receiver_ident: Option<Ident>,
+    arg_idents: &[RustArg],
 ) -> TokenStream {
-    // TODO: use args when non-empty
+    let arg_idents = if arg_idents.is_empty() {
+        vec![]
+    } else {
+        let last_slot = arg_idents.len() - 1;
+        arg_idents
+            .iter()
+            .enumerate()
+            .map(|(slot, x)| {
+                let ident = &x.arg_ident;
+                if slot == last_slot {
+                    quote! { #ident }
+                } else {
+                    quote! { #ident, }
+                }
+            })
+            .collect()
+    };
+
     match receiver_ident {
         Some(receiver_ident) => {
-            quote_spanned! { fn_ident.span() => #fn_ident(#receiver_ident) }
+            if arg_idents.is_empty() {
+                quote_spanned! { fn_ident.span() => #fn_ident(#receiver_ident) }
+            } else {
+                quote_spanned! { fn_ident.span() => #fn_ident(#receiver_ident, #(#arg_idents)*) }
+            }
         }
-        None => quote_spanned! { fn_ident.span() => #fn_ident() },
+        None => {
+            quote_spanned! { fn_ident.span() => #fn_ident(#(#arg_idents)*) }
+        }
     }
 }

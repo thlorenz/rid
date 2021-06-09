@@ -8,3 +8,7 @@ pub fn remove_doc_comments(tokens: TokenStream) -> TokenStream {
         .collect();
     without_docs.join("\n").parse().unwrap()
 }
+
+pub fn dump_tokens(tokens: TokenStream) {
+    eprintln!("--------\n\n{}\n\n----------", tokens);
+}

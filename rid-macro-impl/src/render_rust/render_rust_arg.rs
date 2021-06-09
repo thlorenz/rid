@@ -8,6 +8,7 @@ use crate::{
     render_rust::render_rust_type,
 };
 
+#[derive(Debug)]
 pub struct RustArg {
     pub arg_ident: Ident,
     pub type_tokens: TokenStream,
@@ -69,15 +70,30 @@ impl RustArg {
         }
     }
 
-    pub fn render_typed_parameter(&self, span: Option<Span>) -> TokenStream {
+    pub fn render_typed_parameter(
+        &self,
+        span: Option<Span>,
+        trailing_comma: bool,
+    ) -> TokenStream {
         let RustArg {
             arg_ident,
             type_tokens,
             ..
         } = self;
-        match span {
-            Some(span) => quote_spanned! { span => #arg_ident: #type_tokens },
-            None => quote! { #arg_ident: #type_tokens },
+        if trailing_comma {
+            match span {
+                Some(span) => {
+                    quote_spanned! { span => #arg_ident: #type_tokens, }
+                }
+                None => quote! { #arg_ident: #type_tokens, },
+            }
+        } else {
+            match span {
+                Some(span) => {
+                    quote_spanned! { span => #arg_ident: #type_tokens }
+                }
+                None => quote! { #arg_ident: #type_tokens },
+            }
         }
     }
 }

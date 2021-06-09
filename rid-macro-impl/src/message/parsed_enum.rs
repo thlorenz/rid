@@ -131,9 +131,21 @@ impl ParsedEnum {
             .map(|(slot, f)| RustArg::from(&f.rust_ty, slot))
             .collect();
 
-        let args = arg_idents
-            .iter()
-            .map(|arg| arg.render_typed_parameter(Some(fn_ident.span())));
+        let args = if arg_idents.is_empty() {
+            vec![]
+        } else {
+            let last_slot = arg_idents.len() - 1;
+            arg_idents
+                .iter()
+                .enumerate()
+                .map(|(slot, arg)| {
+                    arg.render_typed_parameter(
+                        Some(fn_ident.span()),
+                        slot != last_slot,
+                    )
+                })
+                .collect()
+        };
 
         let args_resolvers_tokens = arg_idents.iter().map(
             |RustArg {
@@ -168,7 +180,7 @@ impl ParsedEnum {
         quote_spanned! { variant_ident.span() =>
             #[no_mangle]
             #[allow(non_snake_case)]
-            pub extern "C" fn #fn_ident(#req_id_ident: u64, #(#args,)* ) {
+            pub extern "C" fn #fn_ident(#req_id_ident: u64, #(#args)* ) {
                 #(#args_resolvers_tokens)*
                 #msg
                 #update_method

@@ -5,6 +5,7 @@ use quote::quote;
 
 use crate::{
     attrs::{self, FunctionConfig, TypeInfo, TypeInfoMap},
+    common::dump_tokens,
     parse::ParsedFunction,
     render_common::{
         render_vec_accesses, RenderFunctionExportConfig, TypeAlias, VecAccess,
@@ -348,11 +349,16 @@ mod impl_instance_methods {
                 ret_ptr
             }
         };
+
         assert_eq!(res.tokens.to_string(), expected.to_string());
         assert_eq!(res.type_aliases, "Pointer_Model");
     }
 
-    /* TODO: Should not export Rust method that returns nothing (at least for now)
+    /* TODO: Should not export Rust method that returns nothing since that could only be for side
+     * effects which should be done via a message.
+     * Need to note that clearly in the abort!() message
+     */
+    /*
     #[test]
     fn no_args_mut_receiver_return_void() {
         let res = render_impl(
@@ -362,19 +368,6 @@ mod impl_instance_methods {
             },
             "Model",
         );
-        let expected = quote! {
-            fn rid_export_Model_inc_id(ptr: PointerMut_Model) -> () {
-                let receiver: &mut Model = unsafe {
-                    assert!(!ptr.is_null());
-                    ptr.as_mut().unwrap()
-                };
-                let ret = Model::inc_id(receiver);
-                let ret_ptr = ret;
-                ret_ptr
-            }
-        };
-        assert_eq!(res.tokens.to_string(), expected.to_string());
-        assert_eq!(res.type_aliases, "PointerMut_Model");
     }
      */
 
@@ -404,7 +397,11 @@ mod impl_instance_methods {
         assert_eq!(res.type_aliases, "Pointer_Item, Pointer_Model");
     }
 }
-mod impl_static_methods {
+
+// -----------------
+// Impl static Methods no args
+// -----------------
+mod impl_static_methods_no_args {
     use super::*;
     #[test]
     fn no_args_return_receiver_owned_by_name() {
@@ -435,5 +432,124 @@ mod impl_static_methods {
 
         assert_eq!(res.tokens.to_string(), expected.to_string());
         // TODO: verify rendered dart
+    }
+}
+
+// -----------------
+// Impl static Methods with args
+// -----------------
+mod impl_static_methods_with_args {
+    use super::*;
+
+    #[test]
+    fn u8_arg_returning_u8() {
+        let _attrs = TokenStream::new();
+        let input: TokenStream = quote! {
+            #[rid::export]
+            pub fn add_one(n: u8) -> u8 { todo!() }
+        };
+
+        let expected = quote! {
+            fn rid_export_Model_add_one(arg0: u8) -> u8 {
+                let ret = Model::add_one(arg0);
+                let ret_ptr = ret;
+                ret_ptr
+            }
+        };
+        let res = render_impl(input, "Model", false);
+
+        assert_eq!(res.tokens.to_string(), expected.to_string());
+    }
+
+    #[test]
+    fn u8_u32_string_args_returning_u8() {
+        let _attrs = TokenStream::new();
+        let input: TokenStream = quote! {
+            #[rid::export]
+            pub fn run(n: u8, x: u32, s: String) -> u8 { todo!() }
+        };
+
+        let expected = quote! {
+            fn rid_export_Model_run(
+                arg0: u8,
+                arg1: u32,
+                arg2: *mut ::std::os::raw::c_char
+            ) -> u8 {
+                let arg2 = unsafe { ::std::ffi::CString::from_raw(arg2) }
+                    .to_str()
+                    .expect("Received String that wasn't valid UTF-8.")
+                    .to_string();
+                let ret = Model::run(arg0, arg1, arg2);
+                let ret_ptr = ret;
+                ret_ptr
+        }
+        };
+        let res = render_impl(input, "Model", false);
+
+        assert_eq!(res.tokens.to_string(), expected.to_string());
+    }
+}
+//
+// -----------------
+// Impl instance Methods with args
+// -----------------
+mod impl_instance_methods_with_args {
+    use super::*;
+
+    #[test]
+    fn self_ref_u8_arg_returning_u8() {
+        let _attrs = TokenStream::new();
+        let input: TokenStream = quote! {
+            #[rid::export]
+            pub fn add_one(&self, n: u8) -> u8 { todo!() }
+        };
+
+        let expected = quote! {
+            fn rid_export_Model_add_one(ptr: Pointer_Model, arg0: u8) -> u8 {
+                let receiver: &Model = unsafe {
+                    assert!(!ptr.is_null());
+                    ptr.as_ref().unwrap()
+                };
+                let ret = Model::add_one(receiver, arg0);
+                let ret_ptr = ret;
+                ret_ptr
+            }
+        };
+        let res = render_impl(input, "Model", false);
+
+        assert_eq!(res.tokens.to_string(), expected.to_string());
+    }
+
+    #[test]
+    fn self_u8_u32_string_args_returning_u8() {
+        let _attrs = TokenStream::new();
+        let input: TokenStream = quote! {
+            #[rid::export]
+            pub fn run(self, n: u8, x: u32, s: String) -> u8 { todo!() }
+        };
+
+        let expected = quote! {
+            fn rid_export_Model_run(
+                ptr: PointerMut_Model,
+                arg0: u8,
+                arg1: u32,
+                arg2: *mut ::std::os::raw::c_char
+            ) -> u8 {
+                let receiver: Model = unsafe {
+                    assert!(!ptr.is_null());
+                    ptr.unwrap()
+                };
+                let arg2 = unsafe { ::std::ffi::CString::from_raw(arg2) }
+                    .to_str()
+                    .expect("Received String that wasn't valid UTF-8.")
+                    .to_string();
+                let ret = Model::run(receiver, arg0, arg1, arg2);
+                let ret_ptr = ret;
+                ret_ptr
+            }
+        };
+        let res = render_impl(input, "Model", false);
+
+        assert_eq!(res.tokens.to_string(), expected.to_string());
     }
 }
