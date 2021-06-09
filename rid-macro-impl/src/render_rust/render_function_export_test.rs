@@ -553,3 +553,31 @@ mod impl_instance_methods_with_args {
         assert_eq!(res.tokens.to_string(), expected.to_string());
     }
 }
+
+// -----------------
+// Standalone Functions Special Returns
+// -----------------
+mod standalone_special_returns {
+    use super::*;
+
+    #[test]
+    fn u32_arg_returning_option_ref_todo() {
+        let input: TokenStream = quote! {
+            #[rid::export]
+            #[rid::structs(Todo)]
+            fn todo_by_id(id: u32) -> Option<&Todo> {
+                todo!()
+            }
+        };
+
+        let expected = quote! {
+            fn rid_export_todo_by_id(arg0: u32) -> Pointer_Todo {
+                let ret = todo_by_id(arg0);
+                let ret_ptr = rid::_option_ref_to_pointer(ret);
+                ret_ptr
+            }
+        };
+        let res = render(input);
+        assert_eq!(res.tokens.to_string(), expected.to_string());
+    }
+}

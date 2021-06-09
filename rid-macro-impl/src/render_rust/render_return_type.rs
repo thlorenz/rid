@@ -32,13 +32,23 @@ pub fn render_return_type(
     let type_tok = match kind {
         K::Primitive(prim) => render_primitive_return(prim),
         K::Value(val) => {
-            let (alias, tokens ) = render_value_return(val, &reference);
+            let (alias, tokens ) = render_value_return_type(val, &reference);
             type_alias = alias;
             tokens
         }
         K::Composite(Composite::Vec, rust_type) => match rust_type {
             Some(ty) => {
-                let (alias, tokens) = render_vec_return(ty.as_ref());
+                let (alias, tokens) = render_vec_return_type(ty);
+                type_alias = alias;
+                tokens
+            }
+            None => {
+                todo!("blow up since a composite should include inner type")
+            }
+        },
+        K::Composite(Composite::Option, rust_type) => match rust_type {
+            Some(ty) => {
+                let (alias, tokens) = render_option_return_type(ty);
                 type_alias = alias;
                 tokens
             }
@@ -48,7 +58,7 @@ pub fn render_return_type(
         },
         K::Composite(composite, rust_type) => {
             todo!("render_return_type::custom_composite")
-        }
+        },
         K::Unit => quote! { () },
         K::Unknown => todo!("unknown .. need better error .. also gets triggered when exporting custom type without info "),
     };
@@ -73,7 +83,7 @@ fn render_primitive_return(prim: &Primitive) -> TokenStream {
     }
 }
 
-fn render_vec_return(
+fn render_vec_return_type(
     inner_type: &RustType,
 ) -> (Option<TypeAlias>, TokenStream) {
     use TypeKind as K;
@@ -87,23 +97,56 @@ fn render_vec_return(
         }
         K::Value(val) => {
             let (alias, val_tokens) =
-                render_value_return(val, &inner_type.reference);
+                render_value_return_type(val, &inner_type.reference);
             let tokens = quote! { rid::RidVec<#val_tokens> };
             (alias, tokens)
         }
         K::Composite(_, _) => {
-            abort!(inner_type.ident, "todo!(stringify_vec_return::composite)")
+            abort!(inner_type.ident, "todo!(render_vec_return_type::composite)")
         }
         K::Unit => {
-            abort!(inner_type.ident, "todo!(stringify_vec_return::unit)")
+            abort!(inner_type.ident, "todo!(render_vec_return_type::unit)")
         }
         K::Unknown => {
-            abort!(inner_type.ident, "todo!(stringify_vec_return::unknown)")
+            abort!(inner_type.ident, "todo!(render_vec_return_type::unknown)")
+        }
+    }
+}
+fn render_option_return_type(
+    inner_type: &RustType,
+) -> (Option<TypeAlias>, TokenStream) {
+    use TypeKind as K;
+    match &inner_type.kind {
+        K::Primitive(prim) => {
+            let inner_return_type = render_primitive_return(prim);
+            let tokens = quote_spanned! { inner_type.ident.span() =>
+                *const #inner_return_type
+            };
+            (None, tokens)
+        }
+        K::Value(val) => render_value_return_type(val, &inner_type.reference),
+        K::Composite(_, _) => {
+            abort!(
+                inner_type.ident,
+                "todo!(render_option_return_type::composite)"
+            )
+        }
+        K::Unit => {
+            abort!(inner_type.ident, "todo!(render_option_return_type::unit)")
+        }
+        K::Unknown => {
+            abort!(
+                inner_type.ident,
+                "[rid] Missing info for type {0}.\nSpecify it via one of the below:\n\
+                \x20- #[rid::structs({0})]\n\
+                \x20- #[rid::enums({0})]",
+                inner_type.ident
+            )
         }
     }
 }
 
-fn render_value_return(
+fn render_value_return_type(
     value: &Value,
     reference: &ParsedReference,
 ) -> (Option<TypeAlias>, TokenStream) {

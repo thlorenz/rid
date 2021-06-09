@@ -12,3 +12,7 @@ pub fn remove_doc_comments(tokens: TokenStream) -> TokenStream {
 pub fn dump_tokens(tokens: TokenStream) {
     eprintln!("--------\n\n{}\n\n----------", tokens);
 }
+
+pub fn dump_code(code: &str) {
+    eprintln!("--------\n\n{}\n\n----------", code);
+}

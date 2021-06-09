@@ -408,3 +408,82 @@ mod custom_composites {
         };
     }
 }
+
+// -----------------
+// Composite Option
+// -----------------
+mod composite_option {
+    use super::*;
+
+    #[test]
+    fn arg_option_ref_todo() {
+        let model_str = "Todo".to_string();
+        let res = parse(quote! {
+            #[rid::structs(Todo)]
+            fn f(x: Option<&Todo>) {}
+        });
+        let RustType {
+            ident,
+            kind,
+            reference,
+        } = res.expect("extracts rust type");
+
+        assert_eq!(ident.to_string(), "Option", "ident");
+        assert_matches!(reference, ParsedReference::Owned);
+
+        if let TypeKind::Composite(composite, inner) = kind {
+            assert_matches!(composite, Composite::Option);
+            let RustType {
+                ident,
+                kind,
+                reference,
+            } = *inner.expect("has inner rust type");
+
+            assert_eq!(ident.to_string(), "Todo", "ident");
+            assert_matches!(reference, ParsedReference::Ref(_));
+            assert_matches!(
+                kind,
+                TypeKind::Value(Value::Custom(
+                    TypeInfo {
+                        key,
+                        cat: Category::Struct
+                    },
+                    model_str
+                ))
+            )
+        } else {
+            panic!("expected composite")
+        };
+    }
+
+    #[test]
+    fn arg_option_u8() {
+        let model_str = "Todo".to_string();
+        let res = parse(quote! {
+            fn f(x: Option<u8>) {}
+        });
+        let RustType {
+            ident,
+            kind,
+            reference,
+        } = res.expect("extracts rust type");
+
+        assert_eq!(ident.to_string(), "Option", "ident");
+        assert_matches!(reference, ParsedReference::Owned);
+
+        if let TypeKind::Composite(composite, inner) = kind {
+            assert_matches!(composite, Composite::Option);
+            let RustType {
+                ident,
+                kind,
+                reference,
+            } = *inner.expect("has inner rust type");
+
+            assert_eq!(ident.to_string(), "u8", "ident");
+            assert_eq!(reference, ParsedReference::Owned, "reference");
+            assert_matches!(kind, TypeKind::Primitive(Primitive::U8));
+        } else {
+            panic!("expected composite")
+        };
+    }
+}

@@ -93,7 +93,7 @@ pub fn export(attrs: TokenStream, input: TokenStream) -> TokenStream {
     let item = parse_macro_input!(input as syn::Item);
     let args = parse_macro_input!(attrs as syn::AttributeArgs);
     // TODO: is there any way to avoid this clone and/or is cloning the input cheaper?
-    let exports = rid_export_impl(item.clone(), args);
+    let exports = rid_export_impl(item.clone(), args, Default::default());
     let q = quote! {
         #item
         #exports

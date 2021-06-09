@@ -37,6 +37,10 @@ impl RustType {
                 // similar to same case in ./render_return_type.rs
                 todo!("render_pointer_type::custom_composite::vec")
             }
+            K::Composite(Composite::Option, rust_type) => {
+                // similar to same case in ./render_return_type.rs
+                todo!("render_pointer_type::custom_composite::option")
+            }
             K::Composite(composite, rust_type) => {
                 todo!("render_pointer_type::custom_composite")
             }

@@ -93,47 +93,23 @@ impl RustType {
     }
 
     pub fn is_primitive(&self) -> bool {
-        match self.kind {
-            TypeKind::Primitive(_) => true,
-            TypeKind::Value(_) => false,
-            TypeKind::Composite(_, _) => false,
-            TypeKind::Unit => true,
-            TypeKind::Unknown => false,
-        }
+        self.kind.is_primitive()
+    }
+
+    pub fn is_composite(&self) -> bool {
+        self.kind.is_composite()
     }
 
     pub fn is_vec(&self) -> bool {
-        match self.kind {
-            TypeKind::Primitive(_) => false,
-            TypeKind::Value(_) => false,
-            TypeKind::Composite(Composite::Vec, _) => true,
-            TypeKind::Composite(_, _) => false,
-            TypeKind::Unit => true,
-            TypeKind::Unknown => false,
-        }
+        self.kind.is_vec()
     }
 
     pub fn inner_composite_type(&self) -> Option<RustType> {
-        match &self.kind {
-            TypeKind::Primitive(_) => None,
-            TypeKind::Value(_) => None,
-            TypeKind::Composite(Composite::Vec, inner) => {
-                inner.as_ref().map(|x| (*x.clone()))
-            }
-            TypeKind::Composite(_, _) => None,
-            TypeKind::Unit => None,
-            TypeKind::Unknown => None,
-        }
+        self.kind.inner_composite_rust_type()
     }
 
     pub fn is_enum(&self) -> bool {
-        match &self.kind {
-            TypeKind::Primitive(_) => false,
-            TypeKind::Value(val) => val.is_enum(),
-            TypeKind::Composite(_, _) => false,
-            TypeKind::Unit => false,
-            TypeKind::Unknown => false,
-        }
+        self.kind.is_enum()
     }
 }
 
@@ -187,6 +163,59 @@ impl TypeKind {
         match self {
             TypeKind::Value(val) => Self::Value(val.self_unaliased(owner_name)),
             _ => self,
+        }
+    }
+
+    pub fn is_primitive(&self) -> bool {
+        if let TypeKind::Primitive(_) = self {
+            true
+        } else {
+            false
+        }
+    }
+
+    pub fn is_composite(&self) -> bool {
+        if let TypeKind::Composite(_, _) = self {
+            true
+        } else {
+            false
+        }
+    }
+
+    pub fn is_vec(&self) -> bool {
+        if let TypeKind::Composite(Composite::Vec, _) = self {
+            true
+        } else {
+            false
+        }
+    }
+
+    pub fn is_option(&self) -> bool {
+        if let TypeKind::Composite(Composite::Option, _) = self {
+            true
+        } else {
+            false
+        }
+    }
+
+    pub fn is_enum(&self) -> bool {
+        if let TypeKind::Value(val) = self {
+            val.is_enum()
+        } else {
+            false
+        }
+    }
+
+    pub fn inner_composite_rust_type(&self) -> Option<RustType> {
+        match self {
+            TypeKind::Primitive(_) => None,
+            TypeKind::Value(_) => None,
+            TypeKind::Composite(Composite::Vec, inner) => {
+                inner.as_ref().map(|x| (*x.clone()))
+            }
+            TypeKind::Composite(_, _) => None,
+            TypeKind::Unit => None,
+            TypeKind::Unknown => None,
         }
     }
 }
@@ -275,6 +304,7 @@ impl Value {
 #[derive(Clone, PartialEq)]
 pub enum Composite {
     Vec,
+    Option,
     Custom(TypeInfo, String),
 }
 
@@ -282,6 +312,7 @@ impl Debug for Composite {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Composite::Vec => write!(f, "Composite::Vec"),
+            Composite::Option => write!(f, "Composite::Option"),
             Composite::Custom(type_info, name) => {
                 write!(f, "Composite::Custom({:?}, \"{}\")", type_info, name)
             }
@@ -392,6 +423,9 @@ fn ident_to_kind(
                         resolve_rust_ty(ty, type_infos).map(|x| Box::new(x));
                     match ident_str.as_str() {
                         "Vec" => TypeKind::Composite(Composite::Vec, inner),
+                        "Option" => {
+                            TypeKind::Composite(Composite::Option, inner)
+                        }
                         _ => {
                             if let Some(type_info) = type_infos.get(&ident_str)
                             {
