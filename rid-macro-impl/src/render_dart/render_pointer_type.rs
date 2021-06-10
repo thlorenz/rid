@@ -26,7 +26,6 @@ impl RustType {
             K::Composite(Composite::Vec, inner_type) => match inner_type {
                 Some(ty) => {
                     let item_type = ty.ident.to_string();
-
                     let pointer = format!(
                         "{ffigen_bind}.RidVec_{pointer_prefix}{ty}",
                         pointer_prefix = TypeAlias::POINTER_ALIAS_PREFIX,
@@ -38,14 +37,33 @@ impl RustType {
                 None => {
                     abort!(
                         self.ident,
-                        "Rust composite should include inner type"
+                        "Rust Vec composite should include inner type"
                     )
                 }
             },
-            K::Composite(_, _) => {
+            K::Composite(Composite::Option, inner_type) => match inner_type {
+                Some(ty) => {
+                    let item_type = ty.ident.to_string();
+                    let pointer = format!(
+                        "{dart_ffi}.Pointer<{ffigen_bind}.{ty}>?",
+                        dart_ffi = DART_FFI,
+                        ffigen_bind = FFI_GEN_BIND,
+                        ty = inner_type.as_ref().unwrap().dart_ident(false),
+                    );
+                    pointer
+                }
+                None => {
+                    abort!(
+                        self.ident,
+                        "Rust Option composite should include inner type"
+                    )
+                }
+            },
+            K::Composite(kind, _) => {
                 abort!(
                     self.ident,
-                    "TODO: RustType::render_dart_pointer_type K::Composite"
+                    "TODO: RustType::render_dart_pointer_type K::Composite({:?})",
+                    kind
                 )
             }
             K::Unknown => abort!(
