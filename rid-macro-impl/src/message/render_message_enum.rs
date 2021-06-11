@@ -115,14 +115,6 @@ impl ParsedEnum {
 
         let variant_ident = &variant.ident;
 
-        if variant.has_errors() {
-            return variant
-                .errors
-                .iter()
-                .map(|err| derive_error(variant_ident, err))
-                .collect();
-        }
-
         let fn_ident = &variant.method_ident;
         let struct_ident = &self.struct_ident;
         let resolve_struct_ptr = resolve_ptr(&struct_ident);
@@ -146,6 +138,7 @@ impl ParsedEnum {
                 .map(|(slot, arg)| {
                     arg.render_typed_parameter(
                         Some(fn_ident.span()),
+                        slot == 0,
                         slot != last_slot,
                     )
                 })
@@ -158,9 +151,22 @@ impl ParsedEnum {
              }| resolver_tokens,
         );
 
-        let msg_args = arg_idents
-            .iter()
-            .map(|RustArg { arg_ident, .. }| quote_spanned! { fn_ident.span() => #arg_ident });
+        let msg_args = if arg_idents.is_empty() {
+            vec![]
+        } else {
+            let last_slot = arg_idents.len() - 1;
+            arg_idents
+                .iter()
+                .enumerate()
+                .map(|(slot, RustArg { arg_ident, .. })| {
+                    if slot == last_slot {
+                        quote_spanned! { fn_ident.span() => #arg_ident }
+                    } else {
+                        quote_spanned! { fn_ident.span() => #arg_ident, }
+                    }
+                })
+                .collect()
+        };
 
         let req_id_ident = format_ident!("__rid_req_id");
         let msg_ident = format_ident!("__rid_msg");
@@ -178,7 +184,7 @@ impl ParsedEnum {
             }
         } else {
             quote_spanned! { variant_ident.span() =>
-                let #msg_ident = #enum_ident::#variant_ident(#(#msg_args,)*);
+                let #msg_ident = #enum_ident::#variant_ident(#(#msg_args)*);
             }
         };
 
@@ -189,7 +195,7 @@ impl ParsedEnum {
         };
 
         quote_spanned! { variant_ident.span() =>
-             #ffi_prelude fn #fn_ident(#req_id_ident: u64, #(#args)* ) {
+             #ffi_prelude fn #fn_ident(#req_id_ident: u64#(#args)* ) {
                 #(#args_resolvers_tokens)*
                 #msg
                 #update_method
@@ -258,7 +264,7 @@ impl ParsedEnum {
         let code = format!(
             r###"{reply_with_timeout}
 {comment} extension Rid_Message_ExtOnPointer{struct_ident}For{enum_ident} on {dart_ffi}.Pointer<{ffigen_bind}.{struct_ident}> {{
-  {methods}
+{methods}
 {comment} }}"###,
             reply_with_timeout = reply_with_timeout,
             enum_ident = self.ident,
@@ -360,10 +366,9 @@ impl ParsedEnum {
 {comment}
 {comment}     timeout ??= {rid_msg_timeout};
 {comment}     if (timeout == null) return reply;
-{comment}     final msgCall = 'msgInit({args_string}) with reqId: $reqId';
+{comment}     final msgCall = '{dart_method_name}({args_string}) with reqId: $reqId';
 {comment}     return _replyWithTimeout(reply, msgCall, StackTrace.current, timeout);
-{comment}   }}
-{comment} "###,
+{comment}   }}"###,
             class_name = class_name,
             dart_method_name = self.dart_method_name(&fn_ident.to_string()),
             method_name = fn_ident.to_string(),

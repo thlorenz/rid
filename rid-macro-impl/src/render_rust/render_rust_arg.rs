@@ -73,6 +73,7 @@ impl RustArg {
     pub fn render_typed_parameter(
         &self,
         span: Option<Span>,
+        leading_comma: bool,
         trailing_comma: bool,
     ) -> TokenStream {
         let RustArg {
@@ -80,17 +81,22 @@ impl RustArg {
             type_tokens,
             ..
         } = self;
+        let lcomma = if leading_comma {
+            quote! { , }
+        } else {
+            TokenStream::new()
+        };
         if trailing_comma {
             match span {
                 Some(span) => {
-                    quote_spanned! { span => #arg_ident: #type_tokens, }
+                    quote_spanned! { span => #lcomma #arg_ident: #type_tokens, }
                 }
                 None => quote! { #arg_ident: #type_tokens, },
             }
         } else {
             match span {
                 Some(span) => {
-                    quote_spanned! { span => #arg_ident: #type_tokens }
+                    quote_spanned! { span => #lcomma #arg_ident: #type_tokens }
                 }
                 None => quote! { #arg_ident: #type_tokens },
             }

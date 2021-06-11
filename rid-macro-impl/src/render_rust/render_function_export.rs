@@ -175,6 +175,7 @@ fn render_incoming_args(
             .map(|(slot, x)| {
                 x.render_typed_parameter(
                     Some(fn_ident.span()),
+                    false,
                     slot != last_slot,
                 )
             })

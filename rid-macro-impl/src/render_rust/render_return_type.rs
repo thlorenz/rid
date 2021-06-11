@@ -1,5 +1,5 @@
 use crate::{
-    common::abort,
+    common::{abort, missing_struct_enum_info},
     parse::{
         rust_type::{Composite, Primitive, RustType, TypeKind, Value},
         ParsedReference,
@@ -134,15 +134,7 @@ fn render_option_return_type(
         K::Unit => {
             abort!(inner_type.ident, "todo!(render_option_return_type::unit)")
         }
-        K::Unknown => {
-            abort!(
-                inner_type.ident,
-                "[rid] Missing info for type {0}.\nSpecify it via one of the below:\n\
-                \x20- #[rid::structs({0})]\n\
-                \x20- #[rid::enums({0})]",
-                inner_type.ident
-            )
-        }
+        K::Unknown => (None, missing_struct_enum_info(&inner_type.ident)),
     }
 }
 
