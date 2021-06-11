@@ -12,7 +12,10 @@ use crate::{
 };
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote, quote_spanned, IdentFragment};
-use rid_common::{DART_FFI, FFI_GEN_BIND, RID_FFI, STRING_TO_NATIVE_INT8};
+use rid_common::{
+    DART_ASYNC, DART_FFI, FFI_GEN_BIND, RID_DEBUG_REPLY, RID_FFI,
+    RID_MSG_TIMEOUT, STRING_TO_NATIVE_INT8,
+};
 use std::collections::HashMap;
 use syn::{punctuated::Punctuated, token::Comma, Ident, Variant};
 
@@ -192,10 +195,11 @@ impl ParsedEnum {
     // Dart Methods
     //
     fn dart_extension(&self) -> Tokens {
+        let class_name = reply_class_name_for_enum(&self.reply_dart_enum_name);
         let methods: Vec<String> = self
             .parsed_variants
             .iter()
-            .map(|x| self.dart_method(x))
+            .map(|x| self.dart_method(x, &class_name))
             .collect();
 
         let s = format!(
@@ -203,13 +207,33 @@ impl ParsedEnum {
 /// The below extension provides convenience methods to send messages to rust.
 ///
 /// ```dart
+/// final Duration? RID_MSG_TIMEOUT = const Duration(milliseconds: 200);
+/// 
+/// Future<{class_name}> _replyWithTimeout(
+///   Future<{class_name}> reply,
+///   String msgCall,
+///   StackTrace applicationStack,
+///   Duration timeout,
+/// ) {{
+///   final failureMsg = '''$msgCall timed out\n
+/// ---- Application Stack ----\n
+/// $applicationStack\n
+/// ---- Internal Stack ----
+/// ''';
+/// 
+///   return reply.timeout(timeout,
+///       onTimeout: () => throw {dart_async}.TimeoutException(failureMsg, timeout));
+/// }}
+/// 
 /// extension Rid_Message_ExtOnPointer{struct_ident}For{enum_ident} on {dart_ffi}.Pointer<{ffigen_bind}.{struct_ident}> {{
   {methods}
 /// }}
 /// ```
         "###,
+            class_name = class_name,
             enum_ident = self.ident,
             struct_ident = self.struct_ident,
+            dart_async = DART_ASYNC,
             dart_ffi = DART_FFI,
             ffigen_bind = FFI_GEN_BIND,
             methods = methods.join("\n")
@@ -217,7 +241,7 @@ impl ParsedEnum {
         s.parse().unwrap()
     }
 
-    fn dart_method(&self, variant: &ParsedVariant) -> String {
+    fn dart_method(&self, variant: &ParsedVariant, class_name: &str) -> String {
         use crate::common::rust::ValueType::*;
         let fn_ident = &variant.method_ident;
         struct DartArg {
@@ -243,41 +267,52 @@ impl ParsedEnum {
         let args_decl = args_info.iter().fold(
             "".to_string(),
             |acc, (idx, DartArg { arg, ty, .. })| {
-                let comma = if *idx == 0 { "" } else { ", " };
-                format!(
-                    "{acc}{comma}{ty} {arg}",
-                    acc = acc,
-                    comma = comma,
-                    ty = ty,
-                    arg = arg
-                )
+                format!("{acc}{ty} {arg}, ", acc = acc, ty = ty, arg = arg)
             },
         );
 
-        let args_call = args_info.iter().fold(
-            "".to_string(),
-            |acc, (idx, DartArg { ffi_arg, .. })| {
+        let (args_call, args_string) = args_info.iter().fold(
+            ("".to_string(), "".to_string()),
+            |(args_acc, args_string_acc),
+             (idx, DartArg { ffi_arg, arg, .. })| {
                 let comma = if *idx == 0 { "" } else { ", " };
-                format!(
-                    "{acc}{comma}{arg}",
-                    acc = acc,
-                    comma = comma,
-                    arg = ffi_arg
+                (
+                    format!(
+                        "{acc}{comma}{arg}",
+                        acc = args_acc,
+                        comma = comma,
+                        arg = ffi_arg
+                    ),
+                    format!(
+                        "{acc}{comma}${arg}",
+                        acc = args_string_acc,
+                        comma = comma,
+                        arg = arg
+                    ),
                 )
             },
         );
 
         // NOTE: related code rendered via src/reply/render_reply_dart.rs, i.e. RID_DEBUG_REPLY
-        let class_name = reply_class_name_for_enum(&self.reply_dart_enum_name);
         format!(
             r###"
-///   Future<{class_name}> {dart_method_name}({args_decl}) {{
+///   Future<{class_name}> {dart_method_name}({args_decl}{{Duration? timeout}}) {{
 ///     final reqId = replyChannel.reqId;
 ///     {rid_ffi}.{method_name}(reqId, {args_call});
-///     return replyChannel.reply(reqId).then(({class_name} reply) {{
-///       if (RID_DEBUG_REPLY != null) RID_DEBUG_REPLY!(reply);
-///       return reply;
-///     }});
+///
+///     final reply = _isDebugMode && {rid_debug_reply} != null
+///         ? replyChannel.reply(reqId).then(({class_name} reply) {{
+///             if ({rid_debug_reply} != null) {rid_debug_reply}!(reply);
+///             return reply;
+///           }})
+///         : replyChannel.reply(reqId);
+///     
+///     if (!_isDebugMode) return reply;
+///
+///     timeout ??= {rid_msg_timeout};
+///     if (timeout == null) return reply;
+///     final msgCall = 'msgInit({args_string}) with reqId: $reqId';
+///     return _replyWithTimeout(reply, msgCall, StackTrace.current, timeout);
 ///   }}
 /// "###,
             class_name = class_name,
@@ -285,7 +320,10 @@ impl ParsedEnum {
             method_name = fn_ident.to_string(),
             args_decl = args_decl,
             args_call = args_call,
+            args_string = args_string,
             rid_ffi = RID_FFI,
+            rid_debug_reply = RID_DEBUG_REPLY,
+            rid_msg_timeout = RID_MSG_TIMEOUT,
         )
     }
 

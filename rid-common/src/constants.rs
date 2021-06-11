@@ -6,7 +6,10 @@ pub const FFI_GEN_BIND: &str = "ffigen_bind";
 
 /// The built in 'dart:ffi' library is imported into the build wrapper as this id.
 pub const DART_FFI: &str = "dart_ffi";
-///
+
+/// The built in 'dart:async' library is imported into the build wrapper as this id.
+pub const DART_ASYNC: &str = "dart_async";
+
 /// The built in 'dart:collection' library is imported into the build wrapper as this id.
 pub const DART_COLLECTION: &str = "dart_collection";
 
@@ -25,3 +28,6 @@ pub const RID_DEBUG_LOCK: &str = "RID_DEBUG_LOCK";
 
 /// Function set to debug posted replies
 pub const RID_DEBUG_REPLY: &str = "RID_DEBUG_REPLY";
+
+/// Duration set to specify default message timeout
+pub const RID_MSG_TIMEOUT: &str = "RID_MSG_TIMEOUT";

@@ -153,9 +153,13 @@ impl<'a> DartGenerator<'a> {
     }
 
     fn dart_imports(&self) -> String {
-        let import_flutter_widgets = match self.project {
+        let project_specific_imports = match self.project {
             Project::Dart => "",
-            Project::Flutter(_) => "import 'package:flutter/widgets.dart';",
+            Project::Flutter(_) => {
+                r###"
+import 'package:flutter/widgets.dart';
+import 'package:flutter/foundation.dart' as Foundation;"###
+            }
         };
         format!(
             r###"import 'dart:ffi' as {dart_ffi};
@@ -165,7 +169,7 @@ import 'dart:collection' as {dart_collection};
 import 'package:ffi/ffi.dart' as {pack_ffi};
 import '{ffigen_binding}' as {ffigen_bind};
 import '{reply_channel}';
-{import_flutter_widgets}
+{project_specific_imports}
 "###,
             dart_ffi = DART_FFI,
             dart_async = DART_ASYNC,
@@ -174,7 +178,7 @@ import '{reply_channel}';
             reply_channel = self.reply_channel,
             pack_ffi = PACKAGE_FFI,
             ffigen_bind = FFI_GEN_BIND,
-            import_flutter_widgets = import_flutter_widgets,
+            project_specific_imports = project_specific_imports,
         )
         .to_string()
     }
