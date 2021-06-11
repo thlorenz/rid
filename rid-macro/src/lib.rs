@@ -6,8 +6,8 @@ use proc_macro::TokenStream;
 use proc_macro_error::proc_macro_error;
 
 use rid_macro_impl::{
-    rid_debug_impl, rid_display_impl, rid_export_impl, rid_ffi_message_impl,
-    rid_ffi_model_impl, rid_ffi_reply_impl,
+    rid_debug_impl, rid_display_impl, rid_export_impl, rid_ffi_model_impl,
+    rid_ffi_reply_impl, rid_message_impl,
 };
 use syn::{self, parse_macro_input};
 
@@ -47,10 +47,10 @@ pub fn message(attrs: TokenStream, input: TokenStream) -> TokenStream {
     if let Ok(_) = env::var(RID_PRINT_MESSAGE) {
         eprintln!("input: {:#?}", &item);
         eprintln!("args: {:#?}", &args);
-        rid_ffi_message_impl(&item, &args);
+        rid_message_impl(&item, &args, Default::default());
         process::exit(0)
     } else {
-        let exports = rid_ffi_message_impl(&item, &args);
+        let exports = rid_message_impl(&item, &args, Default::default());
         let q = quote! {
             #[repr(C)]
             #item

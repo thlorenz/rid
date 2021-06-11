@@ -38,7 +38,7 @@ impl EnumConfig {
                 RidAttr::Message(attr_ident, _) => {
                     abort!(
                         attr_ident,
-                        "cannot have rid::message attribute on enums"
+                        "cannot have duplicate rid::message attribute on enums"
                     );
                 }
                 RidAttr::Export(attr_ident, _) => {

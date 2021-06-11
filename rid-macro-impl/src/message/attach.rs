@@ -1,14 +1,20 @@
 use proc_macro2::TokenStream;
 use syn::{Item, NestedMeta};
 
-use super::parsed_enum::ParsedEnum;
+use super::{
+    parse_message_enum::ParsedEnum, render_message_enum::MessageRenderConfig,
+};
 use crate::{
     attrs::{self, parse_rid_args, EnumConfig},
     common::{abort, callsite_error},
 };
 
 // https://stackoverflow.com/a/65182902/97443
-pub fn rid_ffi_message_impl(item: &Item, args: &[NestedMeta]) -> TokenStream {
+pub fn rid_message_impl(
+    item: &Item,
+    args: &[NestedMeta],
+    render_config: MessageRenderConfig,
+) -> TokenStream {
     match item {
         Item::Enum(item) => {
             let rid_attrs = attrs::parse_rid_attrs(&item.attrs);
@@ -21,7 +27,7 @@ pub fn rid_ffi_message_impl(item: &Item, args: &[NestedMeta]) -> TokenStream {
                     item.variants.clone(),
                     enum_config,
                 );
-                parsed_enum.tokens()
+                parsed_enum.render(&render_config).0
             } else {
                 abort!(
                     item,
