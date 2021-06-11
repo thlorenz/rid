@@ -1,11 +1,14 @@
 use rid_common::{
-    CSTRING_FREE, DART_COLLECTION, DART_FFI, FFI_GEN_BIND, RID_FFI,
+    CSTRING_FREE, DART_ASYNC, DART_COLLECTION, DART_FFI, FFI_GEN_BIND, RID_FFI,
     STRING_TO_NATIVE_INT8,
 };
 
 use crate::{parsed_bindings::ParsedBindings, FlutterConfig, Project};
 const PACKAGE_FFI: &str = "package_ffi";
 static RID_WIDGETS: &str = include_str!("../dart/_rid_widgets.dart");
+static RID_UTILS_FLUTTER: &str =
+    include_str!("../dart/_rid_utils_flutter.dart");
+static RID_UTILS_DART: &str = include_str!("../dart/_rid_utils_dart.dart");
 
 #[derive(Clone, Copy)]
 pub enum BuildTarget {
@@ -101,6 +104,10 @@ impl<'a> DartGenerator<'a> {
             Project::Dart => "",
             Project::Flutter(_) => RID_WIDGETS,
         };
+        let rid_utils = match self.project {
+            Project::Dart => RID_UTILS_DART,
+            Project::Flutter(_) => RID_UTILS_FLUTTER,
+        };
 
         format!(
             r###"{imports}
@@ -115,6 +122,10 @@ impl<'a> DartGenerator<'a> {
 //
 {open_dl}
 {flutter_widget_overrides}
+//
+// Rid internal Utils
+// 
+{rid_utils}
 //
 // Extensions to provide an API for FFI calls into Rust
 //
@@ -131,6 +142,7 @@ impl<'a> DartGenerator<'a> {
             enum_exports = self.dart_rust_type_reexports(&enums),
             open_dl = self.dart_open_dl(),
             flutter_widget_overrides = flutter_widget_overrides,
+            rid_utils = rid_utils,
             extensions = extensions,
             string_from_pointer_extension = dart_string_from_pointer(),
             string_pointer_from_string_extension =
@@ -147,6 +159,7 @@ impl<'a> DartGenerator<'a> {
         };
         format!(
             r###"import 'dart:ffi' as {dart_ffi};
+import 'dart:async' as {dart_async};
 import 'dart:io' as dart_io;
 import 'dart:collection' as {dart_collection};
 import 'package:ffi/ffi.dart' as {pack_ffi};
@@ -155,6 +168,7 @@ import '{reply_channel}';
 {import_flutter_widgets}
 "###,
             dart_ffi = DART_FFI,
+            dart_async = DART_ASYNC,
             dart_collection = DART_COLLECTION,
             ffigen_binding = self.ffigen_binding,
             reply_channel = self.reply_channel,
