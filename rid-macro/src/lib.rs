@@ -6,8 +6,8 @@ use proc_macro::TokenStream;
 use proc_macro_error::proc_macro_error;
 
 use rid_macro_impl::{
-    rid_debug_impl, rid_display_impl, rid_export_impl, rid_ffi_model_impl,
-    rid_ffi_reply_impl, rid_message_impl,
+    rid_dart_object_impl, rid_debug_impl, rid_display_impl, rid_export_impl,
+    rid_ffi_model_impl, rid_ffi_reply_impl, rid_message_impl,
 };
 use syn::{self, parse_macro_input};
 
@@ -137,4 +137,14 @@ pub fn display(input: TokenStream) -> TokenStream {
 pub fn debug(input: TokenStream) -> TokenStream {
     let item = parse_macro_input!(input as syn::DeriveInput);
     rid_debug_impl(&item, Default::default()).into()
+}
+
+// -----------------
+// #[derive(rid::DartState)]
+// -----------------
+#[proc_macro_derive(DartObject)]
+#[proc_macro_error]
+pub fn dart_object(input: TokenStream) -> TokenStream {
+    let item = parse_macro_input!(input as syn::DeriveInput);
+    rid_dart_object_impl(&item, Default::default()).into()
 }

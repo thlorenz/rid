@@ -62,4 +62,9 @@ impl RustType {
             dart_type.render_type()
         }
     }
+
+    pub fn render_dart_and_ffi_type(&self) -> (String, Option<String>) {
+        let dart_type: DartType = self.into();
+        (dart_type.render_type(), dart_type.render_type_attribute())
+    }
 }
