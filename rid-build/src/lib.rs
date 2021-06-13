@@ -142,6 +142,9 @@ fn generate(
 
     // Extract Dart and Swift code from bindings.h
     let parsed_bindings = ParsedBindings::new(&bindings_h_content);
+    for binding_path in &bindings_h_paths {
+        fs::write(binding_path, &parsed_bindings.updated_binding)?;
+    }
 
     // Generate Dart glue code and add to code extracted from bindings.h
     log::info!("Generating Dart glue code");

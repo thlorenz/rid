@@ -1,3 +1,5 @@
+use std::collections::{HashMap, HashSet};
+
 use crate::{
     function_header::FunctionHeader,
     function_header_parser::parse_function_header,
@@ -14,6 +16,7 @@ pub struct ParsedBindings {
     pub swift_code: String,
     pub structs: Vec<String>,
     pub enums: Vec<String>,
+    pub updated_binding: String,
 }
 
 enum Section {
@@ -31,12 +34,14 @@ impl ParsedBindings {
         let mut inside_section: Option<Section> = None;
         let mut current_section: Vec<String> = vec![];
 
-        let mut structs: Vec<String> = vec![];
+        let mut structs: Vec<(String, usize)> = vec![];
+        let mut struct_aliases: HashMap<String, (String, usize)> =
+            HashMap::new();
         let mut enums: Vec<String> = vec![];
 
         let mut function_headers: Vec<FunctionHeader> = vec![];
 
-        for line in binding.lines() {
+        for (lineno, line) in binding.lines().enumerate() {
             match &inside_section {
                 Some(section) => {
                     let trimmed_line = line.trim();
@@ -57,19 +62,32 @@ impl ParsedBindings {
                     current_section.push(without_comment.to_string());
                 }
                 None => {
-                    let trimmed = line.trim_start();
+                    let trimmed = line.trim();
                     if trimmed.starts_with("* ```dart") {
                         // Starting new dart section
                         inside_section = Some(Dart);
-                    } else if trimmed.starts_with(TYPEDEF_STRUCT) {
+                    } else if trimmed.starts_with(TYPEDEF_STRUCT)
+                        && trimmed.ends_with(";")
+                    {
+                        let trimmed = trimmed.trim_end_matches(";");
                         // Outside any section, collecting structs via type defs
-                        let (struct_name, _) = trimmed[TYPEDEF_STRUCT_LEN..]
+                        let (struct_name, alias_name) = trimmed
+                            [TYPEDEF_STRUCT_LEN..]
                             .split_once(" ")
                             .expect(&format!(
                                 "Invalid struct definition {}",
                                 &trimmed
                             ));
-                        structs.push(struct_name.to_string());
+                        if struct_name == alias_name {
+                            // typedef struct Todo Todo;
+                            structs.push((struct_name.to_string(), lineno));
+                        } else {
+                            // typedef struct Todo RawTodo;
+                            struct_aliases.insert(
+                                struct_name.to_string(),
+                                (alias_name.to_string(), lineno),
+                            );
+                        };
                     } else if trimmed.starts_with(TYPEDEF_ENUM) {
                         let (enum_name, _) = trimmed[TYPEDEF_ENUM_LEN..]
                             .split_once(" ")
@@ -86,6 +104,9 @@ impl ParsedBindings {
                 }
             }
         }
+
+        let updated_binding =
+            replace_struct_aliases(binding, &structs, &struct_aliases);
 
         let dart_code = join_sections(dart_sections);
         let swift_calls: Vec<String> = function_headers
@@ -104,14 +125,20 @@ impl ParsedBindings {
             )
         };
 
-        structs.sort();
-        structs.dedup();
+        let structs: Vec<String> = {
+            let mut structs: Vec<String> =
+                structs_to_include(&structs, &struct_aliases);
+            structs.sort();
+            structs.dedup();
+            structs
+        };
 
         Self {
             dart_code,
             swift_code,
             structs,
             enums,
+            updated_binding,
         }
     }
 }
@@ -147,4 +174,72 @@ fn join_sections(sections: Vec<Vec<String>>) -> String {
                 section = section
             )
         })
+}
+
+// Dart ffigen doesn't handle type aliases very well, so we just have to remove the original struct
+// declaration and replace it with the one that it was aliased to. For example:
+// ```
+// typedef struct Todo Todo;
+// typedef struct RawTodo Todo;
+// ```
+//
+// becomes:
+// ```
+// typedef struct RawTodo RawTodo;
+// ```
+fn replace_struct_aliases(
+    binding: &str,
+    structs: &[(String, usize)],
+    struct_aliases: &HashMap<String, (String, usize)>,
+) -> String {
+    let lines_to_remove: HashSet<usize> = structs
+        .iter()
+        .filter_map(|(name, lineno)| {
+            if struct_aliases.contains_key(name) {
+                Some(*lineno)
+            } else {
+                None
+            }
+        })
+        .collect();
+
+    let replace: HashMap<usize, String> = struct_aliases
+        .values()
+        .map(|(struct_name, lineno)| {
+            let line = format!(
+                "typedef struct {struct_name} {struct_name};",
+                struct_name = struct_name
+            );
+            (*lineno, line)
+        })
+        .collect();
+
+    binding
+        .lines()
+        .enumerate()
+        .filter_map(|(lineno, line)| {
+            if lines_to_remove.contains(&lineno) {
+                None
+            } else {
+                match replace.get(&lineno) {
+                    Some(replacement) => Some(replacement.to_string()),
+                    None => Some(line.to_string()),
+                }
+            }
+        })
+        .collect::<Vec<String>>()
+        .join("\n")
+}
+
+fn structs_to_include(
+    structs: &[(String, usize)],
+    struct_aliases: &HashMap<String, (String, usize)>,
+) -> Vec<String> {
+    structs
+        .iter()
+        .map(|(x, _)| match struct_aliases.get(x) {
+            Some((alias, _)) => alias.to_string(),
+            None => x.to_string(),
+        })
+        .collect()
 }
