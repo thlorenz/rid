@@ -1,7 +1,7 @@
 #![allow(dead_code, unused_variables, unused_imports)]
 mod attrs;
 mod common;
-mod dart_object;
+mod dart;
 mod debug;
 mod display;
 mod export;
@@ -14,7 +14,7 @@ mod render_rust;
 mod reply;
 
 pub use attrs::parse_rid_attrs;
-pub use dart_object::rid_dart_object_impl;
+pub use dart::rid_dart_impl;
 pub use debug::rid_debug_impl;
 pub use display::rid_display_impl;
 pub use export::rid_export_impl;

@@ -38,7 +38,7 @@ impl DartObjectImplConfig {
     }
 }
 
-pub fn rid_dart_object_impl(
+pub fn rid_dart_impl(
     input: &DeriveInput,
     config: DartObjectImplConfig,
 ) -> TokenStream {
@@ -56,7 +56,7 @@ pub fn rid_dart_object_impl(
             let dart_tokens: TokenStream = dart_extension.parse().unwrap();
             let ident = &input.ident;
             let mod_ident = format_ident!("__rid_{}_dart_mod", ident);
-            let fn_ident = format_ident!("_to_dart_object_for_{}", ident);
+            let fn_ident = format_ident!("_to_dart_for_{}", ident);
             quote_spanned! { input.ident.span() =>
                 #[allow(non_snake_case)]
                 mod #mod_ident {

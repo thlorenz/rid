@@ -34,9 +34,9 @@ impl ParsedStruct {
 {comment} // Dart class representation of {ident}.
 {dart_class}
 {comment}
-{comment} // Extension method `toObject` to instantiate {ident} by resolving all fields from Rust
+{comment} // Extension method `toDart` to instantiate a Dart {ident} by resolving all fields from Rust
 {comment} extension Rid_ToDart_ExtOn{ident} on {raw_class_name} {{
-{comment}   {class_name} toObject() {{ 
+{comment}   {class_name} toDart() {{
 {comment}      {rid_ffi}.rid_store_lock();
 {comment}      final instance = {class_name}._({constructor_fields});
 {comment}      {rid_ffi}.rid_store_unlock();
