@@ -4,7 +4,8 @@ use crate::{
     common::state::{get_state, ImplementationType},
     parse::{ParsedFunction, ParsedImplBlock},
     render_common::{
-        render_vec_accesses, RenderFunctionExportConfig, TypeAlias, VecAccess,
+        render_vec_accesses, PointerTypeAlias, RenderFunctionExportConfig,
+        VecAccess,
     },
     render_dart,
     render_rust::{self, ffi_prelude, render_free, RenderedTypeAliasInfo},
@@ -69,8 +70,11 @@ pub fn rid_export_impl(
         syn::Item::Impl(item) => {
             let attrs = parse_rid_attrs(&item.attrs);
             let parsed = ParsedImplBlock::new(item, &attrs);
-            let mut typedefs = HashMap::<Ident, TokenStream>::new();
-            let mut frees = HashMap::<String, TypeAlias>::new();
+            let mut ptr_type_aliases_map =
+                HashMap::<String, TokenStream>::new();
+            let mut raw_type_aliases_map =
+                HashMap::<String, TokenStream>::new();
+            let mut frees = HashMap::<String, PointerTypeAlias>::new();
             let mut vec_accesses = HashMap::<Ident, VecAccess>::new();
             let rust_fn_tokens = &parsed
                 .methods
@@ -78,28 +82,30 @@ pub fn rid_export_impl(
                 .map(|x| {
                     let render_rust::RenderedFunctionExport {
                         tokens,
-                        type_aliases,
+                        ptr_type_aliases,
+                        raw_type_aliases,
                         vec_access,
                     } = render_rust::render_function_export(
                         x,
-                        Some(parsed.ty.ident.clone()),
+                        Some(parsed.ty.ident().clone()),
                         Some(RenderFunctionExportConfig {
                             include_ffi: config.include_ffi,
                             ..Default::default()
                         }),
                     );
-                    for TypeAlias {
+                    for PointerTypeAlias {
                         alias,
                         typedef,
                         type_name,
                         needs_free,
-                    } in type_aliases
+                    } in ptr_type_aliases
                     {
-                        typedefs.insert(alias.clone(), typedef.clone());
+                        ptr_type_aliases_map
+                            .insert(alias.to_string(), typedef.clone());
                         if needs_free {
                             frees.insert(
                                 type_name.clone(),
-                                TypeAlias {
+                                PointerTypeAlias {
                                     alias,
                                     typedef,
                                     type_name,
@@ -108,8 +114,11 @@ pub fn rid_export_impl(
                             );
                         }
                     }
+                    for (key, tokens) in raw_type_aliases {
+                        raw_type_aliases_map.insert(key, tokens);
+                    }
                     vec_access.map(|x| {
-                        vec_accesses.insert(x.vec_type.ident.clone(), x)
+                        vec_accesses.insert(x.vec_type.ident().clone(), x)
                     });
 
                     tokens
@@ -117,8 +126,10 @@ pub fn rid_export_impl(
                 .collect::<Vec<TokenStream>>();
 
             // Make sure we name the module differently for structs that have multiple impl blocks
-            let module_ident = get_state()
-                .unique_ident(format_ident!("__rid_{}_impl", parsed.ty.ident));
+            let module_ident = get_state().unique_ident(format_ident!(
+                "__rid_{}_impl",
+                parsed.ty.ident()
+            ));
 
             let vec_access_tokens = if config.render_vec_access {
                 let needed_vec_accesses = get_state().need_implemtation(
@@ -166,13 +177,19 @@ pub fn rid_export_impl(
                 TokenStream::new()
             };
 
-            let typedef_tokens: Vec<&TokenStream> = typedefs.values().collect();
+            let outer_typedef = parsed.ty.typealias_tokens();
+            let ptr_typedef_tokens: Vec<&TokenStream> =
+                ptr_type_aliases_map.values().collect();
+            let raw_typedef_tokens: Vec<&TokenStream> =
+                raw_type_aliases_map.values().collect();
 
             quote! {
                 #[allow(non_snake_case)]
                 mod #module_ident {
                     use super::*;
-                    #(#typedef_tokens)*
+                    #outer_typedef
+                    #(#raw_typedef_tokens)*
+                    #(#ptr_typedef_tokens)*
                     #dart_extension_tokens
                     #(#rust_fn_tokens)*
                     #(#vec_access_tokens)*
@@ -193,7 +210,7 @@ pub fn rid_export_impl(
             // In the future we may allow this again, but might use a different attribute.
             // The reason is that it is hard to know if a function is part of an impl and thus was
             // exported already.
-            // An alternative would be to track already exported functions in our state via an id
+            // An alternative would be to track already exported functions in our store via an id
             // that is based on function name and possibly content.
             // Another alternative is to require users to have a separate impl block with only
             // methods meant to be exported, possibly excluding some via a #[rid::skip] attr.

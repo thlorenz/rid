@@ -27,7 +27,7 @@ pub fn render_instance_method_extension(
         .map(|x| {
             render_function_export(
                 x,
-                Some(impl_block.ty.ident.clone()),
+                Some(impl_block.ty.ident().clone()),
                 INDENT,
                 None,
             )
@@ -52,7 +52,7 @@ pub fn render_instance_method_extension(
 {comment}```
 "###,
         comment = comment,
-        struct_ident = impl_block.ty.ident,
+        struct_ident = impl_block.ty.ident(),
         dart_ffi = DART_FFI,
         ffigen_bind = FFI_GEN_BIND,
         instance_methods = instance_methods,

@@ -28,11 +28,7 @@ impl ParsedImplBlock {
         let self_ty = *item_impl.self_ty;
         let impl_config = ImplBlockConfig::new(impl_attrs);
         let ty = match RustType::from_type(&self_ty, &impl_config.type_infos) {
-            Some(RustType {
-                kind: TypeKind::Unknown,
-                ident,
-                reference,
-            }) =>
+            Some(ty) if ty.kind == TypeKind::Unknown =>
             // NOTE: At this point we don't require the user to specify the type of the impl owner.
             // We assume it is a struct. It could be an enum, but most likely all arg types,
             // specifically pointer conversions will just work.  We may even consider merging the
@@ -43,23 +39,25 @@ impl ParsedImplBlock {
             // detect non-trivial types and have the user annotate and/or just not allow impl on
             // those.
             {
+                let ident = ty.rust_ident();
+                let reference = &ty.reference;
                 let ident_str = ident.to_string();
                 let type_info = TypeInfo {
                     key: ident.clone(),
                     cat: Category::Struct,
                     typedef: Some(raw_typedef_ident(&ident)),
                 };
-                RustType {
-                    kind: TypeKind::Value(Value::Custom(type_info, ident_str)),
-                    ident,
-                    reference,
-                }
+                RustType::new(
+                    ident.clone(),
+                    TypeKind::Value(Value::Custom(type_info, ident_str)),
+                    reference.clone(),
+                )
             }
             Some(ty) => ty,
             None => abort!(self_ty, "Unexpected impl type {:#?}", self_ty),
         };
 
-        let owner = Some((&ty.ident, &impl_config.type_infos));
+        let owner = Some((ty.rust_ident(), &impl_config.type_infos));
         let methods: Vec<ParsedFunction> = item_impl
             .items
             .into_iter()
@@ -89,7 +87,7 @@ impl ParsedImplBlock {
 
         if methods.is_empty() {
             abort!(
-                ty.ident,
+                ty.rust_ident(),
                 "Has export attribute but none of the contained methods is exported"
             );
         }

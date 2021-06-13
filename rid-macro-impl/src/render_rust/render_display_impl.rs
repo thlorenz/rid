@@ -27,7 +27,7 @@ impl RustType {
         match &self.kind {
             TypeKind::Primitive(ident) => {
                 abort!(
-                    self.ident,
+                    self.rust_ident(),
                     "Cannot render display impl for Builtin Primitive type"
                 )
             }
@@ -35,7 +35,7 @@ impl RustType {
                 match value {
                     Value::CString | Value::String | Value::Str => {
                         abort!(
-                        self.ident,
+                        self.rust_ident(),
                         "Cannot render display impl for Builtin String types"
                     )
                     }
@@ -48,7 +48,7 @@ impl RustType {
                         }
                         Category::Struct => self.render_struct_display_impl(),
                         Category::Prim => abort!(
-                        self.ident,
+                        self.rust_ident(),
                         "Cannot render display impl for Custom Primitive type"
                     ),
                     },
@@ -56,16 +56,19 @@ impl RustType {
             }
             TypeKind::Composite(_, _) => {
                 abort!(
-                    self.ident,
+                    self.rust_ident(),
                     "TODO: Cannot yet render display impl for Composite type"
                 )
             }
             TypeKind::Unit => {
-                abort!(self.ident, "Cannot render display impl for Unit type")
+                abort!(
+                    self.rust_ident(),
+                    "Cannot render display impl for Unit type"
+                )
             }
             TypeKind::Unknown => {
                 abort!(
-                    self.ident,
+                    self.rust_ident(),
                     "Cannot render display impl for Unknown type"
                 )
             }
@@ -75,7 +78,7 @@ impl RustType {
     fn render_struct_display_impl(&self) -> RenderedDisplayImpl {
         let fn_display_method_ident = self.get_fn_display_ident();
 
-        let struct_ident = &self.ident;
+        let struct_ident = &self.ident();
         // TODO: consider using type aliases over `*mut` types via `self.render_pointer_type()`
         let resolve_struct_ptr = resolve_ptr(struct_ident);
 
@@ -102,7 +105,7 @@ impl RustType {
         is_primitive: bool,
     ) -> RenderedDisplayImpl {
         let fn_display_method_ident = self.get_fn_display_ident();
-        let enum_ident = &self.ident;
+        let enum_ident = &self.ident();
 
         let tokens = if is_primitive {
             // NOTE: assuming `repr(C)` for primitive enums
@@ -145,7 +148,7 @@ impl RustType {
 
     fn get_fn_display_ident(&self) -> Ident {
         let method_prefix =
-            format!("rid_{}", self.ident.to_string().to_lowercase())
+            format!("rid_{}", self.ident().to_string().to_lowercase())
                 .to_string();
         format_ident!("{}_display", method_prefix)
     }

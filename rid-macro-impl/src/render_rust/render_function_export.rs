@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use super::{
     render_access_item, render_free, render_lifetime, render_lifetime_def,
     render_return_type, ReceiverArg, RenderedReturnType,
@@ -9,8 +11,8 @@ use crate::{
         ParsedFunction, ParsedReceiver, ParsedReference,
     },
     render_common::{
-        fn_ident_and_impl_ident_string, RenderFunctionExportConfig, TypeAlias,
-        VecAccess,
+        fn_ident_and_impl_ident_string, PointerTypeAlias,
+        RenderFunctionExportConfig, VecAccess,
     },
     render_rust::{ffi_prelude, render_rust_arg, RenderedReceiverArgPass},
 };
@@ -23,7 +25,8 @@ use syn::Ident;
 
 pub struct RenderedFunctionExport {
     pub tokens: TokenStream,
-    pub type_aliases: Vec<TypeAlias>,
+    pub ptr_type_aliases: Vec<PointerTypeAlias>,
+    pub raw_type_aliases: HashMap<String, TokenStream>,
     pub vec_access: Option<VecAccess>,
 }
 
@@ -33,7 +36,8 @@ pub fn render_function_export(
     config: Option<RenderFunctionExportConfig>,
 ) -> RenderedFunctionExport {
     let config = config.unwrap_or(Default::default());
-    let mut type_aliases = Vec::<TypeAlias>::new();
+    let mut ptr_type_aliases = Vec::<PointerTypeAlias>::new();
+    let mut raw_type_aliases = HashMap::<String, TokenStream>::new();
 
     let ParsedFunction {
         fn_ident,
@@ -63,8 +67,14 @@ pub fn render_function_export(
     let RenderedReturnType {
         tokens: ret_type,
         type_alias: ret_alias,
+        inner_typedef: ret_inner_typedef,
     } = render_return_type(return_arg, true);
-    ret_alias.clone().map(|x| type_aliases.push(x));
+    if let Some((key, tokens)) = ret_inner_typedef {
+        if !raw_type_aliases.contains_key(&key) {
+            raw_type_aliases.insert(key, tokens);
+        }
+    }
+    ret_alias.clone().map(|x| ptr_type_aliases.push(x));
 
     let ret_to_pointer =
         return_arg.render_to_return(&return_ident, &return_pointer_ident);
@@ -81,6 +91,7 @@ pub fn render_function_export(
             None => (None, TokenStream::new(), None),
         };
 
+    // TODO(thlorenz): Need to collect raw type aliases here as well
     let arg_idents: Vec<RustArg> = args
         .iter()
         .enumerate()
@@ -97,13 +108,13 @@ pub fn render_function_export(
          }| resolver_tokens,
     );
 
-    let (receiver_arg, type_alias) = match receiver_arg {
+    let (receiver_arg, ptr_type_alias) = match receiver_arg {
         Some(RenderedReceiverArgPass { tokens, type_alias }) => {
             (Some(tokens), type_alias)
         }
         None => (None, None),
     };
-    type_alias.map(|x| type_aliases.push(x));
+    ptr_type_alias.map(|x| ptr_type_aliases.push(x));
 
     // insert comma after receiver arg
     let receiver_arg = match receiver_arg {
@@ -126,8 +137,8 @@ pub fn render_function_export(
     let vec_access = if return_arg.is_vec() {
         // TODO: does this work when type is not aliased?
         let ret_ident = match &ret_alias {
-            Some(TypeAlias { alias, .. }) => alias,
-            Option::None => &return_arg.ident,
+            Some(PointerTypeAlias { alias, .. }) => alias,
+            Option::None => &return_arg.ident(),
         };
 
         let fn_len_ident = format_ident!("rid_len_{}", ret_ident);
@@ -153,7 +164,8 @@ pub fn render_function_export(
 
     RenderedFunctionExport {
         tokens: fn_export,
-        type_aliases,
+        ptr_type_aliases,
+        raw_type_aliases,
         vec_access,
     }
 }

@@ -1,4 +1,4 @@
-use quote::format_ident;
+use quote::{format_ident, quote_spanned};
 use syn::{
     AngleBracketedGenericArguments, GenericArgument, Ident, Path,
     PathArguments, PathSegment, Type, TypePath,
@@ -12,7 +12,13 @@ use super::ParsedReference;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct RustType {
-    pub ident: Ident,
+    ident: Ident,
+    raw_ident: Ident,
+
+    /// If a type alias is needed, namely if the ident differs from the rust ident
+    /// This is currently the case for structs and vecs
+    pub needs_type_alias: bool,
+
     pub kind: TypeKind,
     pub reference: ParsedReference,
 }
@@ -23,19 +29,37 @@ impl RustType {
         kind: TypeKind,
         reference: ParsedReference,
     ) -> Self {
+        let raw_ident = raw_typedef_ident(&ident);
+        let needs_type_alias = kind.is_struct() || kind.is_vec();
         Self {
             ident,
+            raw_ident,
+            needs_type_alias,
             kind,
             reference,
         }
     }
 
+    /// Ident that should be used inside generated Rust/Dart wrapper methods
+    pub fn ident(&self) -> &Ident {
+        if self.needs_type_alias {
+            &self.raw_ident
+        } else {
+            &self.ident
+        }
+    }
+
+    /// Ident that came directly from the annotated Rust code
+    pub fn rust_ident(&self) -> &Ident {
+        &self.ident
+    }
+
     /// Used at this point only to name Dart presentations of Rust enums
     pub fn dart_ident(&self, prefix: bool) -> Ident {
         if prefix {
-            format_ident!("Rid{}", self.ident)
+            format_ident!("Rid{}", self.ident())
         } else {
-            self.ident.clone()
+            self.ident().clone()
         }
     }
 
@@ -64,11 +88,11 @@ impl RustType {
     }
 
     pub fn self_unaliased(self, owner_name: String) -> Self {
-        RustType {
-            ident: self.ident,
-            kind: self.kind.self_unaliased(owner_name),
-            reference: self.reference,
-        }
+        RustType::new(
+            self.ident,
+            self.kind.self_unaliased(owner_name),
+            self.reference,
+        )
     }
 
     pub fn with_lifetime_option(self, lifetime: Option<Ident>) -> Self {
@@ -79,19 +103,19 @@ impl RustType {
     }
 
     pub fn with_lifetime(self, lifetime: Ident) -> Self {
-        RustType {
-            ident: self.ident,
-            kind: self.kind,
-            reference: self.reference.with_lifetime(lifetime),
-        }
+        RustType::new(
+            self.ident,
+            self.kind,
+            self.reference.with_lifetime(lifetime),
+        )
     }
 
     pub fn ensured_lifetime(self, lifetime: Ident) -> Self {
-        RustType {
-            ident: self.ident,
-            kind: self.kind,
-            reference: self.reference.ensured_lifetime(lifetime),
-        }
+        RustType::new(
+            self.ident,
+            self.kind,
+            self.reference.ensured_lifetime(lifetime),
+        )
     }
 
     pub fn is_primitive(&self) -> bool {
@@ -208,6 +232,14 @@ impl TypeKind {
         }
     }
 
+    pub fn is_struct(&self) -> bool {
+        if let TypeKind::Value(val) = self {
+            val.is_struct()
+        } else {
+            false
+        }
+    }
+
     pub fn inner_composite_rust_type(&self) -> Option<RustType> {
         match self {
             TypeKind::Primitive(_) => None,
@@ -298,6 +330,14 @@ impl Value {
             Custom(type_info, _) => type_info.cat == Category::Enum,
         }
     }
+
+    fn is_struct(&self) -> bool {
+        use Value::*;
+        match self {
+            CString | String | Str => false,
+            Custom(type_info, _) => type_info.cat == Category::Struct,
+        }
+    }
 }
 
 // --------------
@@ -362,11 +402,7 @@ fn resolve_rust_ty(ty: &Type, type_infos: &TypeInfoMap) -> Option<RustType> {
         _ => return None,
     };
 
-    Some(RustType {
-        ident: ident.clone(),
-        kind,
-        reference,
-    })
+    Some(RustType::new(ident.clone(), kind, reference))
 }
 
 fn ident_to_kind(

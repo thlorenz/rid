@@ -37,25 +37,25 @@ impl RustType {
                 }
                 None => {
                     abort!(
-                        self.ident,
+                        self.rust_ident(),
                         "Rust Option composite should include inner type"
                     )
                 }
             },
             K::Composite(kind, _) => {
                 abort!(
-                    self.ident,
+                    self.rust_ident(),
                     "TODO: RustType::render_dart_pointer_type K::Composite({:?})",
                     kind
                 )
             }
             K::Unit => abort!(
-                self.ident,
+                self.rust_ident(),
                 "Should not export rust method that returns nothing"
             ),
 
             K::Unknown => abort!(
-                self.ident,
+                self.rust_ident(),
                 "TODO: RustType::render_dart_to_return_type K::Unknown"
             ),
         }

@@ -23,15 +23,7 @@ mod self_aliasing {
     fn impl_block_with_new_returning_self() {
         let mystruct_str = "MyStruct".to_string();
 
-        let ParsedImplBlock {
-            ty:
-                RustType {
-                    ident,
-                    kind,
-                    reference,
-                },
-            methods,
-        } = parse(quote! {
+        let ParsedImplBlock { ty, methods } = parse(quote! {
             #[rid::export]
             #[rid::structs(MyStruct)]
             impl MyStruct {
@@ -41,10 +33,15 @@ mod self_aliasing {
                 }
             }
         });
-        assert_eq!(ident.to_string(), "MyStruct", "return ident");
-        assert_eq!(reference, ParsedReference::Owned, "return reference");
+        assert_eq!(ty.ident().to_string(), "RawMyStruct", "return ident");
+        assert_eq!(
+            ty.rust_ident().to_string(),
+            "MyStruct",
+            "return rust ident"
+        );
+        assert_eq!(ty.reference, ParsedReference::Owned, "return reference");
         assert_matches!(
-            kind,
+            ty.kind,
             TypeKind::Value(Value::Custom(
                 TypeInfo {
                     key,
@@ -76,9 +73,9 @@ mod self_aliasing {
         assert_matches!(
             &args[0],
             RustType {
-                ident,
                 kind: TypeKind::Primitive(Primitive::U8),
                 reference: ParsedReference::Owned,
+                ..
             }
         );
 
@@ -104,12 +101,7 @@ mod method_exports {
         let mystruct_str = "MyStruct".to_string();
 
         let ParsedImplBlock {
-            ty:
-                RustType {
-                    ident,
-                    kind: owner_ty,
-                    reference,
-                },
+            ty: owner_ty,
             methods,
         } = parse(quote! {
             #[rid::export]
@@ -132,10 +124,19 @@ mod method_exports {
             }
         });
 
-        assert_eq!(ident.to_string(), "MyStruct", "return ident");
-        assert_eq!(reference, ParsedReference::Owned, "return reference");
+        assert_eq!(owner_ty.ident().to_string(), "RawMyStruct", "return ident");
+        assert_eq!(
+            owner_ty.rust_ident().to_string(),
+            "MyStruct",
+            "return rust ident"
+        );
+        assert_eq!(
+            owner_ty.reference,
+            ParsedReference::Owned,
+            "return reference"
+        );
         assert_matches!(
-            &owner_ty,
+            &owner_ty.kind,
             TypeKind::Value(Value::Custom(
                 TypeInfo {
                     key,
@@ -153,7 +154,7 @@ mod method_exports {
             fn_ident_alias,
             receiver,
             args,
-            return_arg: RustType { kind: ret_ty, .. },
+            return_arg: RustType { kind: ret_kind, .. },
         } = &methods[0];
 
         assert_eq!(fn_ident.to_string(), "new", "function ident");
@@ -163,7 +164,7 @@ mod method_exports {
             "'initModel' export ident"
         );
         assert_eq!(
-            ret_ty, &owner_ty,
+            ret_kind, &owner_ty.kind,
             "new() -> Self return type is owning struct"
         );
         assert_eq!(args.len(), 1, "one arg");

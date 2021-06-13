@@ -2,7 +2,7 @@ use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
 use syn::Ident;
 
-use crate::{parse::ParsedReference, render_common::TypeAlias};
+use crate::{parse::ParsedReference, render_common::PointerTypeAlias};
 impl ParsedReference {
     pub fn stringify_lifetime(&self) -> String {
         match self.lifetime() {
@@ -29,7 +29,7 @@ impl ParsedReference {
         &self,
         type_name: &str,
         is_primitive: bool,
-    ) -> (Option<TypeAlias>, TokenStream) {
+    ) -> (Option<PointerTypeAlias>, TokenStream) {
         let name_tok: TokenStream = type_name.parse().unwrap();
 
         match self {
@@ -87,23 +87,26 @@ fn aliased_pointer(
     type_name: &str,
     name_tok: TokenStream,
     is_mut: bool,
-) -> (Option<TypeAlias>, TokenStream) {
+) -> (Option<PointerTypeAlias>, TokenStream) {
     let (alias, typedef) = if is_mut {
         let alias = format_ident!(
             "{}{}",
-            TypeAlias::POINTER_MUT_ALIAS_PREFIX,
+            PointerTypeAlias::POINTER_MUT_ALIAS_PREFIX,
             type_name
         );
         (alias.clone(), quote! { type #alias = *mut #name_tok; })
     } else {
-        let alias =
-            format_ident!("{}{}", TypeAlias::POINTER_ALIAS_PREFIX, type_name);
+        let alias = format_ident!(
+            "{}{}",
+            PointerTypeAlias::POINTER_ALIAS_PREFIX,
+            type_name
+        );
         (alias.clone(), quote! { type #alias = *const #name_tok; })
     };
 
     let tokens = quote! { #alias };
     (
-        Some(TypeAlias {
+        Some(PointerTypeAlias {
             alias,
             typedef,
             type_name: type_name.to_string(),

@@ -27,7 +27,7 @@ impl VariantField {
         };
         if &rust_ty.kind == &TypeKind::Unknown {
             missing_msg_field_enum_info(
-                &f.ident.as_ref().unwrap_or(&rust_ty.ident),
+                &f.ident.as_ref().unwrap_or(&rust_ty.rust_ident()),
             );
         };
         let dart_ffi_ty = DartType::from(&rust_ty);

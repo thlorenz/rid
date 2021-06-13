@@ -63,36 +63,36 @@ mod structs_debug_impl {
         });
 
         let expected = quote! {
-            mod __rid_mod_rid_single_debug {
+            mod __rid_mod_rid_rawsingle_debug {
                 use super::*;
+                type RawSingle = Single;
                 #[no_mangle]
                 #[allow(non_snake_case)]
-                pub extern "C" fn rid_single_debug(ptr: *mut Single) -> *const ::std::os::raw::c_char {
-                    let single = unsafe {
+                pub extern "C" fn rid_rawsingle_debug(ptr: *mut RawSingle) -> *const ::std::os::raw::c_char {
+                    let rawsingle = unsafe {
                         assert!(!ptr.is_null());
-                        let ptr: *mut Single = &mut *ptr;
+                        let ptr: *mut RawSingle = &mut *ptr;
                         ptr.as_mut().unwrap()
                     };
-                    let s = format!("{:?}", single);
+                    let s = format!("{:?}", rawsingle);
                     let cstring = ::std::ffi::CString::new(s.as_str()).unwrap();
                     cstring.into_raw()
                 }
                 #[no_mangle]
                 #[allow(non_snake_case)]
-                pub extern "C" fn rid_single_debug_pretty(ptr: *mut Single) -> *const ::std::os::raw::c_char {
-                    let single = unsafe {
+                pub extern "C" fn rid_rawsingle_debug_pretty(ptr: *mut RawSingle) -> *const ::std::os::raw::c_char {
+                    let rawsingle = unsafe {
                         assert!(!ptr.is_null());
-                        let ptr: *mut Single = &mut *ptr;
+                        let ptr: *mut RawSingle = &mut *ptr;
                         ptr.as_mut().unwrap()
                     };
-                    let s = format!("{:#?}", single);
+                    let s = format!("{:#?}", rawsingle);
                     let cstring = ::std::ffi::CString::new(s.as_str()).unwrap();
                     cstring.into_raw()
                 }
             }
         };
 
-        // eprintln!("{}", res.to_string());
         assert_eq!(res.to_string().trim(), expected.to_string().trim())
     }
 }

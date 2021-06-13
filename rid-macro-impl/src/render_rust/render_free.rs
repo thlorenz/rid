@@ -8,12 +8,12 @@ use crate::{
         rust_type::{Composite, Primitive, RustType, TypeKind, Value},
         ParsedFunction,
     },
-    render_common::TypeAlias,
+    render_common::PointerTypeAlias,
 };
 
 pub struct RenderedFree {
     pub tokens: TokenStream,
-    pub type_alias: Option<TypeAlias>,
+    pub type_alias: Option<PointerTypeAlias>,
 }
 
 pub fn render_free(
@@ -27,6 +27,7 @@ pub fn render_free(
     let RenderedReturnType {
         tokens: return_type,
         type_alias,
+        ..
     } = render_return_type(rust_type, false);
 
     let free: Option<TokenStream> = match &rust_type.kind {

@@ -19,6 +19,8 @@ fn render_export(input: TokenStream) -> TokenStream {
 // Struct impl methods
 // -----------------
 mod struct_impl_methods {
+    use crate::common::dump_tokens;
+
     use super::*;
 
     #[test]
@@ -34,11 +36,12 @@ mod struct_impl_methods {
 
         let expected = quote! {
             #[allow(non_snake_case)]
-            mod __rid_MyStruct_impl_1 {
+            mod __rid_RawMyStruct_impl_1 {
                 use super::*;
-                type PointerMut_MyStruct = *mut MyStruct;
-                fn rid_export_MyStruct_new() -> PointerMut_MyStruct {
-                    let ret = MyStruct::new();
+                type RawMyStruct = MyStruct;
+                type PointerMut_RawSelf = *mut RawSelf;
+                fn rid_export_RawMyStruct_new() -> PointerMut_RawSelf {
+                    let ret = RawMyStruct::new();
                     let ret_ptr = std::boxed::Box::into_raw(std::boxed::Box::new(ret));
                     ret_ptr
                 }
@@ -46,7 +49,6 @@ mod struct_impl_methods {
         };
 
         let tokens = render_export(input);
-
         assert_eq!(tokens.to_string().trim(), expected.to_string().trim());
     }
 }

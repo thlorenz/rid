@@ -38,11 +38,11 @@ impl From<&RustType> for DartType {
             }
             Unit => DartType::Unit,
             Composite(_, _) => {
-                abort!(rust_type.ident, "No simple conversion from composite rust type to dart type exists")
+                abort!(rust_type.rust_ident(), "No simple conversion from composite rust type to dart type exists")
             }
             Unknown => {
                 abort!(
-                    rust_type.ident,
+                    rust_type.rust_ident(),
                     "Cannot convert unknown rust type to dart type"
                 )
             }

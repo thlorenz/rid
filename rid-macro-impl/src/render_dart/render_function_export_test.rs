@@ -62,7 +62,7 @@ mod impl_method_basic {
             "Model",
         );
         let expected = r###"
-dart_ffi.Pointer<ffigen_bind.Todo> get_todo() {
+dart_ffi.Pointer<ffigen_bind.RawTodo> get_todo() {
   final res = rid_ffi.rid_export_Model_get_todo(this);
   final ret = res;
   return ret;
@@ -111,7 +111,7 @@ mod impl_method_returning_option {
             "Model",
         );
         let expected = r###"
-dart_ffi.Pointer<ffigen_bind.Todo>? find_todo(@dart_ffi.Int32() int arg0) {
+dart_ffi.Pointer<ffigen_bind.RawTodo>? find_todo(@dart_ffi.Int32() int arg0) {
   final res = rid_ffi.rid_export_Model_find_todo(this, arg0);
   final ret = res.address == 0x0 ? null : res;
   return ret;

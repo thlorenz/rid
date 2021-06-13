@@ -43,57 +43,45 @@ mod primitive {
     #[test]
     fn u8() {
         let res = parse(quote! { fn f(x: u8) {} });
-        let RustType {
-            ident,
-            kind,
-            reference,
-        } = res.expect("extracts rust type");
+        let ty = res.expect("extracts rust type");
 
-        assert_eq!(ident.to_string(), "u8", "ident");
-        assert_matches!(reference, ParsedReference::Owned);
-        assert_matches!(kind, TypeKind::Primitive(Primitive::U8));
+        assert_eq!(ty.ident().to_string(), "u8", "ident");
+        assert_eq!(ty.rust_ident().to_string(), "u8", "rust ident");
+        assert_matches!(ty.reference, ParsedReference::Owned);
+        assert_matches!(ty.kind, TypeKind::Primitive(Primitive::U8));
     }
 
     #[test]
     fn ref_u8() {
         let res = parse(quote! { fn f(x: &u8) {} });
-        let RustType {
-            ident,
-            kind,
-            reference,
-        } = res.expect("extracts rust type");
+        let ty = res.expect("extracts rust type");
 
-        assert_eq!(ident.to_string(), "u8", "ident");
-        assert_matches!(reference, ParsedReference::Ref(None));
-        assert_matches!(kind, TypeKind::Primitive(Primitive::U8));
+        assert_eq!(ty.ident().to_string(), "u8", "ident");
+        assert_eq!(ty.rust_ident().to_string(), "u8", "rust ident");
+        assert_matches!(ty.reference, ParsedReference::Ref(None));
+        assert_matches!(ty.kind, TypeKind::Primitive(Primitive::U8));
     }
 
     #[test]
     fn ref_mut_u8() {
         let res = parse(quote! { fn f(x: &mut u8) {} });
-        let RustType {
-            ident,
-            kind,
-            reference,
-        } = res.expect("extracts rust type");
+        let ty = res.expect("extracts rust type");
 
-        assert_eq!(ident.to_string(), "u8", "ident");
-        assert_matches!(reference, ParsedReference::RefMut(None));
-        assert_matches!(kind, TypeKind::Primitive(Primitive::U8));
+        assert_eq!(ty.ident().to_string(), "u8", "ident");
+        assert_eq!(ty.rust_ident().to_string(), "u8", "rust ident");
+        assert_matches!(ty.reference, ParsedReference::RefMut(None));
+        assert_matches!(ty.kind, TypeKind::Primitive(Primitive::U8));
     }
 
     #[test]
     fn ref_i64() {
         let res = parse(quote! { fn f(x: &i64) {} });
-        let RustType {
-            ident,
-            kind,
-            reference,
-        } = res.expect("extracts rust type");
+        let ty = res.expect("extracts rust type");
 
-        assert_eq!(ident.to_string(), "i64", "ident");
-        assert_matches!(reference, ParsedReference::Ref(None));
-        assert_matches!(kind, TypeKind::Primitive(Primitive::I64));
+        assert_eq!(ty.ident().to_string(), "i64", "ident");
+        assert_eq!(ty.rust_ident().to_string(), "i64", "rust ident");
+        assert_matches!(ty.reference, ParsedReference::Ref(None));
+        assert_matches!(ty.kind, TypeKind::Primitive(Primitive::I64));
     }
 }
 
@@ -106,43 +94,34 @@ mod strings {
     #[test]
     fn string() {
         let res = parse(quote! { fn f(x: String) {} });
-        let RustType {
-            ident,
-            kind,
-            reference,
-        } = res.expect("extracts rust type");
+        let ty = res.expect("extracts rust type");
 
-        assert_eq!(ident.to_string(), "String", "ident");
-        assert_matches!(reference, ParsedReference::Owned);
-        assert_matches!(kind, TypeKind::Value(Value::String));
+        assert_eq!(ty.ident().to_string(), "String", "ident");
+        assert_eq!(ty.rust_ident().to_string(), "String", "rust ident");
+        assert_matches!(ty.reference, ParsedReference::Owned);
+        assert_matches!(ty.kind, TypeKind::Value(Value::String));
     }
 
     #[test]
     fn ref_str() {
         let res = parse(quote! { fn f(x: &str) {} });
-        let RustType {
-            ident,
-            kind,
-            reference,
-        } = res.expect("extracts rust type");
+        let ty = res.expect("extracts rust type");
 
-        assert_eq!(ident.to_string(), "str", "ident");
-        assert_matches!(reference, ParsedReference::Ref(None));
-        assert_matches!(kind, TypeKind::Value(Value::Str));
+        assert_eq!(ty.ident().to_string(), "str", "ident");
+        assert_eq!(ty.rust_ident().to_string(), "str", "rust ident");
+        assert_matches!(ty.reference, ParsedReference::Ref(None));
+        assert_matches!(ty.kind, TypeKind::Value(Value::Str));
     }
 
     #[test]
     fn ref_mut_cstring() {
         let res = parse(quote! { fn f(x: &mut CString) {} });
-        let RustType {
-            ident,
-            kind,
-            reference,
-        } = res.expect("extracts rust type");
+        let ty = res.expect("extracts rust type");
 
-        assert_eq!(ident.to_string(), "CString", "ident");
-        assert_matches!(reference, ParsedReference::RefMut(None));
-        assert_matches!(kind, TypeKind::Value(Value::CString));
+        assert_eq!(ty.ident().to_string(), "CString", "ident");
+        assert_eq!(ty.rust_ident().to_string(), "CString", "rust ident");
+        assert_matches!(ty.reference, ParsedReference::RefMut(None));
+        assert_matches!(ty.kind, TypeKind::Value(Value::CString));
     }
 }
 
@@ -159,16 +138,13 @@ mod custom {
             #[rid::structs(Model)]
             fn f(x: Model) {}
         });
-        let RustType {
-            ident,
-            kind,
-            reference,
-        } = res.expect("extracts rust type");
+        let ty = res.expect("extracts rust type");
 
-        assert_eq!(ident.to_string(), "Model", "ident");
-        assert_matches!(reference, ParsedReference::Owned);
+        assert_eq!(ty.ident().to_string(), "RawModel", "ident");
+        assert_eq!(ty.rust_ident().to_string(), "Model", "rust ident");
+        assert_matches!(ty.reference, ParsedReference::Owned);
         assert_matches!(
-            kind,
+            ty.kind,
             TypeKind::Value(Value::Custom(
                 TypeInfo {
                     key,
@@ -184,15 +160,13 @@ mod custom {
         let res = parse(quote! {
             fn f(x: Model) {}
         });
-        let RustType {
-            ident,
-            kind,
-            reference,
-        } = res.expect("extracts rust type");
+        let ty = res.expect("extracts rust type");
 
-        assert_eq!(ident.to_string(), "Model", "ident");
-        assert_matches!(reference, ParsedReference::Owned);
-        assert_matches!(kind, TypeKind::Unknown)
+        // Doesn't alias to RawModel since it doesn't know if it is a struct or not
+        assert_eq!(ty.ident().to_string(), "Model", "ident");
+        assert_eq!(ty.rust_ident().to_string(), "Model", "rust ident");
+        assert_matches!(ty.reference, ParsedReference::Owned);
+        assert_matches!(ty.kind, TypeKind::Unknown)
     }
     #[test]
     fn ref_model() {
@@ -201,16 +175,13 @@ mod custom {
             #[rid::structs(Model)]
             fn f(x: &Model) {}
         });
-        let RustType {
-            ident,
-            kind,
-            reference,
-        } = res.expect("extracts rust type");
+        let ty = res.expect("extracts rust type");
 
-        assert_eq!(ident.to_string(), "Model", "ident");
-        assert_matches!(reference, ParsedReference::Ref(None));
+        assert_eq!(ty.ident().to_string(), "RawModel", "ident");
+        assert_eq!(ty.rust_ident().to_string(), "Model", "rust ident");
+        assert_matches!(ty.reference, ParsedReference::Ref(None));
         assert_matches!(
-            kind,
+            ty.kind,
             TypeKind::Value(Value::Custom(
                 TypeInfo {
                     key,
@@ -234,26 +205,24 @@ mod vec {
         let res = parse(quote! {
             fn f(x: Vec<u8>) {}
         });
-        let RustType {
-            ident,
-            kind,
-            reference,
-        } = res.expect("extracts rust type");
+        let ty = res.expect("extracts rust type");
 
-        assert_eq!(ident.to_string(), "Vec", "ident");
-        assert_matches!(reference, ParsedReference::Owned);
+        assert_eq!(ty.ident().to_string(), "RawVec", "ident");
+        assert_eq!(ty.rust_ident().to_string(), "Vec", "rust ident");
+        assert_matches!(ty.reference, ParsedReference::Owned);
 
-        if let TypeKind::Composite(composite, inner) = kind {
+        if let TypeKind::Composite(composite, inner) = ty.kind {
             assert_matches!(composite, Composite::Vec);
-            let RustType {
-                ident,
-                kind,
-                reference,
-            } = *inner.expect("has inner rust type");
+            let inner_ty = inner.expect("has inner rust type");
 
-            assert_eq!(ident.to_string(), "u8", "ident");
-            assert_matches!(reference, ParsedReference::Owned);
-            assert_matches!(kind, TypeKind::Primitive(Primitive::U8));
+            assert_eq!(inner_ty.ident().to_string(), "u8", "inner ident");
+            assert_eq!(
+                inner_ty.rust_ident().to_string(),
+                "u8",
+                "inner rust ident"
+            );
+            assert_matches!(inner_ty.reference, ParsedReference::Owned);
+            assert_matches!(inner_ty.kind, TypeKind::Primitive(Primitive::U8));
         } else {
             panic!("expected composite")
         };
@@ -264,26 +233,24 @@ mod vec {
         let res = parse(quote! {
             fn f(x: Vec<&u8>) {}
         });
-        let RustType {
-            ident,
-            kind,
-            reference,
-        } = res.expect("extracts rust type");
+        let ty = res.expect("extracts rust type");
 
-        assert_eq!(ident.to_string(), "Vec", "ident");
-        assert_matches!(reference, ParsedReference::Owned);
+        assert_eq!(ty.ident().to_string(), "RawVec", "ident");
+        assert_eq!(ty.rust_ident().to_string(), "Vec", "rust ident");
+        assert_matches!(ty.reference, ParsedReference::Owned);
 
-        if let TypeKind::Composite(composite, inner) = kind {
+        if let TypeKind::Composite(composite, inner) = ty.kind {
             assert_matches!(composite, Composite::Vec);
-            let RustType {
-                ident,
-                kind,
-                reference,
-            } = *inner.expect("has inner rust type");
+            let inner_ty = inner.expect("has inner rust type");
 
-            assert_eq!(ident.to_string(), "u8", "ident");
-            assert_matches!(reference, ParsedReference::Ref(None));
-            assert_matches!(kind, TypeKind::Primitive(Primitive::U8));
+            assert_eq!(inner_ty.ident().to_string(), "u8", "inner ident");
+            assert_eq!(
+                inner_ty.rust_ident().to_string(),
+                "u8",
+                "inner rust ident"
+            );
+            assert_matches!(inner_ty.reference, ParsedReference::Ref(None));
+            assert_matches!(inner_ty.kind, TypeKind::Primitive(Primitive::U8));
         } else {
             panic!("expected composite")
         };
@@ -295,28 +262,26 @@ mod vec {
             #[rid::structs(Todo)]
             fn f(x: &mut Vec<&Todo>) {}
         });
-        let RustType {
-            ident,
-            kind,
-            reference,
-        } = res.expect("extracts rust type");
+        let ty = res.expect("extracts rust type");
 
-        assert_eq!(ident.to_string(), "Vec", "ident");
-        assert_matches!(reference, ParsedReference::RefMut(None));
+        assert_eq!(ty.ident().to_string(), "RawVec", "ident");
+        assert_eq!(ty.rust_ident().to_string(), "Vec", "rust ident");
+        assert_matches!(ty.reference, ParsedReference::RefMut(None));
 
-        if let TypeKind::Composite(composite, inner) = kind {
+        if let TypeKind::Composite(composite, inner) = ty.kind {
             let todo_str = "Todo".to_string();
             assert_matches!(composite, Composite::Vec);
-            let RustType {
-                ident,
-                kind,
-                reference,
-            } = *inner.expect("has inner rust type");
+            let inner_ty = inner.expect("has inner rust type");
 
-            assert_eq!(ident.to_string(), "Todo", "ident");
-            assert_matches!(reference, ParsedReference::Ref(None));
+            assert_eq!(inner_ty.ident().to_string(), "RawTodo", "inner ident");
+            assert_eq!(
+                inner_ty.rust_ident().to_string(),
+                "Todo",
+                "inner rust ident"
+            );
+            assert_matches!(inner_ty.reference, ParsedReference::Ref(None));
             assert_matches!(
-                kind,
+                inner_ty.kind,
                 TypeKind::Value(Value::Custom(
                     TypeInfo {
                         key,
@@ -336,27 +301,27 @@ mod vec {
         let res = parse(quote! {
             fn f(x: &Vec<&Todo>) {}
         });
-        let RustType {
-            ident,
-            kind,
-            reference,
-        } = res.expect("extracts rust type");
+        let ty = res.expect("extracts rust type");
 
-        assert_eq!(ident.to_string(), "Vec", "ident");
-        assert_matches!(reference, ParsedReference::Ref(None));
+        assert_eq!(ty.ident().to_string(), "RawVec", "ident");
+        assert_eq!(ty.rust_ident().to_string(), "Vec", "rust ident");
+        assert_matches!(ty.reference, ParsedReference::Ref(None));
 
-        if let TypeKind::Composite(composite, inner) = kind {
+        if let TypeKind::Composite(composite, inner) = ty.kind {
             let todo_str = "Todo".to_string();
             assert_matches!(composite, Composite::Vec);
-            let RustType {
-                ident,
-                kind,
-                reference,
-            } = *inner.expect("has inner rust type");
+            let inner_ty = inner.expect("has inner rust type");
 
-            assert_eq!(ident.to_string(), "Todo", "ident");
-            assert_matches!(reference, ParsedReference::Ref(None));
-            assert_matches!(kind, TypeKind::Unknown);
+            // TODO: not yet properly type aliasing argument types
+            // see: src/render_rust/render_function_export.rs:95
+            // assert_eq!(inner_ty.ident().to_string(), "RawTodo", "inner ident");
+            assert_eq!(
+                inner_ty.rust_ident().to_string(),
+                "Todo",
+                "inner rust ident"
+            );
+            assert_matches!(inner_ty.reference, ParsedReference::Ref(None));
+            assert_matches!(inner_ty.kind, TypeKind::Unknown);
         } else {
             panic!("expected composite")
         };
@@ -377,16 +342,15 @@ mod custom_composites {
             #[rid::structs(Cont)]
             fn f(x: &Cont<u8>) {}
         });
-        let RustType {
-            ident,
-            kind,
-            reference,
-        } = res.expect("extracts rust type");
+        let ty = res.expect("extracts rust type");
 
-        assert_eq!(ident.to_string(), "Cont", "ident");
-        assert_matches!(reference, ParsedReference::Ref(None));
+        // TODO(thlorenz): we don't properly alias arg types to Raw* yet,
+        // see: src/render_rust/render_function_export.rs:93
+        assert_eq!(ty.ident().to_string(), "Cont", "ident");
+        assert_eq!(ty.rust_ident().to_string(), "Cont", "rust ident");
+        assert_matches!(ty.reference, ParsedReference::Ref(None));
 
-        if let TypeKind::Composite(composite, inner) = kind {
+        if let TypeKind::Composite(composite, inner) = ty.kind {
             assert_matches!(
                 composite,
                 Composite::Custom(
@@ -398,15 +362,16 @@ mod custom_composites {
                     cont_str
                 )
             );
-            let RustType {
-                ident,
-                kind,
-                reference,
-            } = *inner.expect("has inner rust type");
+            let inner_ty = inner.expect("has inner rust type");
 
-            assert_eq!(ident.to_string(), "u8", "ident");
-            assert_matches!(reference, ParsedReference::Owned);
-            assert_matches!(kind, TypeKind::Primitive(Primitive::U8));
+            assert_eq!(inner_ty.ident().to_string(), "u8", "inner ident");
+            assert_eq!(
+                inner_ty.rust_ident().to_string(),
+                "u8",
+                "inner rust ident"
+            );
+            assert_matches!(inner_ty.reference, ParsedReference::Owned);
+            assert_matches!(inner_ty.kind, TypeKind::Primitive(Primitive::U8));
         } else {
             panic!("expected composite")
         };
@@ -426,27 +391,30 @@ mod composite_option {
             #[rid::structs(Todo)]
             fn f(x: Option<&Todo>) {}
         });
-        let RustType {
-            ident,
-            kind,
-            reference,
-        } = res.expect("extracts rust type");
+        let ty = res.expect("extracts rust type");
 
-        assert_eq!(ident.to_string(), "Option", "ident");
-        assert_matches!(reference, ParsedReference::Owned);
+        assert_eq!(ty.ident().to_string(), "Option", "ident");
+        assert_eq!(ty.rust_ident().to_string(), "Option", "rust ident");
+        assert_matches!(ty.reference, ParsedReference::Owned);
 
-        if let TypeKind::Composite(composite, inner) = kind {
+        if let TypeKind::Composite(composite, inner) = ty.kind {
             assert_matches!(composite, Composite::Option);
-            let RustType {
-                ident,
-                kind,
-                reference,
-            } = *inner.expect("has inner rust type");
+            let inner_ty = inner.expect("has inner rust type");
 
-            assert_eq!(ident.to_string(), "Todo", "ident");
-            assert_matches!(reference, ParsedReference::Ref(_));
+            assert_eq!(inner_ty.ident().to_string(), "RawTodo", "inner ident");
+            assert_eq!(
+                inner_ty.rust_ident().to_string(),
+                "Todo",
+                "inner rust ident"
+            );
+            assert_eq!(
+                inner_ty.rust_ident().to_string(),
+                "Todo",
+                "inner rust ident"
+            );
+            assert_matches!(inner_ty.reference, ParsedReference::Ref(_));
             assert_matches!(
-                kind,
+                inner_ty.kind,
                 TypeKind::Value(Value::Custom(
                     TypeInfo {
                         key,
@@ -467,26 +435,24 @@ mod composite_option {
         let res = parse(quote! {
             fn f(x: Option<u8>) {}
         });
-        let RustType {
-            ident,
-            kind,
-            reference,
-        } = res.expect("extracts rust type");
+        let ty = res.expect("extracts rust type");
 
-        assert_eq!(ident.to_string(), "Option", "ident");
-        assert_matches!(reference, ParsedReference::Owned);
+        assert_eq!(ty.ident().to_string(), "Option", "ident");
+        assert_eq!(ty.rust_ident().to_string(), "Option", "rust ident");
+        assert_matches!(ty.reference, ParsedReference::Owned);
 
-        if let TypeKind::Composite(composite, inner) = kind {
+        if let TypeKind::Composite(composite, inner) = ty.kind {
             assert_matches!(composite, Composite::Option);
-            let RustType {
-                ident,
-                kind,
-                reference,
-            } = *inner.expect("has inner rust type");
+            let inner_ty = inner.expect("has inner rust type");
 
-            assert_eq!(ident.to_string(), "u8", "ident");
-            assert_eq!(reference, ParsedReference::Owned, "reference");
-            assert_matches!(kind, TypeKind::Primitive(Primitive::U8));
+            assert_eq!(inner_ty.ident().to_string(), "u8", "inner ident");
+            assert_eq!(
+                inner_ty.rust_ident().to_string(),
+                "u8",
+                "inner rust ident"
+            );
+            assert_eq!(inner_ty.reference, ParsedReference::Owned, "reference");
+            assert_matches!(inner_ty.kind, TypeKind::Primitive(Primitive::U8));
         } else {
             panic!("expected composite")
         };

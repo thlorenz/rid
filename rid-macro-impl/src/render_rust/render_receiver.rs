@@ -9,7 +9,7 @@ use crate::{
         rust_type::{RustType, TypeKind, Value},
         ParsedReceiver,
     },
-    render_common::TypeAlias,
+    render_common::PointerTypeAlias,
 };
 
 use super::{render_pointer_type, render_to_return_type};
@@ -50,7 +50,7 @@ impl ParsedReceiver {
 
 pub struct RenderedReceiverArgPass {
     pub tokens: TokenStream,
-    pub type_alias: Option<TypeAlias>,
+    pub type_alias: Option<PointerTypeAlias>,
 }
 
 impl RenderedReceiverArgPass {

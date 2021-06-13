@@ -42,7 +42,7 @@ impl RustType {
         use TypeKind as K;
         let call = match &self.kind {
             K::Unit => abort!(
-                self.ident,
+                self.ident(),
                 "Should not export rust method that returns nothing"
             ),
             // TODO(thlorenz): All the below do the same, need to investigate if that makes sense
@@ -89,9 +89,9 @@ impl RustType {
                 params = params
             ),
             K::Composite(kind, _) => {
-                abort!(self.ident, "TODO: RustType::render_fn_body K::Composite({:?})", kind)
+                abort!(self.rust_ident(), "TODO: RustType::render_fn_body K::Composite({:?})", kind)
             }
-            K::Unknown => abort!(self.ident, "TODO: RustType::render_fn_body K::Unknown"),
+            K::Unknown => abort!(self.rust_ident(), "TODO: RustType::render_fn_body K::Unknown"),
         };
         format!(
             r###"{call}

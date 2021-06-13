@@ -1,18 +1,25 @@
+use std::ops::Deref;
+
+use super::render_rust_type_misc;
 use crate::{
     common::{abort, missing_struct_enum_info},
     parse::{
         rust_type::{Composite, Primitive, RustType, TypeKind, Value},
         ParsedReference,
     },
-    render_common::TypeAlias,
+    render_common::PointerTypeAlias,
 };
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote, quote_spanned};
 use syn::Ident;
 
 pub struct RenderedReturnType {
+    /// Rendered return type
     pub tokens: TokenStream,
-    pub type_alias: Option<TypeAlias>,
+    /// Pointer aliases, i.e. type Pointer_RawTodo = *const RawTodo;
+    pub type_alias: Option<PointerTypeAlias>,
+    /// Named typedef needed for inner rust type if it was present, otherwise None
+    pub inner_typedef: Option<(String, TokenStream)>,
 }
 
 pub fn render_return_type(
@@ -21,35 +28,38 @@ pub fn render_return_type(
 ) -> RenderedReturnType {
     use crate::parse::ParsedReference::*;
     use TypeKind as K;
-    let RustType {
-        ident,
-        kind,
-        reference,
-    } = rust_type;
+    let mut type_alias: Option<PointerTypeAlias> = None;
+    let mut inner_typedef: Option<(String, TokenStream)> = None;
 
-    let mut type_alias: Option<TypeAlias> = None;
-
-    let type_tok = match kind {
+    let type_tok = match &rust_type.kind {
         K::Primitive(prim) => render_primitive_return(prim),
         K::Value(val) => {
-            let (alias, tokens ) = render_value_return_type(val, &reference);
+            let (alias, tokens ) = render_value_return_type(val, &rust_type);
             type_alias = alias;
             tokens
         }
-        K::Composite(Composite::Vec, rust_type) => match rust_type {
+        K::Composite(Composite::Vec, inner_ty) => match inner_ty {
             Some(ty) => {
                 let (alias, tokens) = render_vec_return_type(ty);
                 type_alias = alias;
+                inner_typedef = match inner_ty.as_ref() {
+                    Some(ty) if ty.needs_type_alias => Some((ty.rust_ident().to_string(), ty.typealias_tokens())),
+                    _ => None,
+                };
                 tokens
             }
             None => {
                 todo!("blow up since a composite should include inner type")
             }
         },
-        K::Composite(Composite::Option, rust_type) => match rust_type {
+        K::Composite(Composite::Option, inner_ty) => match inner_ty {
             Some(ty) => {
                 let (alias, tokens) = render_option_return_type(ty);
                 type_alias = alias;
+                inner_typedef = match inner_ty.as_ref() {
+                    Some(ty) if ty.needs_type_alias => Some((ty.rust_ident().to_string(), ty.typealias_tokens())),
+                    _ => None,
+                };
                 tokens
             }
             None => {
@@ -62,9 +72,14 @@ pub fn render_return_type(
         K::Unit => quote! { () },
         K::Unknown => todo!("unknown .. need better error .. also gets triggered when exporting custom type without info "),
     };
+    let ident = rust_type.ident();
     let tokens = quote_spanned! { ident.span() => #type_tok };
 
-    RenderedReturnType { tokens, type_alias }
+    RenderedReturnType {
+        tokens,
+        type_alias,
+        inner_typedef,
+    }
 }
 
 fn render_primitive_return(prim: &Primitive) -> TokenStream {
@@ -85,71 +100,85 @@ fn render_primitive_return(prim: &Primitive) -> TokenStream {
 
 fn render_vec_return_type(
     inner_type: &RustType,
-) -> (Option<TypeAlias>, TokenStream) {
+) -> (Option<PointerTypeAlias>, TokenStream) {
     use TypeKind as K;
     match &inner_type.kind {
         K::Primitive(prim) => {
             let inner_return_type = render_primitive_return(prim);
-            let tokens = quote_spanned! { inner_type.ident.span() =>
+            let tokens = quote_spanned! { inner_type.rust_ident().span() =>
                 rid::RidVec<#inner_return_type>
             };
             (None, tokens)
         }
         K::Value(val) => {
-            let (alias, val_tokens) =
-                render_value_return_type(val, &inner_type.reference);
+            let (alias, val_tokens) = render_value_return_type(val, inner_type);
             let tokens = quote! { rid::RidVec<#val_tokens> };
             (alias, tokens)
         }
         K::Composite(_, _) => {
-            abort!(inner_type.ident, "todo!(render_vec_return_type::composite)")
+            abort!(
+                inner_type.rust_ident(),
+                "todo!(render_vec_return_type::composite)"
+            )
         }
         K::Unit => {
-            abort!(inner_type.ident, "todo!(render_vec_return_type::unit)")
+            abort!(
+                inner_type.rust_ident(),
+                "todo!(render_vec_return_type::unit)"
+            )
         }
         K::Unknown => {
-            abort!(inner_type.ident, "todo!(render_vec_return_type::unknown)")
+            abort!(
+                inner_type.rust_ident(),
+                "todo!(render_vec_return_type::unknown)"
+            )
         }
     }
 }
 fn render_option_return_type(
     inner_type: &RustType,
-) -> (Option<TypeAlias>, TokenStream) {
+) -> (Option<PointerTypeAlias>, TokenStream) {
     use TypeKind as K;
     match &inner_type.kind {
         K::Primitive(prim) => {
             let inner_return_type = render_primitive_return(prim);
-            let tokens = quote_spanned! { inner_type.ident.span() =>
+            let tokens = quote_spanned! { inner_type.rust_ident().span() =>
                 *const #inner_return_type
             };
             (None, tokens)
         }
-        K::Value(val) => render_value_return_type(val, &inner_type.reference),
+        K::Value(val) => render_value_return_type(val, &inner_type),
         K::Composite(_, _) => {
             abort!(
-                inner_type.ident,
+                inner_type.rust_ident(),
                 "todo!(render_option_return_type::composite)"
             )
         }
         K::Unit => {
-            abort!(inner_type.ident, "todo!(render_option_return_type::unit)")
+            abort!(
+                inner_type.rust_ident(),
+                "todo!(render_option_return_type::unit)"
+            )
         }
-        K::Unknown => (None, missing_struct_enum_info(&inner_type.ident)),
+        K::Unknown => {
+            (None, missing_struct_enum_info(&inner_type.rust_ident()))
+        }
     }
 }
 
 fn render_value_return_type(
     value: &Value,
-    reference: &ParsedReference,
-) -> (Option<TypeAlias>, TokenStream) {
+    ty: &RustType,
+) -> (Option<PointerTypeAlias>, TokenStream) {
     use Value as V;
 
     match value {
         V::CString | V::String | V::Str => {
             (None, quote! { *const ::std::os::raw::c_char })
         }
-        V::Custom(info, name) => {
-            let (alias, ref_tok) = reference.render_pointer(name, false);
+        V::Custom(info, _) => {
+            let (alias, ref_tok) =
+                ty.reference.render_pointer(&ty.ident().to_string(), false);
             (alias, quote_spanned! { info.key.span() => #ref_tok })
         }
     }

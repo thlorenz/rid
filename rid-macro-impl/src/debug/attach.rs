@@ -100,7 +100,7 @@ fn render_debug(
         && rust_type.is_enum()
         && get_state().needs_implementation(
             &ImplementationType::DartEnum,
-            &rust_type.ident.to_string(),
+            &rust_type.ident().to_string(),
         ) {
         rust_type
             .render_dart_enum(
@@ -117,9 +117,11 @@ fn render_debug(
     };
 
     let mod_ident = format_ident!("__rid_mod_{}", fn_debug_method_ident);
+    let typealias = rust_type.typealias_tokens();
     quote! {
         mod #mod_ident {
             use super::*;
+            #typealias
             #dart_enum_tokens
             #dart_ext_tokens
             #rust_method_tokens

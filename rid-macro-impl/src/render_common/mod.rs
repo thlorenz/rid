@@ -1,6 +1,6 @@
 pub use idents::*;
 pub use render_function_export_config::*;
-pub use type_alias::TypeAlias;
+pub use type_alias::PointerTypeAlias;
 pub use vec::*;
 
 mod idents;

@@ -16,9 +16,7 @@ impl RustType {
         use crate::parse::ParsedReference::*;
         use TypeKind as K;
         let RustType {
-            ident,
-            kind,
-            reference,
+            kind, reference, ..
         } = self;
 
         let tokens = match kind {
