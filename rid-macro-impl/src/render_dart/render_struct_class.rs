@@ -19,10 +19,12 @@ impl ParsedStruct {
             ffigen_bind = FFI_GEN_BIND,
             ident = self.raw_ident
         );
+        let constructor_fields = self.render_constructor_fields(config);
+
         // TODO(thlorenz): `rid_store_{un}lock` is only present if we have a message unless we
         // create a stub otherwise
         let dart_class =
-            self.render_dart_class(config, &class_name, &raw_class_name);
+            self.render_dart_class(config, &constructor_fields, &class_name);
         if config.dart_class_only {
             dart_class
         } else {
@@ -36,7 +38,7 @@ impl ParsedStruct {
 {comment} extension Rid_ToDart_ExtOn{ident} on {raw_class_name} {{
 {comment}   {class_name} toObject() {{ 
 {comment}      {rid_ffi}.rid_store_lock();
-{comment}      final instance = {class_name}._(this);
+{comment}      final instance = {class_name}._({constructor_fields});
 {comment}      {rid_ffi}.rid_store_unlock();
 {comment}      return instance;
 {comment}   }}
@@ -46,6 +48,7 @@ impl ParsedStruct {
                 dart_class = dart_class,
                 class_name = class_name,
                 raw_class_name = raw_class_name,
+                constructor_fields = constructor_fields,
                 rid_ffi = RID_FFI,
                 comment = config.comment
             )
@@ -55,14 +58,14 @@ impl ParsedStruct {
     fn render_dart_class(
         &self,
         config: &ParsedStructRenderConfig,
+        constructor_fields: &str,
         class_name: &str,
-        raw_class_name: &str,
     ) -> String {
         let field_declarations = self.render_field_declarations(config);
         let constructor = self.render_private_constructor(
             &config,
-            &class_name,
-            &raw_class_name,
+            constructor_fields,
+            class_name,
         );
         format!(
             r###"{comment} class {class_name} {{
@@ -108,22 +111,20 @@ impl ParsedStruct {
     fn render_private_constructor(
         &self,
         config: &ParsedStructRenderConfig,
+        constructor_fields: &str,
         class_name: &str,
-        raw_class_name: &str,
     ) -> String {
-        let assignments = self.render_constructor_field_assignments(config);
         format!(
             r###"{comment}
-{comment}   {class_name}._({raw_class_name} raw)
-{assignments};"###,
+{comment}   const {class_name}._({constructor_fields});
+"###,
             class_name = class_name,
-            raw_class_name = raw_class_name,
             comment = config.comment,
-            assignments = assignments
+            constructor_fields = constructor_fields,
         )
     }
 
-    fn render_constructor_field_assignments(
+    fn render_constructor_fields(
         &self,
         config: &ParsedStructRenderConfig,
     ) -> String {
@@ -133,22 +134,9 @@ impl ParsedStruct {
             let last_slot = self.fields.len() - 1;
             self.fields
                 .iter()
-                .enumerate()
-                .map(|(slot, x)| {
-                    let ty = x.rust_type.render_dart_type(true);
-                    let colon_or_indent =
-                        if slot == 0 { "      : " } else { "        " };
-                    let comma = if slot == last_slot { "" } else { ", " };
-                    format!(
-                        "{comment} {colon_or_indent}{name} = raw.{name}{comma}",
-                        colon_or_indent = colon_or_indent,
-                        name = x.ident,
-                        comma = comma,
-                        comment = config.comment
-                    )
-                })
+                .map(|x| format!("this.{name}", name = x.ident,))
                 .collect::<Vec<String>>()
-                .join("\n")
+                .join(", ")
         }
     }
 }
