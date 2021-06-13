@@ -82,7 +82,7 @@ mod msg_variants_without_fields {
             }
         };
         let expected_dart = r###"
-            extension Rid_Message_ExtOnPointerStoreForMsg on dart_ffi.Pointer<ffigen_bind.Store> {
+            extension Rid_Message_ExtOnPointerStoreForMsg on dart_ffi.Pointer<ffigen_bind.RawStore> {
             Future<PostedReply> msgInit({Duration? timeout}) {
                 final reqId = replyChannel.reqId;
                 rid_ffi.rid_msg_Init(reqId, );
@@ -133,7 +133,7 @@ mod msg_variants_without_fields {
             }
         };
         let expected_dart = r###"
-            extension Rid_Message_ExtOnPointerStoreForMsg on dart_ffi.Pointer<ffigen_bind.Store> {
+            extension Rid_Message_ExtOnPointerStoreForMsg on dart_ffi.Pointer<ffigen_bind.RawStore> {
 
               Future<PostedReply> msgInit({Duration? timeout}) {
                   final reqId = replyChannel.reqId;
@@ -210,7 +210,7 @@ mod msg_variants_with_primitive_fields {
             }
         };
         let expected_dart = r###"
-            extension Rid_Message_ExtOnPointerStoreForMsg on dart_ffi.Pointer<ffigen_bind.Store> {
+            extension Rid_Message_ExtOnPointerStoreForMsg on dart_ffi.Pointer<ffigen_bind.RawStore> {
 
               Future<PostedReply> msgAdd(@dart_ffi.Int32() int arg0, {Duration? timeout}) {
                   final reqId = replyChannel.reqId;
@@ -265,7 +265,7 @@ mod msg_variants_with_primitive_fields {
             }
         };
         let expected_dart = r###"
-            extension Rid_Message_ExtOnPointerStoreForMsg on dart_ffi.Pointer<ffigen_bind.Store> {
+            extension Rid_Message_ExtOnPointerStoreForMsg on dart_ffi.Pointer<ffigen_bind.RawStore> {
            
               Future<PostedReply> msgAdd(@dart_ffi.Int32() int arg0, String arg1, {Duration? timeout}) {
                 final reqId = replyChannel.reqId;
@@ -321,7 +321,7 @@ mod msg_variants_with_enum_fields {
             }
         };
         let expected_dart = r###"
-            extension Rid_Message_ExtOnPointerStoreForMsg on dart_ffi.Pointer<ffigen_bind.Store> {
+            extension Rid_Message_ExtOnPointerStoreForMsg on dart_ffi.Pointer<ffigen_bind.RawStore> {
 
               Future<PostedReply> msgSetFilter(int arg0, {Duration? timeout}) {
                 final reqId = replyChannel.reqId;

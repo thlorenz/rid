@@ -1,5 +1,5 @@
 use crate::{
-    attrs::{EnumConfig, TypeInfoMap},
+    attrs::{raw_typedef_ident, EnumConfig, TypeInfoMap},
     parse::rust_type,
 };
 
@@ -20,6 +20,9 @@ pub struct ParsedEnum {
 
     /// The identifier of the struct receiving the message, i.e. Store
     pub struct_ident: syn::Ident,
+
+    /// The raw pointer identifier of the struct receiving the message, i.e. RawStore
+    pub raw_struct_ident: syn::Ident,
 
     /// Identifier of the module into which the hidden code is wrapped
     pub module_ident: syn::Ident,
@@ -46,6 +49,7 @@ impl ParsedEnum {
         let parsed_variants =
             parse_variants(variants, &method_prefix, &config.type_infos);
         let struct_ident = format_ident!("{}", config.to);
+        let raw_struct_ident = raw_typedef_ident(&struct_ident);
         let reply_ident = rust_type::RustType::from_owned_enum(&config.reply);
         let reply_dart_enum_name = reply_ident.dart_ident(false).to_string();
 
@@ -55,6 +59,7 @@ impl ParsedEnum {
             parsed_variants,
             method_prefix,
             struct_ident,
+            raw_struct_ident,
             module_ident,
             ident_lower_camel,
             config,

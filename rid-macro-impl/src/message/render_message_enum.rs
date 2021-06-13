@@ -263,12 +263,13 @@ impl ParsedEnum {
 
         let code = format!(
             r###"{reply_with_timeout}
-{comment} extension Rid_Message_ExtOnPointer{struct_ident}For{enum_ident} on {dart_ffi}.Pointer<{ffigen_bind}.{struct_ident}> {{
+{comment} extension Rid_Message_ExtOnPointer{struct_ident}For{enum_ident} on {dart_ffi}.Pointer<{ffigen_bind}.{raw_struct_ident}> {{
 {methods}
 {comment} }}"###,
             reply_with_timeout = reply_with_timeout,
             enum_ident = self.ident,
             struct_ident = self.struct_ident,
+            raw_struct_ident = self.raw_struct_ident,
             dart_ffi = DART_FFI,
             ffigen_bind = FFI_GEN_BIND,
             methods = methods.join("\n"),
