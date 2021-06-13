@@ -1,7 +1,10 @@
 use proc_macro2::TokenStream;
 use quote::quote_spanned;
 
-use crate::common::state::{get_state, ImplementationType};
+use crate::{
+    attrs::{raw_typedef_ident, Category},
+    common::state::{get_state, ImplementationType},
+};
 use rid_common::{
     DART_FFI, FFI_GEN_BIND, RID_DEBUG_LOCK, RID_DEBUG_REPLY, RID_FFI,
     RID_MSG_TIMEOUT,
@@ -10,6 +13,12 @@ pub fn code_store_module(
     msg_ident: &syn::Ident,
     store_ident: &syn::Ident,
 ) -> TokenStream {
+    let (store_ident, typedef) = {
+        let raw_store_ident = raw_typedef_ident(store_ident);
+        let typedef = quote_spanned! { store_ident.span() => type #raw_store_ident = #store_ident; };
+        (raw_store_ident, typedef)
+    };
+
     let store_extension_dart: TokenStream = format!(
         r###"
 /// ```dart
@@ -104,6 +113,7 @@ pub fn code_store_module(
     quote_spanned! {msg_ident.span() =>
         pub mod store {
             use super::*;
+            #typedef
 
             /// cbindgen:ignore
             static mut STORE_LOCK: Option<::std::sync::RwLock<#store_ident>> = None;

@@ -5,6 +5,7 @@ use std::{
     ops::{Deref, DerefMut},
 };
 
+use quote::format_ident;
 use syn::Ident;
 
 #[derive(PartialEq, Clone)]
@@ -20,11 +21,17 @@ pub fn add_idents_to_type_map(
     idents: &[Ident],
 ) {
     for ident in idents {
+        let typedef = if cat == Category::Struct {
+            Some(raw_typedef_ident(&ident))
+        } else {
+            None
+        };
         type_infos.insert(
             ident.to_string(),
             TypeInfo {
                 key: ident.clone(),
                 cat: cat.clone(),
+                typedef,
             },
         );
     }
@@ -44,6 +51,7 @@ impl Debug for Category {
 pub struct TypeInfo {
     pub key: Ident,
     pub cat: Category,
+    pub typedef: Option<Ident>,
 }
 
 impl TypeInfo {
@@ -55,7 +63,16 @@ impl TypeInfo {
 impl From<(&str, Category)> for TypeInfo {
     fn from((name, cat): (&str, Category)) -> Self {
         let ident = Ident::new(name, proc_macro2::Span::mixed_site());
-        Self { key: ident, cat }
+        let typedef = if cat == Category::Struct {
+            Some(raw_typedef_ident(&ident))
+        } else {
+            None
+        };
+        Self {
+            key: ident,
+            cat,
+            typedef,
+        }
     }
 }
 
@@ -78,4 +95,8 @@ impl Default for TypeInfoMap {
     fn default() -> Self {
         Self(HashMap::new())
     }
+}
+
+pub fn raw_typedef_ident(ident: &Ident) -> Ident {
+    format_ident!("Raw{}", ident)
 }

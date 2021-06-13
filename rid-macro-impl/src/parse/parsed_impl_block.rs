@@ -7,7 +7,10 @@ use super::{
     parsed_function::ParsedFunction,
     rust_type::{RustType, TypeKind, Value},
 };
-use crate::{attrs, common::abort};
+use crate::{
+    attrs::{self, raw_typedef_ident},
+    common::abort,
+};
 
 #[derive(Debug)]
 pub struct ParsedImplBlock {
@@ -44,6 +47,7 @@ impl ParsedImplBlock {
                 let type_info = TypeInfo {
                     key: ident.clone(),
                     cat: Category::Struct,
+                    typedef: Some(raw_typedef_ident(&ident)),
                 };
                 RustType {
                     kind: TypeKind::Value(Value::Custom(type_info, ident_str)),

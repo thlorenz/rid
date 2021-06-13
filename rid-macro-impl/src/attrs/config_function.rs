@@ -3,7 +3,10 @@ use syn::Ident;
 use crate::common::abort;
 use std::collections::HashMap;
 
-use super::{add_idents_to_type_map, Category, RidAttr, TypeInfo, TypeInfoMap};
+use super::{
+    add_idents_to_type_map, raw_typedef_ident, Category, RidAttr, TypeInfo,
+    TypeInfoMap,
+};
 
 #[derive(Debug)]
 pub struct FunctionConfig {
@@ -57,6 +60,7 @@ impl FunctionConfig {
                     TypeInfo {
                         key: ident.clone(),
                         cat: Category::Struct,
+                        typedef: Some(raw_typedef_ident(&ident)),
                     },
                 );
             }

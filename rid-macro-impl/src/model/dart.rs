@@ -70,7 +70,7 @@ impl DartType {
             DartType::Bool => "bool".to_string(),
             DartType::String => "String".to_string(),
             DartType::Vec(inner) => format!(
-                "{dart_ffi}.Pointer<{ffigen_bind}.Vec_{ty}>",
+                "{dart_ffi}.Pointer<{ffigen_bind}.Vec_Raw{ty}>",
                 dart_ffi = DART_FFI,
                 ffigen_bind = FFI_GEN_BIND,
                 ty = inner

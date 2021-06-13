@@ -12,13 +12,12 @@ impl ParsedStruct {
         &self,
         config: &ParsedStructRenderConfig,
     ) -> String {
-        // TODO(thlorenz): Prefix pointers with 'Raw' and use Rust struct name as is here
-        let class_name = format!("{}Object", self.ident);
+        let class_name = self.ident.to_string();
         let raw_class_name = format!(
             "{dart_ffi}.Pointer<{ffigen_bind}.{ident}>",
             dart_ffi = DART_FFI,
             ffigen_bind = FFI_GEN_BIND,
-            ident = self.ident
+            ident = self.raw_ident
         );
         // TODO(thlorenz): `rid_store_{un}lock` is only present if we have a message unless we
         // create a stub otherwise

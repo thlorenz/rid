@@ -33,8 +33,10 @@ impl DartType {
                     Ok(DartType::Vec(vec_indent.to_string()))
                 }
                 CString | RString => Ok(DartType::String),
-                RCustom(info, ty) => {
-                    Ok(DartType::Custom(info.clone(), ty.to_string()))
+                RCustom(info, _) => {
+                    let ty =
+                        info.typedef.as_ref().unwrap_or(&info.key).to_string();
+                    Ok(DartType::Custom(info.clone(), ty))
                 }
             },
             _ => Err(format!(

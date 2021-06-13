@@ -48,7 +48,8 @@ mod self_aliasing {
             TypeKind::Value(Value::Custom(
                 TypeInfo {
                     key,
-                    cat: Category::Struct
+                    cat: Category::Struct,
+                    typedef,
                 },
                 mystruct_str
             ))
@@ -83,7 +84,7 @@ mod self_aliasing {
 
         assert_matches!(
             &ret_ty ,
-            TypeKind::Value(Value::Custom(TypeInfo { key: _, cat }, name)) => {
+            TypeKind::Value(Value::Custom(TypeInfo { key: _, cat, .. }, name)) => {
                 assert_eq!(
                     (cat, name.as_str()),
                     (&attrs::Category::Struct, "MyStruct"),
@@ -138,7 +139,8 @@ mod method_exports {
             TypeKind::Value(Value::Custom(
                 TypeInfo {
                     key,
-                    cat: Category::Struct
+                    cat: Category::Struct,
+                    typedef,
                 },
                 mystruct_str
             ))

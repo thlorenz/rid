@@ -6,7 +6,7 @@ use syn::{
 
 use std::fmt::Debug;
 
-use crate::attrs::{Category, TypeInfo, TypeInfoMap};
+use crate::attrs::{raw_typedef_ident, Category, TypeInfo, TypeInfoMap};
 
 use super::ParsedReference;
 
@@ -43,6 +43,7 @@ impl RustType {
         let type_info = TypeInfo {
             cat: Category::Struct,
             key: ident.clone(),
+            typedef: Some(raw_typedef_ident(&ident)),
         };
         let value = Value::Custom(type_info, ident.to_string());
         let kind = TypeKind::Value(value);
@@ -54,6 +55,7 @@ impl RustType {
         let type_info = TypeInfo {
             cat: Category::Enum,
             key: ident.clone(),
+            typedef: None,
         };
         let value = Value::Custom(type_info, ident.to_string());
         let kind = TypeKind::Value(value);

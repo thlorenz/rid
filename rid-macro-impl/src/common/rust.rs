@@ -1,5 +1,6 @@
 #![allow(dead_code)]
 use super::abort;
+use crate::attrs::{self, raw_typedef_ident, Category, TypeInfo, TypeInfoMap};
 use std::fmt::{Debug, Display};
 
 #[derive(PartialEq)]
@@ -14,6 +15,13 @@ impl ValueType {
     pub fn is_enum(&self) -> bool {
         match self {
             RCustom(type_info, _) => type_info.cat == Category::Enum,
+            _ => false,
+        }
+    }
+
+    pub fn is_struct(&self) -> bool {
+        match self {
+            RCustom(type_info, _) => type_info.cat == Category::Struct,
             _ => false,
         }
     }
@@ -104,8 +112,6 @@ use PrimitiveType::*;
 use RustType::*;
 use ValueType::*;
 
-use crate::attrs::{self, Category, TypeInfo, TypeInfoMap};
-
 pub fn extract_path_segment(
     path: &syn::Path,
     types: Option<&TypeInfoMap>,
@@ -172,6 +178,7 @@ pub fn extract_path_segment(
                     TypeInfo {
                         key: ident.clone(),
                         cat: attrs::Category::Struct,
+                        typedef: Some(raw_typedef_ident(&ident)),
                     },
                     ident_str,
                 ))
@@ -240,12 +247,14 @@ impl RustType {
                 TypeInfo {
                     key: _,
                     cat: attrs::Category::Struct,
+                    ..
                 },
                 name,
             )) if name == "Self" => RustType::Value(ValueType::RCustom(
                 TypeInfo {
                     key: owner.clone(),
                     cat: attrs::Category::Struct,
+                    typedef: Some(raw_typedef_ident(&owner)),
                 },
                 owner.to_string(),
             )),

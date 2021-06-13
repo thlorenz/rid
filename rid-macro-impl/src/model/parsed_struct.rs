@@ -1,6 +1,10 @@
+use std::ops::Deref;
+
 use super::dart::GetterBody;
 use crate::{
-    attrs::{self, StructConfig, TypeInfo, TypeInfoMap},
+    attrs::{
+        self, raw_typedef_ident, Category, StructConfig, TypeInfo, TypeInfoMap,
+    },
     common::{
         errors::type_error,
         parsed_field::ParsedField,
@@ -20,7 +24,7 @@ use proc_macro2::TokenStream;
 use rid_common::{DART_FFI, FFI_GEN_BIND, RID_FFI};
 
 use quote::{format_ident, quote, quote_spanned};
-use syn::{punctuated::Punctuated, token::Comma, Field};
+use syn::{punctuated::Punctuated, token::Comma, Field, Ident};
 
 type Tokens = proc_macro2::TokenStream;
 
@@ -37,6 +41,8 @@ pub struct RenderedRustModule {
     pub fn_debug_pretty_method_name: String,
 }
 
+// TODO(thlorenz): when we reimplement this we should consider read-locking the store for the
+// access + vec methods
 #[derive(Debug)]
 pub struct ParsedStruct {
     ident: syn::Ident,
@@ -79,7 +85,12 @@ impl ParsedStruct {
         //
         // Rust
         //
-        let (field_method_tokens, implemented_vecs) = self.rust_field_methods();
+        let struct_ident = raw_typedef_ident(&self.ident);
+        let ident = &self.ident;
+        let typedef = quote_spanned! { self.ident.span() => type #struct_ident = #ident; };
+
+        let (field_method_tokens, implemented_vecs, typedefs) =
+            self.rust_field_methods(&struct_ident);
 
         //
         // Dart
@@ -105,11 +116,11 @@ impl ParsedStruct {
             Tokens::new()
         };
 
-        let dart_extension = self.dart_extension();
+        let dart_extension = self.dart_extension(&struct_ident);
         // TODO: use single quote! here
         let intro = format!(
-            "/// FFI access methods generated for struct '{}'.\n///\n",
-            self.ident
+            "/// FFI access methods generated for Rust struct '{}' implemented on '{}'.\n///\n",
+            self.ident, struct_ident,
         );
         let dart_header = format!(
             "/// Below is the dart extension to call those methods.\n///"
@@ -124,6 +135,8 @@ impl ParsedStruct {
         let tokens = quote! {
             mod #mod_name {
                 use super::*;
+                #typedef
+                #(#typedefs)*
 
                 #comment_header
                 #dart_extension
@@ -136,32 +149,42 @@ impl ParsedStruct {
         tokens
     }
 
-    fn rust_field_methods(&self) -> (Tokens, Vec<vec::ImplementVecOld>) {
+    fn rust_field_methods(
+        &self,
+        struct_ident: &Ident,
+    ) -> (Tokens, Vec<vec::ImplementVecOld>, Vec<TokenStream>) {
         let mut implemented_vecs: Vec<vec::ImplementVecOld> = vec![];
+        let mut typedefs: Vec<TokenStream> = vec![];
         let field_method_tokens: Tokens = self
             .parsed_fields
             .iter()
             .map(|f| {
-                let (tokens, mut vecs) = self.rust_field_method(f);
+                let (tokens, mut vecs, typedef) =
+                    self.rust_field_method(f, struct_ident);
                 implemented_vecs.append(&mut vecs);
+                typedefs.push(typedef);
                 tokens
             })
             .collect();
-        (field_method_tokens, implemented_vecs)
+        (field_method_tokens, implemented_vecs, typedefs)
     }
 
     fn rust_field_method(
         &self,
         field: &ParsedField,
-    ) -> (Tokens, Vec<vec::ImplementVecOld>) {
+        struct_ident: &Ident,
+    ) -> (Tokens, Vec<vec::ImplementVecOld>, TokenStream) {
         let field_ident = &field.ident;
         let fn_ident = &field.method_ident;
         let ty = &field.ty;
-        let struct_ident = &self.ident;
+
         let struct_instance_ident = instance_ident(&struct_ident);
         let mut implemented_vecs: Vec<vec::ImplementVecOld> = vec![];
 
         let resolve_struct_ptr = resolve_ptr(struct_ident);
+
+        // HACK: avoiding to rewrite too much code we'll replace anyways
+        let mut typedef = TokenStream::new();
 
         let method = match &field.rust_ty {
             Ok(RustType::Value(ValueType::CString)) => {
@@ -252,9 +275,18 @@ impl ParsedStruct {
                 let fn_len_ident = format_ident!("rid_vec_{}_len", item_ty);
                 let fn_get_ident = format_ident!("rid_vec_{}_get", item_ty);
 
-                let resolve_vec = resolve_vec_ptr(&item_ty);
+                let item_ty = match rust_type.deref() {
+                    RustType::Value(ty) if ty.is_struct() => {
+                        let raw_type = raw_typedef_ident(item_ty);
+                        typedef = quote_spanned! { item_ty.span() => type #raw_type = #item_ty; };
+                        raw_type
+                    }
+                    _ => item_ty.clone(),
+                };
 
+                let resolve_vec = resolve_vec_ptr(&item_ty);
                 let vec_type = format!("Vec_{}", item_ty);
+
                 let dart_item_type = DartType::try_from(&rust_type, &item_ty)
                     .expect("vec item type should be a valid dart type");
                 let vec_impl = if get_state().needs_implementation(
@@ -331,14 +363,14 @@ impl ParsedStruct {
         };
 
         let tokens: Tokens = method.into();
-        (tokens, implemented_vecs)
+        (tokens, implemented_vecs, typedef)
     }
 
     //
     // Dart Extension
     //
 
-    fn dart_extension(&self) -> Tokens {
+    fn dart_extension(&self, struct_ident: &Ident) -> Tokens {
         let (dart_field_getters_string, errors) = self.dart_field_getters();
         let s = format!(
             r###"
@@ -347,7 +379,7 @@ impl ParsedStruct {
 /// }}
 /// ```
         "###,
-            struct_ident = self.ident,
+            struct_ident = struct_ident,
             dart_ffi = DART_FFI,
             ffigen_bind = FFI_GEN_BIND,
             field_getters = dart_field_getters_string,

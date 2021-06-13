@@ -172,7 +172,8 @@ mod custom {
             TypeKind::Value(Value::Custom(
                 TypeInfo {
                     key,
-                    cat: Category::Struct
+                    cat: Category::Struct,
+                    typedef,
                 },
                 model_str
             ))
@@ -213,7 +214,8 @@ mod custom {
             TypeKind::Value(Value::Custom(
                 TypeInfo {
                     key,
-                    cat: Category::Struct
+                    cat: Category::Struct,
+                    typedef,
                 },
                 model_str
             ))
@@ -318,7 +320,8 @@ mod vec {
                 TypeKind::Value(Value::Custom(
                     TypeInfo {
                         key,
-                        cat: Category::Struct
+                        cat: Category::Struct,
+                        typedef,
                     },
                     todo_str
                 ))
@@ -389,7 +392,8 @@ mod custom_composites {
                 Composite::Custom(
                     TypeInfo {
                         key,
-                        cat: Category::Struct
+                        cat: Category::Struct,
+                        typedef,
                     },
                     cont_str
                 )
@@ -446,7 +450,8 @@ mod composite_option {
                 TypeKind::Value(Value::Custom(
                     TypeInfo {
                         key,
-                        cat: Category::Struct
+                        cat: Category::Struct,
+                        typedef,
                     },
                     model_str
                 ))

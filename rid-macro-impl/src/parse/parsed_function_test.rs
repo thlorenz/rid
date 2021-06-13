@@ -94,7 +94,7 @@ mod return_arg {
 
         assert_matches!(
             &ret_ty ,
-            TypeKind::Value(Value::Custom(TypeInfo { key: _, cat }, name)) => {
+            TypeKind::Value(Value::Custom(TypeInfo { key: _, cat, .. }, name)) => {
                 assert_eq!(
                     (cat, name.as_str()),
                     (&attrs::Category::Struct, "Todo"),
@@ -154,7 +154,8 @@ mod return_arg {
                 TypeKind::Value(Value::Custom(
                     TypeInfo {
                         key,
-                        cat: Category::Struct
+                        cat: Category::Struct,
+                        typedef,
                     },
                     todo_str
                 ))
