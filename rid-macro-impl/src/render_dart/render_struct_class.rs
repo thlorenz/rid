@@ -5,6 +5,7 @@ use crate::parse::ParsedStruct;
 pub struct ParsedStructRenderConfig {
     pub comment: String,
     pub dart_class_only: bool,
+    pub include_equality: bool,
 }
 
 impl ParsedStruct {
@@ -67,14 +68,18 @@ impl ParsedStruct {
             constructor_fields,
             class_name,
         );
+        let equality_overrides =
+            self.render_equality_overrides(config, class_name);
         format!(
             r###"{comment} class {class_name} {{
 {field_declarations}
 {constructor}
+{equality_overrides}
 {comment} }}"###,
             class_name = class_name,
             field_declarations = field_declarations,
             constructor = constructor,
+            equality_overrides = equality_overrides,
             comment = config.comment
         )
     }
@@ -137,6 +142,114 @@ impl ParsedStruct {
                 .map(|x| format!("this.{name}", name = x.ident,))
                 .collect::<Vec<String>>()
                 .join(", ")
+        }
+    }
+
+    fn render_equality_overrides(
+        &self,
+        config: &ParsedStructRenderConfig,
+        class_name: &str,
+    ) -> String {
+        if config.include_equality {
+            format!(
+                "{}\n{}",
+                self.render_equals_operator(config, class_name),
+                self.render_hash_code(config)
+            )
+        } else {
+            "".to_string()
+        }
+    }
+
+    /// Renders hashCode override for the provided class.
+    ///
+    /// Example:
+    ///
+    /// ```dart
+    /// @override
+    /// int get hashCode {
+    ///   return
+    ///     id.hashCode ^
+    ///     title.hashCode ^
+    ///     completed.hashCode;
+    /// }
+    /// ```
+    fn render_hash_code(&self, config: &ParsedStructRenderConfig) -> String {
+        if self.fields.is_empty() {
+            "".to_string()
+        } else {
+            let field_xors = self
+                .fields
+                .iter()
+                .map(|x| {
+                    format!(
+                        "{comment}      {field}.hashCode",
+                        field = x.ident,
+                        comment = config.comment
+                    )
+                })
+                .collect::<Vec<String>>()
+                .join(" ^\n");
+
+            format!(
+                r###"{comment}  @override
+{comment}  int get hashCode {{
+{comment}    return
+{field_xors};
+{comment}  }}"###,
+                field_xors = field_xors,
+                comment = config.comment,
+            )
+        }
+    }
+
+    /// Renders equals override for the provided class.
+    ///
+    /// Example:
+    ///
+    /// ```dart
+    /// @override
+    /// bool operator ==(Object other) {
+    ///   return identical(this, other) ||
+    ///     other is Todo &&
+    ///         runtimeType == other.runtimeType &&
+    ///         id == other.id &&
+    ///         title == other.title &&
+    ///         completed == other.completed;
+    /// }
+    /// ```
+    fn render_equals_operator(
+        &self,
+        config: &ParsedStructRenderConfig,
+        class_name: &str,
+    ) -> String {
+        if self.fields.is_empty() {
+            "".to_string()
+        } else {
+            let field_comparisons = self
+                .fields
+                .iter()
+                .map(|x| {
+                    format!(
+                        "{comment}          {field} == other.{field}",
+                        field = x.ident,
+                        comment = config.comment
+                    )
+                })
+                .collect::<Vec<String>>()
+                .join(" &&\n");
+
+            format!(
+                r###"{comment}  @override
+{comment}  bool operator ==(Object other) {{
+{comment}    return identical(this, other) ||
+{comment}      other is {class_name} &&
+{field_comparisons};
+{comment}  }}"###,
+                field_comparisons = field_comparisons,
+                class_name = class_name,
+                comment = config.comment,
+            )
         }
     }
 }
