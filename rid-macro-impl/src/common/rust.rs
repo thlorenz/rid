@@ -232,6 +232,13 @@ impl RustType {
         }
     }
 
+    pub fn is_struct(&self) -> bool {
+        match self {
+            Value(val) => val.is_struct(),
+            _ => false,
+        }
+    }
+
     pub fn val_type_name(&self) -> String {
         match self {
             Value(val) => val.type_name(),

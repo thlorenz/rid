@@ -225,7 +225,7 @@ impl ParsedStruct {
                     #cstring_free_tokens
                 }
             }
-            Ok(RustType::Value(ValueType::RCustom(info, _))) => {
+            Ok(RustType::Value(ValueType::RCustom(info, name))) => {
                 use attrs::Category::*;
                 match info.cat {
                     // TODO: we are assuming each enum is #[repr(C)]
@@ -237,14 +237,20 @@ impl ParsedStruct {
                             #struct_instance_ident.#field_ident.clone() as i32
                         }
                     },
-                    Struct => quote_spanned! { fn_ident.span() =>
-                        #[no_mangle]
-                        #[allow(non_snake_case)]
-                        pub extern "C" fn #fn_ident(ptr: *mut #struct_ident) -> *const #ty {
-                            let #struct_instance_ident = #resolve_struct_ptr;
-                            &#struct_instance_ident.#field_ident as *const _ as *const #ty
+                    Struct => {
+                        // TODO(thlorenz): quickly hacked in here before to make things work until
+                        // it is replaced
+                        let raw_ty = format_ident!("Raw{}", info.key);
+                        quote_spanned! { fn_ident.span() =>
+                            type #raw_ty = #ty;
+                            #[no_mangle]
+                            #[allow(non_snake_case)]
+                            pub extern "C" fn #fn_ident(ptr: *mut #struct_ident) -> *const #raw_ty {
+                                let #struct_instance_ident = #resolve_struct_ptr;
+                                &#struct_instance_ident.#field_ident as *const _ as *const #raw_ty
+                            }
                         }
-                    },
+                    }
                     Prim => todo!("parsed_struct:rust_field_method Prim"),
                 }
             }
