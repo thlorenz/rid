@@ -7,7 +7,7 @@ void main() {
 }
 
 class MyApp extends StatelessWidget {
-  final Pointer<Store> _store;
+  final Pointer<RawStore> _store;
 
   const MyApp(this._store, {Key? key}) : super(key: key);
 
@@ -24,7 +24,7 @@ class MyApp extends StatelessWidget {
 }
 
 class MyHomePage extends StatefulWidget {
-  final Pointer<Store> _store;
+  final Pointer<RawStore> _store;
   MyHomePage(this._store, {Key? key, required this.title}) : super(key: key);
   final String title;
   @override

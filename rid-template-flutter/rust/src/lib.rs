@@ -13,7 +13,7 @@ impl Store {
         match msg {
             Msg::Inc => {
                 self.count += 1;
-                rid::post(Reply::Icreased(req_id));
+                rid::post(Reply::Increased(req_id));
             }
             Msg::Add(n) => {
                 self.count += n;
@@ -32,6 +32,6 @@ pub enum Msg {
 
 #[rid::reply]
 pub enum Reply {
-    Icreased(u64),
+    Increased(u64),
     Added(u64, String),
 }
