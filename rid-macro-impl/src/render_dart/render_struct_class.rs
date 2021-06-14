@@ -6,6 +6,7 @@ pub struct ParsedStructRenderConfig {
     pub comment: String,
     pub dart_class_only: bool,
     pub include_equality: bool,
+    pub include_to_string: bool,
 }
 
 impl ParsedStruct {
@@ -56,6 +57,12 @@ impl ParsedStruct {
         }
     }
 
+    // -----------------
+    // Dart Class
+    // -----------------
+    /// Renders a Dart class for a specific Rust struct that can be instantiated by passing a pointer
+    /// to a Rust struct instance.
+    /// It includes a private constructor and overrides for equality and toString.
     fn render_dart_class(
         &self,
         config: &ParsedStructRenderConfig,
@@ -70,20 +77,28 @@ impl ParsedStruct {
         );
         let equality_overrides =
             self.render_equality_overrides(config, class_name);
+        let to_string_override =
+            self.render_to_string_override(config, class_name);
+
         format!(
             r###"{comment} class {class_name} {{
 {field_declarations}
 {constructor}
 {equality_overrides}
+{to_string_override}
 {comment} }}"###,
             class_name = class_name,
             field_declarations = field_declarations,
             constructor = constructor,
             equality_overrides = equality_overrides,
+            to_string_override = to_string_override,
             comment = config.comment
         )
     }
 
+    // -----------------
+    // Class Fields
+    // -----------------
     fn render_field_declarations(
         &self,
         config: &ParsedStructRenderConfig,
@@ -113,6 +128,9 @@ impl ParsedStruct {
             .join("\n");
     }
 
+    // -----------------
+    // Class Constructor
+    // -----------------
     fn render_private_constructor(
         &self,
         config: &ParsedStructRenderConfig,
@@ -145,6 +163,9 @@ impl ParsedStruct {
         }
     }
 
+    // -----------------
+    // Class Equality overrides
+    // -----------------
     fn render_equality_overrides(
         &self,
         config: &ParsedStructRenderConfig,
@@ -248,6 +269,70 @@ impl ParsedStruct {
 {comment}  }}"###,
                 field_comparisons = field_comparisons,
                 class_name = class_name,
+                comment = config.comment,
+            )
+        }
+    }
+
+    // -----------------
+    // Class toString override
+    // -----------------
+
+    /// Renders toString() override for Dart instance
+    ///
+    /// Example:
+    /// ```dart
+    /// @override
+    /// String toString() {
+    ///   return 'Todo{id: $id, title: $title, completed: $completed}';
+    /// }
+    /// ```
+    fn render_to_string_override(
+        &self,
+        config: &ParsedStructRenderConfig,
+        class_name: &str,
+    ) -> String {
+        if !config.include_to_string || self.fields.is_empty() {
+            "".to_string()
+        } else {
+            let multi_line = self.fields.len() > 6;
+            let field_separator = if multi_line {
+                format!("\n{comment}   ", comment = config.comment)
+            } else {
+                ", ".to_string()
+            };
+            let quote = if multi_line { "'''" } else { "'" };
+            let fields = self
+                .fields
+                .iter()
+                .map(|x| format!("{field}: ${field}", field = x.ident,))
+                .collect::<Vec<String>>()
+                .join(&field_separator);
+
+            let pre_fields = if multi_line {
+                format!(" {{\n{comment}   ", comment = config.comment)
+            } else {
+                "{".to_string()
+            };
+            let post_fields = if multi_line {
+                format!(
+                    "\n{comment}{closing_brace}",
+                    comment = config.comment,
+                    closing_brace = "}}"
+                )
+            } else {
+                "}".to_string()
+            };
+            format!(
+                r###"{comment}  @override
+    {comment}  String toString() {{
+    {comment}    return {quote}{class_name}{pre_fields}{fields}{post_fields}{quote};
+    {comment}  }}"###,
+                class_name = class_name,
+                pre_fields = pre_fields,
+                post_fields = post_fields,
+                fields = fields,
+                quote = quote,
                 comment = config.comment,
             )
         }

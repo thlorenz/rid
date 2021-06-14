@@ -51,6 +51,7 @@ pub fn rid_dart_impl(
                 comment: comment.to_string(),
                 dart_class_only: false,
                 include_equality: true,
+                include_to_string: true,
             };
             let dart_extension = parsed_struct
                 .render_struct_pointer_to_class_extension(&render_class_config);
