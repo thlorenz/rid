@@ -43,11 +43,13 @@ impl VecAccess {
         // TODO: this is not working for primitive types since they use RidVecs.
         //  - we can try to reuse the template, but then we cannot include `Pointer<...>` as return
         //  type in it, or we use a different template, i.e. `rid_vec.dart` for those
-        let dart_item_type = &self.item_type.render_dart_pointer_type();
+        let dart_item_type = &self.item_type.render_dart_type(false);
+        let dart_raw_item_type = &self.item_type.render_dart_pointer_type();
         TEMPLATE
             .replace("///", comment)
             .replace("{vec_type}", &self.vec_type_dart)
             .replace("{dart_item_type}", &dart_item_type)
+            .replace("{dart_raw_item_type}", &dart_raw_item_type)
             .replace("{fn_len_ident}", &self.fn_len_ident.to_string())
             .replace("{fn_get_ident}", &self.fn_get_ident.to_string())
             .replace("{fn_free_ident}", &self.fn_free_ident.to_string())
