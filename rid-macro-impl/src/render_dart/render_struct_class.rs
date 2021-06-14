@@ -1,4 +1,4 @@
-use rid_common::{DART_FFI, FFI_GEN_BIND, RID_FFI};
+use rid_common::{DART_FFI, FFI_GEN_BIND};
 
 use crate::parse::ParsedStruct;
 
@@ -39,9 +39,9 @@ impl ParsedStruct {
 {comment} // Extension method `toDart` to instantiate a Dart {ident} by resolving all fields from Rust
 {comment} extension Rid_ToDart_ExtOn{ident} on {raw_class_name} {{
 {comment}   {class_name} toDart() {{
-{comment}      {rid_ffi}.rid_store_lock();
+{comment}      ridStoreLock();
 {comment}      final instance = {class_name}._({constructor_fields});
-{comment}      {rid_ffi}.rid_store_unlock();
+{comment}      ridStoreUnlock();
 {comment}      return instance;
 {comment}   }}
 {comment} }}
@@ -51,7 +51,6 @@ impl ParsedStruct {
                 class_name = class_name,
                 raw_class_name = raw_class_name,
                 constructor_fields = constructor_fields,
-                rid_ffi = RID_FFI,
                 comment = config.comment
             )
         }
