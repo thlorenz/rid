@@ -53,10 +53,13 @@ fn render_frees(
 fn compare_strings_by_line(s1: &str, s2: &str) {
     let lines1: Vec<&str> = s1.lines().collect();
     let lines2: Vec<&str> = s2.lines().collect();
+    if lines1.len() != lines2.len() {
+        eprintln!("{}", s1);
+    }
     assert_eq!(
         lines1.len(),
         lines2.len(),
-        "strints should have same amount of lines"
+        "strings should have same amount of lines"
     );
 
     for (idx, l1) in lines1.into_iter().enumerate() {
