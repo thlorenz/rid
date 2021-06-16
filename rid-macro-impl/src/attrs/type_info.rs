@@ -58,6 +58,10 @@ impl TypeInfo {
     pub fn is_self(&self) -> bool {
         self.cat == Category::Struct && self.key.to_string() == "Self"
     }
+
+    pub fn is_enum(&self) -> bool {
+        self.cat == Category::Enum
+    }
 }
 
 impl From<(&str, Category)> for TypeInfo {

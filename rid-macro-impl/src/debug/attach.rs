@@ -100,7 +100,7 @@ fn render_debug(
         && rust_type.is_enum()
         && get_state().needs_implementation(
             &ImplementationType::DartEnum,
-            &rust_type.ident().to_string(),
+            &rust_type.rust_ident().to_string(),
         ) {
         rust_type
             .render_dart_enum(
