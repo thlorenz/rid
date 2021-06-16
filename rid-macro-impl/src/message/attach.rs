@@ -2,7 +2,8 @@ use proc_macro2::TokenStream;
 use syn::{Item, NestedMeta};
 
 use super::{
-    parse_message_enum::ParsedEnum, render_message_enum::MessageRenderConfig,
+    parsed_message_enum::ParsedMessageEnum,
+    render_message_enum::MessageRenderConfig,
 };
 use crate::{
     attrs::{self, parse_rid_args, EnumConfig},
@@ -22,12 +23,12 @@ pub fn rid_message_impl(
             if rid_args.len() == 2 {
                 let enum_config =
                     EnumConfig::new(&rid_attrs, &rid_args[0], &rid_args[1]);
-                let parsed_enum = ParsedEnum::new(
+                let parsed_message_enum = ParsedMessageEnum::new(
                     &item.ident,
                     item.variants.clone(),
                     enum_config,
                 );
-                parsed_enum.render(&render_config).0
+                parsed_message_enum.render(&render_config).0
             } else {
                 abort!(
                     item,

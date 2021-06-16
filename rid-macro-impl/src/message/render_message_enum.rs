@@ -15,7 +15,8 @@ use crate::{
 };
 
 use super::{
-    parsed_variant::ParsedVariant, store::code_store_module, ParsedEnum,
+    parsed_variant::ParsedMessageVariant, store::code_store_module,
+    ParsedMessageEnum,
 };
 
 pub struct MessageRenderConfig {
@@ -50,7 +51,7 @@ impl MessageRenderConfig {
     }
 }
 
-impl ParsedEnum {
+impl ParsedMessageEnum {
     /// Renders this message enum and returns a tuple of the fully rendered tokens and
     /// a separate copy of the dart string. The latter is mainly used when testing.
     /// When generating code the first one is what should be used.
@@ -108,7 +109,7 @@ impl ParsedEnum {
 
     fn render_rust_method(
         &self,
-        variant: &ParsedVariant,
+        variant: &ParsedMessageVariant,
         config: &MessageRenderConfig,
     ) -> TokenStream {
         use crate::common::rust::ValueType::*;
@@ -294,7 +295,7 @@ impl ParsedEnum {
 
     fn render_dart_method(
         &self,
-        variant: &ParsedVariant,
+        variant: &ParsedMessageVariant,
         class_name: &str,
         comment: &str,
     ) -> String {

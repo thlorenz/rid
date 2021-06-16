@@ -10,14 +10,14 @@ use crate::{
 };
 
 #[derive(Debug)]
-pub struct VariantField {
+pub struct MessageVariantField {
     pub ty: syn::Type,
     pub rust_ty: RustType,
     pub dart_ty: DartType,
     pub slot: usize,
 }
 
-impl VariantField {
+impl MessageVariantField {
     pub fn new(f: Field, slot: usize, types: &TypeInfoMap) -> Self {
         let ty = f.ty;
         let rust_ty = RustType::from_type(&ty, types);

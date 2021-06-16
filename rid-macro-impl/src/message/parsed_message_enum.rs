@@ -3,17 +3,17 @@ use crate::{
     parse::rust_type,
 };
 
-use super::{parsed_variant::ParsedVariant, store::code_store_module};
+use super::{parsed_variant::ParsedMessageVariant, store::code_store_module};
 use quote::{format_ident, quote, quote_spanned, IdentFragment};
 use std::collections::HashMap;
 use syn::{punctuated::Punctuated, token::Comma, Ident, Variant};
 
-pub struct ParsedEnum {
+pub struct ParsedMessageEnum {
     /// The enum itself, i.e. Msg
     pub ident: syn::Ident,
 
     /// The enum variants, i.e. AddTodo(String)
-    pub parsed_variants: Vec<ParsedVariant>,
+    pub parsed_variants: Vec<ParsedMessageVariant>,
 
     /// Prefix used for all message methods, i.e. rid_msg
     pub method_prefix: String,
@@ -34,7 +34,7 @@ pub struct ParsedEnum {
     pub config: EnumConfig,
 }
 
-impl ParsedEnum {
+impl ParsedMessageEnum {
     pub fn new(
         ident: &Ident,
         variants: Punctuated<Variant, Comma>,
@@ -71,10 +71,10 @@ fn parse_variants(
     variants: Punctuated<Variant, Comma>,
     method_prefix: &str,
     types: &TypeInfoMap,
-) -> Vec<ParsedVariant> {
+) -> Vec<ParsedMessageVariant> {
     variants
         .into_iter()
-        .map(|v| ParsedVariant::new(v, &method_prefix, types))
+        .map(|v| ParsedMessageVariant::new(v, &method_prefix, types))
         .collect()
 }
 

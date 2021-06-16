@@ -5,7 +5,7 @@ use syn::{parse_macro_input, Ident, Item};
 use crate::{
     attrs::{self, EnumConfig, RidAttr},
     common::{abort, dump_code, dump_tokens, normalize_code},
-    message::ParsedEnum,
+    message::ParsedMessageEnum,
 };
 
 use super::render_message_enum::MessageRenderConfig;
@@ -23,7 +23,7 @@ fn render(
             let rid_attrs = attrs::parse_rid_attrs(&item.attrs);
             let enum_config =
                 EnumConfig::new(&rid_attrs, &rid_args[0], &rid_args[1]);
-            let parsed_enum = ParsedEnum::new(
+            let parsed_enum = ParsedMessageEnum::new(
                 &item.ident,
                 item.variants.clone(),
                 enum_config,

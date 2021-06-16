@@ -1,15 +1,15 @@
 use syn::Variant;
 
-use super::variant_field::VariantField;
+use super::variant_field::MessageVariantField;
 use crate::attrs::TypeInfoMap;
 
-pub struct ParsedVariant {
+pub struct ParsedMessageVariant {
     pub ident: syn::Ident,
     pub method_ident: syn::Ident,
-    pub fields: Vec<VariantField>,
+    pub fields: Vec<MessageVariantField>,
 }
 
-impl ParsedVariant {
+impl ParsedMessageVariant {
     pub fn new(v: Variant, method_prefix: &str, types: &TypeInfoMap) -> Self {
         let ident = v.ident.clone();
         let method_ident = method_ident_from_variant(method_prefix, &ident);
@@ -22,11 +22,11 @@ impl ParsedVariant {
     }
 }
 
-fn extract_fields(v: Variant, types: &TypeInfoMap) -> Vec<VariantField> {
+fn extract_fields(v: Variant, types: &TypeInfoMap) -> Vec<MessageVariantField> {
     v.fields
         .into_iter()
         .enumerate()
-        .map(|(idx, f)| VariantField::new(f, idx, types))
+        .map(|(idx, f)| MessageVariantField::new(f, idx, types))
         .collect()
 }
 
