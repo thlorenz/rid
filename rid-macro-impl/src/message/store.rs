@@ -25,9 +25,9 @@ pub fn code_store_module(
 /// extension rid_store_specific_extension on {dart_ffi}.Pointer<{ffigen_bind}.{store}> {{
 ///   /// Executes the provided callback while locking the store to guarantee that the
 ///   /// store is not modified while that callback runs.
-///   T runLocked<T>(T Function({dart_ffi}.Pointer<{ffigen_bind}.{store}>) fn) {{
+///   T runLocked<T>(T Function({dart_ffi}.Pointer<{ffigen_bind}.{store}>) fn, {{String? request}}) {{
 ///     try {{
-///       ridStoreLock();
+///       ridStoreLock(request: request);
 ///       return fn(this);
 ///     }} finally {{
 ///       ridStoreUnlock();
@@ -53,23 +53,19 @@ pub fn code_store_module(
 /// ```dart
 /// int _locks = 0;
 ///
-/// void Function(bool, int)? RID_DEBUG_LOCK = (bool locking, int locks) {{
-///   String countIndicator = '';
+/// void Function(bool, int, {{String? request}})? RID_DEBUG_LOCK = (bool locking, int locks, {{String? request}}) {{
 ///   if (locking) {{
-///     for (int i = 1; i < locks; i++) countIndicator += '  ';
-///     final lock = _locks == 1 ? '🔐' : '  ';
-///     print('$lock $countIndicator{{');
+///     if (locks == 1) print('🔐 {{');
+///     if (request != null) print(' $request');
 ///   }} else {{
-///     for (int i = 0; i < locks; i++) countIndicator += '  ';
-///     final lock = _locks == 0 ? '🔓' : '  ';
-///     print('$countIndicator}} $lock');
+///     if (locks == 0) print('}} 🔓');
 ///   }}
 /// }};
 ///
-/// void ridStoreLock() {{
+/// void ridStoreLock({{String? request}}) {{
 ///   if (_locks == 0) {rid_ffi}.rid_store_lock();
 ///   _locks++;
-///   if (RID_DEBUG_LOCK != null) RID_DEBUG_LOCK!(true, _locks);
+///   if (RID_DEBUG_LOCK != null) RID_DEBUG_LOCK!(true, _locks, request: request);
 /// }}
 ///
 /// void ridStoreUnlock() {{
