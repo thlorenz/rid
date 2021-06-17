@@ -2,6 +2,7 @@ pub use ffi_prelude::ffi_prelude;
 pub use render_access_item::*;
 pub use render_debug_impl::*;
 pub use render_display_impl::*;
+pub use render_enum_resolution_impl::*;
 pub use render_free::*;
 pub use render_function_export::*;
 pub use render_pointer_type::*;
@@ -31,5 +32,9 @@ mod render_to_return_type;
 mod type_alias;
 mod vec;
 
+mod render_enum_resolution_impl;
+
+#[cfg(test)]
+pub mod render_enum_resolution_impl_test;
 #[cfg(test)]
 pub mod render_function_export_test;

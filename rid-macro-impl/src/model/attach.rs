@@ -1,36 +1,49 @@
 use crate::{
     attrs, attrs::StructConfig, common::abort,
-    model::parsed_struct::ParsedStruct,
+    model::parsed_struct::ParsedStruct, parse::ParsedEnum,
 };
 use proc_macro2::TokenStream;
+use quote::quote_spanned;
 use syn::{Fields, Item};
 
 pub fn rid_ffi_model_impl(item: &Item) -> TokenStream {
     match item {
-        Item::Struct(item) => {
-            let rid_attrs = attrs::parse_rid_attrs(&item.attrs);
+        Item::Struct(struct_item) => {
+            let rid_attrs = attrs::parse_rid_attrs(&struct_item.attrs);
             let struct_config = StructConfig::new(&rid_attrs);
-            match &item.fields {
+            let exports = match &struct_item.fields {
                 Fields::Named(fields) => {
                     let parsed_struct = ParsedStruct::new(
-                        item.ident.clone(),
+                        struct_item.ident.clone(),
                         &fields.named,
                         struct_config,
                     );
                     parsed_struct.tokens()
                 }
                 Fields::Unnamed(_) => abort!(
-                    item.ident,
+                    struct_item.ident,
                     "not yet supporting structs with unnamed fields"
                 ),
                 Fields::Unit => abort!(
-                    item.ident,
+                    struct_item.ident,
                     "structs without fields cannot be a rid::model"
                 ),
+            };
+            quote_spanned! { struct_item.ident.span() =>
+                #item
+                #exports
+            }
+        }
+        Item::Enum(enum_item) => {
+            let parsed_enum = ParsedEnum::from(enum_item);
+            let resolution_impl = parsed_enum.render_enum_resolution_impl();
+            quote_spanned! { enum_item.ident.span() =>
+                #[repr(C)]
+                #item
+                #resolution_impl
             }
         }
         Item::Const(_)
-        | Item::Enum(_)
         | Item::ExternCrate(_)
         | Item::Fn(_)
         | Item::ForeignMod(_)
@@ -46,7 +59,7 @@ pub fn rid_ffi_model_impl(item: &Item) -> TokenStream {
         | Item::Use(_)
         | Item::Verbatim(_)
         | Item::__TestExhaustive(_) => {
-            abort!(item, "rid::model attribute can only be applied to structs");
+            abort!(item, "rid::model attribute can only be applied to structs and c-style enums");
         }
     }
 }

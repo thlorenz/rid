@@ -27,12 +27,8 @@ pub fn model(_attrs: TokenStream, input: TokenStream) -> TokenStream {
         rid_ffi_model_impl(&item);
         process::exit(0)
     } else {
-        let exports = rid_ffi_model_impl(&item);
-        let q = quote! {
-            #item
-            #exports
-        };
-        q.into()
+        let item_and_impl = rid_ffi_model_impl(&item);
+        item_and_impl.into()
     }
 }
 
