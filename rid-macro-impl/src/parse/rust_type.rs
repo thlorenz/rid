@@ -41,6 +41,8 @@ impl RustType {
     }
 
     /// Ident that should be used inside generated Rust/Dart wrapper methods
+    /// For structs this is `rust_ident` prefixed with `Raw` and equal to `rust_ident` for all
+    /// else.
     pub fn ident(&self) -> &Ident {
         if self.needs_type_alias {
             &self.raw_ident
@@ -52,15 +54,6 @@ impl RustType {
     /// Ident that came directly from the annotated Rust code
     pub fn rust_ident(&self) -> &Ident {
         &self.ident
-    }
-
-    /// Used at this point only to name Dart presentations of Rust enums
-    pub fn dart_ident(&self, prefix: bool) -> Ident {
-        if prefix {
-            format_ident!("Rid{}", self.ident())
-        } else {
-            self.ident().clone()
-        }
     }
 
     pub fn from_owned_struct(ident: &Ident) -> Self {

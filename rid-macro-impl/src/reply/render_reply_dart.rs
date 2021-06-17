@@ -17,8 +17,8 @@ pub fn render_reply_dart(
     let rust_type = RustType::from_owned_enum(enum_ident);
     let variants: Vec<String> =
         enum_variants.iter().map(|x| x.ident.to_string()).collect();
-    let rendered_enum = rust_type.render_dart_enum(&variants, comment, false);
-    let dart_enum_name = rust_type.dart_ident(false).to_string();
+    let rendered_enum = rust_type.render_dart_enum(&variants, comment);
+    let dart_enum_name = rust_type.rust_ident().to_string();
 
     let class_name = reply_class_name_for_enum(&dart_enum_name);
 

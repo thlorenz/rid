@@ -106,7 +106,6 @@ fn render_display(
                     .as_ref()
                     .expect("Need variants to render enum"),
                 "///",
-                true,
             )
             .parse()
             .unwrap()

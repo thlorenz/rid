@@ -37,8 +37,11 @@ mod c_style_enums {
                         n => panic!("enum Count does not include discriminant {}", n),
                     }
                 }
-                pub fn _rid_into_discriminant(self) -> i32 {
-                    self as i32
+                pub fn _rid_into_discriminant(&self) -> i32 {
+                    match self {
+                        Self::One => 0,
+                        Self::Two => 1,
+                    }
                 }
             }
         };

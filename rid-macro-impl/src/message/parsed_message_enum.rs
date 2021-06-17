@@ -51,7 +51,7 @@ impl ParsedMessageEnum {
         let struct_ident = format_ident!("{}", config.to);
         let raw_struct_ident = raw_typedef_ident(&struct_ident);
         let reply_ident = rust_type::RustType::from_owned_enum(&config.reply);
-        let reply_dart_enum_name = reply_ident.dart_ident(false).to_string();
+        let reply_dart_enum_name = reply_ident.rust_ident().to_string();
 
         Self {
             ident: ident.clone(),

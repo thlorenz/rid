@@ -36,8 +36,11 @@ impl ParsedEnum {
     ///         }
     ///     }
     ///
-    ///     pub fn _rid_into_discriminant(self) -> i32 {
-    ///         self as i32
+    ///     pub fn _rid_into_discriminant(&self) -> i32 {
+    ///         match self {
+    ///             Self::One => 0,
+    ///             Self::Two => 1,
+    ///         }
     ///     }
     /// }
     /// ```
@@ -48,7 +51,7 @@ impl ParsedEnum {
             ident = ident
         );
 
-        let variant_tokens: Vec<TokenStream> = self
+        let variant_to_int_tokens: TokenStream = self
             .variants
             .iter()
             .map(|variant| {
@@ -57,10 +60,26 @@ impl ParsedEnum {
                     discriminant = variant.discriminant,
                     variant = variant.ident,
                 )
-                .parse()
-                .unwrap()
             })
-            .collect();
+            .collect::<Vec<String>>()
+            .join("\n")
+            .parse()
+            .unwrap();
+
+        let int_to_variant_tokens: TokenStream = self
+            .variants
+            .iter()
+            .map(|variant| {
+                format!(
+                    "Self::{variant} => {discriminant},",
+                    discriminant = variant.discriminant,
+                    variant = variant.ident,
+                )
+            })
+            .collect::<Vec<String>>()
+            .join("\n")
+            .parse()
+            .unwrap();
 
         quote_spanned! { ident.span() =>
             impl #ident {
@@ -69,12 +88,14 @@ impl ParsedEnum {
                     T: Into<i32> + Sized,
                 {
                     match discriminant.into() {
-                        #(#variant_tokens)*
+                        #variant_to_int_tokens
                         n => panic!(#panic_quote, n),
                     }
                 }
-                pub fn _rid_into_discriminant(self) -> i32 {
-                    self as i32
+                pub fn _rid_into_discriminant(&self) -> i32 {
+                    match self {
+                        #int_to_variant_tokens
+                    }
                 }
             }
         }

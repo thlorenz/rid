@@ -21,8 +21,7 @@ impl DartType {
             let enum_name = enum_name.as_ref().unwrap();
 
             return Expression(format!(
-                "{enum_name}.values[{rid_ffi}.{ffi_method}(this)];",
-                enum_name = enum_name,
+                "{rid_ffi}.{ffi_method}(this);",
                 rid_ffi = RID_FFI,
                 ffi_method = ffi_method
             ));

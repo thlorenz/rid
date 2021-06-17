@@ -5,11 +5,10 @@ impl RustType {
         &self,
         variants: &[String],
         comment: &str,
-        prefix_type_name: bool,
     ) -> String {
         assert!(self.is_enum(), "Can only render dart enum for rust enum");
 
-        let type_name = self.dart_ident(prefix_type_name).to_string();
+        let type_name = self.rust_ident().to_string();
         let rust_type_name = self.ident().to_string();
         let variants = variants.join(", ");
 

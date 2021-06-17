@@ -433,10 +433,7 @@ impl ParsedStruct {
         };
 
         let enum_name = if is_enum {
-            Some(format!(
-                "Rid{}",
-                field.rust_ty.as_ref().unwrap().val_type_name()
-            ))
+            Some(field.rust_ty.as_ref().unwrap().val_type_name())
         } else {
             None
         };
@@ -451,10 +448,9 @@ impl ParsedStruct {
             let enum_name = enum_name.as_ref().unwrap();
 
             format!(
-                "{attrib}/// {enum_name} get {field_ident}{delim}{body}",
+                "{attrib}/// int get {field_ident}{delim}{body}",
                 delim = delim,
                 attrib = attrib,
-                enum_name = enum_name,
                 field_ident = &field.ident,
                 body = body
             )
