@@ -1,7 +1,7 @@
 use crate::{attrs::TypeInfo, common::abort, parse::rust_type::RustType};
 use rid_common::{DART_FFI, STRING_TO_NATIVE_INT8};
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum DartType {
     Int32,
     Int64,

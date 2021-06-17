@@ -10,7 +10,7 @@ use syn::{
 
 use crate::common::abort;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum RidAttr {
     // rid specific
     Structs(Ident, Vec<syn::Ident>),
