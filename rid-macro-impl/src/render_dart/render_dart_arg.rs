@@ -1,4 +1,4 @@
-use crate::parse::rust_type::RustType;
+use crate::{attrs::TypeInfoMap, parse::rust_type::RustType};
 
 #[derive(Debug)]
 pub struct DartArg {
@@ -7,8 +7,8 @@ pub struct DartArg {
 }
 
 impl DartArg {
-    pub fn from(ty: &RustType, slot: usize) -> Self {
-        let dart_ty = ty.render_dart_type(true);
+    pub fn from(ty: &RustType, type_infos: &TypeInfoMap, slot: usize) -> Self {
+        let dart_ty = ty.render_dart_type(type_infos, true);
         let arg = format!("arg{}", slot);
         Self { arg, ty: dart_ty }
     }

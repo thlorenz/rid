@@ -106,7 +106,8 @@ impl ParsedStruct {
             .fields
             .iter()
             .map(|x| {
-                let (ty, ffi_ty) = x.rust_type.render_dart_and_ffi_type();
+                let (ty, ffi_ty) =
+                    x.rust_type.render_dart_and_ffi_type(self.type_infos());
                 match ffi_ty {
                     Some(ffi_ty) => format!(
                         "{comment}    {ffi_ty}\n{comment}   final {ty} {name};",

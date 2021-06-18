@@ -1,7 +1,8 @@
 use rid_common::{DART_COLLECTION, DART_FFI, FFI_GEN_BIND, RID_FFI};
 
 use crate::{
-    common::DartType, parse::rust_type::RustType, render_common::VecAccess,
+    attrs::TypeInfoMap, common::DartType, parse::rust_type::RustType,
+    render_common::VecAccess,
 };
 
 const TEMPLATE_OLD: &str = std::include_str!("./vec_old.dart");
@@ -38,12 +39,17 @@ pub(crate) fn render(vec: &ImplementVecOld) -> String {
 }
 
 impl VecAccess {
-    pub fn render_dart(&self, comment: &str) -> String {
+    pub fn render_dart(
+        &self,
+        type_infos: &TypeInfoMap,
+        comment: &str,
+    ) -> String {
         // TODO: once we have recursive vecs, we need to pass the nested vecs to implement along
         // TODO: this is not working for primitive types since they use RidVecs.
         //  - we can try to reuse the template, but then we cannot include `Pointer<...>` as return
         //  type in it, or we use a different template, i.e. `rid_vec.dart` for those
-        let dart_item_type = &self.item_type.render_dart_type(false);
+        let dart_item_type =
+            &self.item_type.render_dart_type(type_infos, false);
         let dart_raw_item_type = &self.item_type.render_dart_pointer_type();
         TEMPLATE
             .replace("///", comment)

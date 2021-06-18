@@ -20,7 +20,7 @@ fn parse(
         syn::Item::Fn(syn::ItemFn { attrs, sig, .. }) => {
             let rid_attrs = parse_rid_attrs(&attrs);
             let config = FunctionConfig::new(&rid_attrs, owner);
-            ParsedFunction::new(sig, &config, owner)
+            ParsedFunction::new(sig, config, owner)
         }
         _ => panic!("Unexpected item, we're trying to parse functions here"),
     }

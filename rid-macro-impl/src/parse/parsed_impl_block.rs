@@ -8,7 +8,7 @@ use super::{
     rust_type::{RustType, TypeKind, Value},
 };
 use crate::{
-    attrs::{self, raw_typedef_ident},
+    attrs::{self, raw_typedef_ident, RidAttr},
     common::abort,
 };
 
@@ -16,18 +16,15 @@ use crate::{
 pub struct ParsedImplBlock {
     pub ty: RustType,
     pub methods: Vec<ParsedFunction>,
+    pub config: ImplBlockConfig,
 }
 
 impl ParsedImplBlock {
-    pub fn new(
-        item_impl: syn::ItemImpl,
-        impl_attrs: &[attrs::RidAttr],
-    ) -> Self {
+    pub fn new(item_impl: syn::ItemImpl, config: ImplBlockConfig) -> Self {
         use syn::*;
 
         let self_ty = *item_impl.self_ty;
-        let impl_config = ImplBlockConfig::new(impl_attrs);
-        let ty = match RustType::from_type(&self_ty, &impl_config.type_infos) {
+        let ty = match RustType::from_type(&self_ty, &config.type_infos) {
             Some(ty) if ty.kind == TypeKind::Unknown =>
             // NOTE: At this point we don't require the user to specify the type of the impl owner.
             // We assume it is a struct. It could be an enum, but most likely all arg types,
@@ -57,7 +54,7 @@ impl ParsedImplBlock {
             None => abort!(self_ty, "Unexpected impl type {:#?}", self_ty),
         };
 
-        let owner = Some((ty.rust_ident(), &impl_config.type_infos));
+        let owner = Some((ty.rust_ident(), &config.type_infos));
         let methods: Vec<ParsedFunction> = item_impl
             .items
             .into_iter()
@@ -72,7 +69,7 @@ impl ParsedImplBlock {
                     let rid_attrs = parse_rid_attrs(&attrs);
                     let fn_config = FunctionConfig::new(&rid_attrs, owner);
                     if fn_config.is_exported {
-                        Some(ParsedFunction::new(sig, &fn_config, owner))
+                        Some(ParsedFunction::new(sig, fn_config, owner))
                     } else {
                         None
                     }
@@ -92,6 +89,20 @@ impl ParsedImplBlock {
             );
         }
 
-        Self { ty, methods }
+        Self {
+            ty,
+            methods,
+            config,
+        }
+    }
+
+    /// Parsed attributes of the impl block
+    pub fn attrs(&self) -> &[RidAttr] {
+        &self.config.attrs
+    }
+
+    /// Information about custom types used inside this impl block
+    pub fn type_infos(&self) -> &TypeInfoMap {
+        &self.config.type_infos
     }
 }

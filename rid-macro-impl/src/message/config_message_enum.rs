@@ -1,25 +1,29 @@
-use syn::{Ident, ItemEnum};
+use syn::Ident;
 
-use crate::{common::abort, parse_rid_attrs};
 use std::collections::HashMap;
 
-use super::{
-    add_idents_to_type_map, parse_rid_args, Category, RidAttr, TypeInfo,
-    TypeInfoMap,
+use crate::{
+    attrs::{add_idents_to_type_map, Category, RidAttr, TypeInfo, TypeInfoMap},
+    common::abort,
 };
 
-#[derive(Debug, PartialEq)]
-pub struct EnumConfig {
+#[derive(Debug)]
+pub struct MessageEnumConfig {
     pub debug: bool,
-    pub attrs: Vec<RidAttr>,
     pub type_infos: TypeInfoMap,
+    pub to: Ident,
+    pub reply: Ident,
 }
 
-impl EnumConfig {
-    pub fn new(attrs: Vec<RidAttr>) -> Self {
+impl MessageEnumConfig {
+    pub fn new(
+        attrs: &[RidAttr],
+        model_ident: &Ident,
+        reply_ident: &Ident,
+    ) -> Self {
         let mut debug = false;
         let mut type_infos: TypeInfoMap = TypeInfoMap(HashMap::new());
-        for attr in &attrs {
+        for attr in attrs {
             match attr {
                 RidAttr::Structs(attr_ident, idents) => add_idents_to_type_map(
                     &mut type_infos,
@@ -49,12 +53,8 @@ impl EnumConfig {
         Self {
             debug,
             type_infos,
-            attrs,
+            to: model_ident.clone(),
+            reply: reply_ident.clone(),
         }
-    }
-
-    pub fn from(enum_item: &ItemEnum) -> Self {
-        let rid_attrs = parse_rid_attrs(&enum_item.attrs);
-        Self::new(rid_attrs)
     }
 }

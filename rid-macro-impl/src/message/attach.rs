@@ -3,10 +3,10 @@ use syn::{Item, NestedMeta};
 
 use super::{
     parsed_message_enum::ParsedMessageEnum,
-    render_message_enum::MessageRenderConfig,
+    render_message_enum::MessageRenderConfig, MessageEnumConfig,
 };
 use crate::{
-    attrs::{self, parse_rid_args, EnumConfig},
+    attrs::{self, parse_rid_args},
     common::{abort, callsite_error},
 };
 
@@ -21,8 +21,11 @@ pub fn rid_message_impl(
             let rid_attrs = attrs::parse_rid_attrs(&item.attrs);
             let rid_args = parse_rid_args(args);
             if rid_args.len() == 2 {
-                let enum_config =
-                    EnumConfig::new(&rid_attrs, &rid_args[0], &rid_args[1]);
+                let enum_config = MessageEnumConfig::new(
+                    &rid_attrs,
+                    &rid_args[0],
+                    &rid_args[1],
+                );
                 let parsed_message_enum = ParsedMessageEnum::new(
                     &item.ident,
                     item.variants.clone(),

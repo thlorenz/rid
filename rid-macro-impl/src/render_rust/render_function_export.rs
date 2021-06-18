@@ -45,6 +45,7 @@ pub fn render_function_export(
         receiver,
         args,
         return_arg,
+        ..
     } = parsed_function;
 
     let return_ident = format_ident!("ret");

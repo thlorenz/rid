@@ -2,7 +2,11 @@ use syn::{
     punctuated::Punctuated, token::Comma, Field, Ident, ItemEnum, Variant,
 };
 
-use crate::{attrs::RidAttr, common::abort, parse_rid_attrs};
+use crate::{
+    attrs::{EnumConfig, RidAttr, TypeInfoMap},
+    common::abort,
+    parse_rid_attrs,
+};
 
 use super::{dart_type::DartType, rust_type::RustType};
 
@@ -17,12 +21,12 @@ pub struct ParsedEnum {
     /// The enum variants, i.e. All, Completed
     pub variants: Vec<ParsedEnumVariant>,
 
-    /// Parsed attributes of the enum
-    pub attrs: Vec<RidAttr>,
+    /// The config of the enum including information from other attributes found on it
+    pub config: EnumConfig,
 }
 
 impl ParsedEnum {
-    pub fn from(enum_item: &ItemEnum) -> Self {
+    pub fn from(enum_item: &ItemEnum, config: EnumConfig) -> Self {
         let ItemEnum {
             ident,
             variants,
@@ -30,22 +34,30 @@ impl ParsedEnum {
             ..
         } = enum_item;
 
-        let attrs = parse_rid_attrs(&attrs);
-
         // NOTE: there is a parseable variant.discriminant Option that we can parse if we want to
         // support custom discriminants, i.e. `enum Stage { Started = 1 }`
         // For now we just assume it's the same as the slot of the variant.
         let variants = variants
             .into_iter()
             .enumerate()
-            .map(|(idx, v)| ParsedEnumVariant::from(v, idx))
+            .map(|(idx, v)| ParsedEnumVariant::from(v, idx, &config.type_infos))
             .collect();
 
         Self {
             ident: ident.clone(),
             variants,
-            attrs,
+            config,
         }
+    }
+
+    /// Parsed attributes of the enum
+    pub fn attrs(&self) -> &[RidAttr] {
+        &self.config.attrs
+    }
+
+    /// Information about custom types used inside this enum
+    pub fn type_infos(&self) -> &TypeInfoMap {
+        &self.config.type_infos
     }
 }
 
@@ -65,12 +77,16 @@ pub struct ParsedEnumVariant {
 }
 
 impl ParsedEnumVariant {
-    pub fn from(variant: &Variant, discriminant: usize) -> Self {
+    pub fn from(
+        variant: &Variant,
+        discriminant: usize,
+        type_infos: &TypeInfoMap,
+    ) -> Self {
         let fields = variant
             .fields
             .iter()
             .enumerate()
-            .map(|(idx, f)| ParsedEnumVariantField::from(f, idx))
+            .map(|(idx, f)| ParsedEnumVariantField::from(f, idx, type_infos))
             .collect();
         Self {
             ident: variant.ident.clone(),
@@ -98,13 +114,13 @@ pub struct ParsedEnumVariantField {
 impl ParsedEnumVariantField {
     // NOTE: unlike the `message` enum (src/message/variant_field.rs) here we don't support custom
     // types yet
-    fn from(f: &Field, slot: usize) -> Self {
+    fn from(f: &Field, slot: usize, type_infos: &TypeInfoMap) -> Self {
         let rust_type = RustType::from_plain_type(&f.ty);
         let rust_type = match rust_type {
             Some(x) => x,
             None => abort!(f.ident, "invalid rust type"),
         };
-        let dart_type = DartType::from(&rust_type);
+        let dart_type = DartType::from(&rust_type, type_infos);
         Self {
             rust_type,
             dart_type,

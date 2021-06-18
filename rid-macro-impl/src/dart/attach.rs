@@ -1,12 +1,16 @@
+use std::collections::HashMap;
+
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote, quote_spanned};
 use syn::{
-    punctuated::Punctuated, Data, DataEnum, DeriveInput, Token, Variant,
+    punctuated::Punctuated, Data, DataEnum, DeriveInput, ItemStruct, Token,
+    Variant,
 };
 
 use crate::{
+    attrs::{self, add_idents_to_type_map, StructConfig, TypeInfoMap},
     common::{
-        abort, extract_variant_names,
+        abort,
         state::{get_state, ImplementationType},
         tokens::cstring_free,
     },
@@ -15,12 +19,12 @@ use crate::{
     render_rust::RenderedDisplayImpl,
 };
 
-pub struct DartObjectImplConfig {
+pub struct DartRenderImplConfig {
     render_cstring_free: bool,
     render_dart_only: bool,
 }
 
-impl Default for DartObjectImplConfig {
+impl Default for DartRenderImplConfig {
     fn default() -> Self {
         Self {
             render_cstring_free: true,
@@ -29,7 +33,7 @@ impl Default for DartObjectImplConfig {
     }
 }
 
-impl DartObjectImplConfig {
+impl DartRenderImplConfig {
     pub fn for_tests() -> Self {
         Self {
             render_cstring_free: false,
@@ -39,41 +43,37 @@ impl DartObjectImplConfig {
 }
 
 pub fn rid_dart_impl(
-    input: &DeriveInput,
-    config: DartObjectImplConfig,
+    struct_item: &ItemStruct,
+    struct_config: StructConfig,
+    render_config: DartRenderImplConfig,
 ) -> TokenStream {
-    match &input.data {
-        Data::Struct(data) => {
-            let parsed_struct = ParsedStruct::new(&data, &input.ident);
+    let parsed_struct =
+        ParsedStruct::new(&struct_item, &struct_item.ident, struct_config);
 
-            let comment = if config.render_dart_only { "" } else { "///" };
-            let render_class_config = ParsedStructRenderConfig {
-                comment: comment.to_string(),
-                dart_class_only: false,
-                include_equality: true,
-                include_to_string: true,
-            };
-            let dart_extension = parsed_struct
-                .render_struct_pointer_to_class_extension(&render_class_config);
-            let dart_tokens: TokenStream = dart_extension.parse().unwrap();
-            let ident = &input.ident;
-            let mod_ident = format_ident!("__rid_{}_dart_mod", ident);
-            let fn_ident = format_ident!("_to_dart_for_{}", ident);
-            quote_spanned! { input.ident.span() =>
-                #[allow(non_snake_case)]
-                mod #mod_ident {
-                    #dart_tokens
-                    #[no_mangle]
-                    pub extern "C" fn #fn_ident() {}
-                }
-            }
+    // TODO: continue here by using type_infos when converting to DartType
+    let comment = if render_config.render_dart_only {
+        ""
+    } else {
+        "///"
+    };
+    let render_class_config = ParsedStructRenderConfig {
+        comment: comment.to_string(),
+        dart_class_only: false,
+        include_equality: true,
+        include_to_string: true,
+    };
+    let dart_extension = parsed_struct
+        .render_struct_pointer_to_class_extension(&render_class_config);
+    let dart_tokens: TokenStream = dart_extension.parse().unwrap();
+    let ident = &struct_item.ident;
+    let mod_ident = format_ident!("__rid_{}_dart_mod", ident);
+    let fn_ident = format_ident!("_to_dart_for_{}", ident);
+    quote_spanned! { ident.span() =>
+        #[allow(non_snake_case)]
+        mod #mod_ident {
+            #dart_tokens
+            #[no_mangle]
+            pub extern "C" fn #fn_ident() {}
         }
-        Data::Enum(_) => {
-            abort!(input.ident, "Cannot derive DartObject for an enum")
-        }
-        Data::Union(data) => abort!(
-            input.ident,
-            "Cannot derive DartObject for an untagged Union type"
-        ),
     }
 }

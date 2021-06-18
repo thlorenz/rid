@@ -9,10 +9,11 @@ use crate::{
     },
 };
 
-pub fn render_reply_dart(enum_item: &ItemEnum, comment: &str) -> TokenStream {
-    let enum_ident = &enum_item.ident;
-    let rust_type = RustType::from_owned_enum(enum_ident);
-    let parsed_enum = ParsedEnum::from(enum_item);
+pub fn render_reply_dart(
+    parsed_enum: &ParsedEnum,
+    comment: &str,
+) -> TokenStream {
+    let rust_type = RustType::from_owned_enum(&parsed_enum.ident);
     let rendered_enum = parsed_enum.render_dart(comment);
     let dart_enum_name = rust_type.rust_ident().to_string();
 

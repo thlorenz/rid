@@ -1,5 +1,5 @@
 use super::rust_type::{Primitive, RustType, TypeKind, Value};
-use crate::attrs;
+use crate::attrs::{self, ImplBlockConfig};
 use assert_matches::assert_matches;
 use attrs::{parse_rid_attrs, Category, TypeInfo};
 
@@ -10,8 +10,8 @@ fn parse(input: proc_macro2::TokenStream) -> ParsedImplBlock {
     let item = syn::parse2::<syn::Item>(input).unwrap();
     match item {
         syn::Item::Impl(item) => {
-            let rid_attrs = parse_rid_attrs(&item.attrs);
-            ParsedImplBlock::new(item, &rid_attrs)
+            let config = ImplBlockConfig::from(&item);
+            ParsedImplBlock::new(item, config)
         }
         _ => panic!("Unexpected item, we're trying to parse functions here"),
     }
@@ -23,7 +23,7 @@ mod self_aliasing {
     fn impl_block_with_new_returning_self() {
         let mystruct_str = "MyStruct".to_string();
 
-        let ParsedImplBlock { ty, methods } = parse(quote! {
+        let ParsedImplBlock { ty, methods, .. } = parse(quote! {
             #[rid::export]
             #[rid::structs(MyStruct)]
             impl MyStruct {
@@ -63,6 +63,7 @@ mod self_aliasing {
                     reference,
                     ..
                 },
+            config: _,
         } = &methods[0];
 
         assert_eq!(fn_ident.to_string(), "new", "function name");
@@ -103,6 +104,7 @@ mod method_exports {
         let ParsedImplBlock {
             ty: owner_ty,
             methods,
+            ..
         } = parse(quote! {
             #[rid::export]
             impl MyStruct {
@@ -155,6 +157,7 @@ mod method_exports {
             receiver,
             args,
             return_arg: RustType { kind: ret_kind, .. },
+            config: _,
         } = &methods[0];
 
         assert_eq!(fn_ident.to_string(), "new", "function ident");
@@ -182,6 +185,7 @@ mod method_exports {
             receiver,
             args,
             return_arg: RustType { kind: ret_ty, .. },
+            config: _,
         } = &methods[1];
 
         assert_eq!(fn_ident.to_string(), "get_id", "function ident");
@@ -204,6 +208,7 @@ mod method_exports {
             receiver,
             args,
             return_arg: RustType { kind: ret_ty, .. },
+            config: _,
         } = &methods[2];
         assert_eq!(fn_ident.to_string(), "set_id", "function ident");
         assert_eq!(fn_ident_alias, &None, "no export ident");

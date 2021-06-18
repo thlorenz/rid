@@ -4,7 +4,7 @@ use syn::Ident;
 
 use super::vec::*;
 use crate::{
-    attrs::Category,
+    attrs::{Category, TypeInfoMap},
     common::{abort, state::get_state},
     parse::{
         rust_type::{Composite, RustType, TypeKind, Value},
@@ -17,7 +17,9 @@ impl RustType {
     pub fn render_dart_pointer_type(&self) -> String {
         use TypeKind as K;
         match &self.kind {
-            K::Primitive(_) => self.render_dart_type(false),
+            K::Primitive(_) => {
+                self.render_dart_type(&TypeInfoMap::default(), false)
+            }
             K::Unit => abort!(
                 self.rust_ident(),
                 "Should not export rust method that returns nothing"

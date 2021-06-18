@@ -7,6 +7,7 @@ use rid_common::{
 use syn::Ident;
 
 use crate::{
+    attrs::TypeInfoMap,
     common::{
         derive_error, prefixes::reply_class_name_for_enum, tokens::resolve_ptr,
     },
@@ -307,6 +308,10 @@ impl ParsedMessageEnum {
             ffi_arg: String,
         }
 
+        // NOTE: we don't support data of custom types inside message variants
+        // Only primitives and Strings are allowed
+        let type_infos = TypeInfoMap::default();
+
         let args_info: Vec<(usize, DartArg)> = variant
             .fields
             .iter()
@@ -314,7 +319,7 @@ impl ParsedMessageEnum {
                 let ffi_arg = f.dart_ty.render_resolved_ffi_arg(f.slot);
                 DartArg {
                     arg: format!("arg{}", f.slot),
-                    ty: f.rust_ty.render_dart_type(true),
+                    ty: f.rust_ty.render_dart_type(&type_infos, true),
                     ffi_arg,
                 }
             })

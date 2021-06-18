@@ -22,7 +22,7 @@ fn parse(input: proc_macro2::TokenStream) -> ParsedFunction {
         }) => {
             let rid_attrs = parse_rid_attrs(&attrs);
             let config = FunctionConfig::new(&rid_attrs, None);
-            ParsedFunction::new(sig, &config, None)
+            ParsedFunction::new(sig, config, None)
         }
         _ => panic!("Unexpected item, we're trying to parse functions here"),
     }
@@ -211,7 +211,7 @@ mod receiver {
                 let rid_attrs = parse_rid_attrs(&attrs);
                 let owner = Some((&type_info.key, &type_info_map));
                 let config = FunctionConfig::new(&rid_attrs, owner);
-                ParsedFunction::new(sig, &config, owner)
+                ParsedFunction::new(sig, config, owner)
             }
             _ => {
                 panic!("Unexpected item, we're trying to parse functions here")

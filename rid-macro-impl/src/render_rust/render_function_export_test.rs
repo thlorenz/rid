@@ -26,10 +26,11 @@ fn stringify_type_aliases(type_aliases: &[PointerTypeAlias]) -> String {
 }
 
 fn render_vec_access(vec_access: Option<VecAccess>) -> (TokenStream, String) {
+    let type_infos = TypeInfoMap::default();
     match vec_access {
         Some(access) => {
             let rust = access.render_rust().tokens;
-            let dart = access.render_dart("");
+            let dart = access.render_dart(&type_infos, "");
             (rust, dart)
         }
         None => (TokenStream::new(), "".to_string()),
@@ -86,7 +87,7 @@ fn parse(
         syn::Item::Fn(syn::ItemFn { attrs, sig, .. }) => {
             let rid_attrs = attrs::parse_rid_attrs(&attrs);
             let config = FunctionConfig::new(&rid_attrs, owner);
-            ParsedFunction::new(sig, &config, owner)
+            ParsedFunction::new(sig, config, owner)
         }
         _ => panic!("Unexpected item, we're trying to parse functions here"),
     }

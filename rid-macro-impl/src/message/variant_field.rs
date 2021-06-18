@@ -30,7 +30,7 @@ impl MessageVariantField {
                 &f.ident.as_ref().unwrap_or(&rust_ty.rust_ident()),
             );
         };
-        let dart_ffi_ty = DartType::from(&rust_ty);
+        let dart_ffi_ty = DartType::from(&rust_ty, types);
 
         Self {
             ty: ty.clone(),

@@ -5,6 +5,7 @@ use syn::{Item, NestedMeta};
 use crate::{
     attrs::{self, parse_rid_args, EnumConfig},
     common::{abort, callsite_error},
+    parse::ParsedEnum,
 };
 
 use super::{
@@ -15,8 +16,8 @@ use super::{
 
 pub fn rid_ffi_reply_impl(item: &Item, _: &[NestedMeta]) -> TokenStream {
     match item {
-        Item::Enum(item) => {
-            let reply_variants: Vec<ReplyVariant> = item
+        Item::Enum(enum_item) => {
+            let reply_variants: Vec<ReplyVariant> = enum_item
                 .variants
                 .iter()
                 .enumerate()
@@ -24,10 +25,12 @@ pub fn rid_ffi_reply_impl(item: &Item, _: &[NestedMeta]) -> TokenStream {
                 .collect();
 
             let into_dart =
-                render_reply_into_dart(&item.ident, &reply_variants);
-            let reply_dart = render_reply_dart(&item, "///");
+                render_reply_into_dart(&enum_item.ident, &reply_variants);
+            let enum_config = EnumConfig::from(&enum_item);
+            let parsed_enum = ParsedEnum::from(&enum_item, enum_config);
+            let reply_dart = render_reply_dart(&parsed_enum, "///");
 
-            quote_spanned! { item.ident.span() =>
+            quote_spanned! { enum_item.ident.span() =>
                 mod __rid_reply_mod {
                     #reply_dart
                     #[no_mangle]

@@ -3,12 +3,14 @@ use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
 use syn::{Ident, Item};
 
+use crate::attrs::EnumConfig;
+
 use super::{ParsedEnum, ParsedEnumVariant, ParsedEnumVariantField};
 
 fn parse(input: TokenStream) -> ParsedEnum {
     let item = syn::parse2::<syn::Item>(input).unwrap();
     match item {
-        Item::Enum(item) => ParsedEnum::from(&item),
+        Item::Enum(item) => ParsedEnum::from(&item, EnumConfig::from(&item)),
         _ => panic!("Unexpected item, we're trying to parse enums here"),
     }
 }
@@ -22,7 +24,7 @@ mod c_style_enums {
         let ParsedEnum {
             ident,
             variants,
-            attrs: _,
+            config: _,
         } = parse(quote! {
             enum Count { One }
         });
@@ -43,9 +45,7 @@ mod c_style_enums {
         let ident_one: Ident = format_ident!("One");
         let ident_two: Ident = format_ident!("Two");
         let ParsedEnum {
-            ident,
-            variants,
-            attrs: _,
+            ident, variants, ..
         } = parse(quote! {
             enum Count { One, Two }
         });
@@ -81,7 +81,7 @@ mod field_enums {
         let ParsedEnum {
             ident,
             variants,
-            attrs: _,
+            config: _,
         } = parse(quote! {
             enum Count { One(u8) }
         });
@@ -108,7 +108,7 @@ mod field_enums {
         let ParsedEnum {
             ident,
             variants,
-            attrs: _,
+            config: _,
         } = parse(quote! {
             enum Count { One(String) }
         });

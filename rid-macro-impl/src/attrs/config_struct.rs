@@ -1,23 +1,24 @@
 use std::collections::HashMap;
 
-use syn::Ident;
+use syn::{Ident, ItemStruct};
 
-use crate::common::abort;
+use crate::{common::abort, parse_rid_attrs};
 
 use super::{add_idents_to_type_map, Category, RidAttr, TypeInfo, TypeInfoMap};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct StructConfig {
     pub debug: bool,
     pub type_infos: TypeInfoMap,
+    pub attrs: Vec<RidAttr>,
 }
 
 impl StructConfig {
-    pub fn new(attrs: &[RidAttr]) -> Self {
+    pub fn new(attrs: Vec<RidAttr>) -> Self {
         let mut debug = false;
         let mut type_infos: TypeInfoMap = TypeInfoMap(HashMap::new());
 
-        for attr in attrs {
+        for attr in &attrs {
             match attr {
                 RidAttr::Structs(attr_ident, idents) => add_idents_to_type_map(
                     &mut type_infos,
@@ -44,6 +45,15 @@ impl StructConfig {
                 RidAttr::DeriveDebug(_) => debug = true,
             }
         }
-        Self { debug, type_infos }
+        Self {
+            debug,
+            type_infos,
+            attrs,
+        }
+    }
+
+    pub fn from(struct_item: &ItemStruct) -> Self {
+        let rid_attrs = parse_rid_attrs(&struct_item.attrs);
+        Self::new(rid_attrs)
     }
 }

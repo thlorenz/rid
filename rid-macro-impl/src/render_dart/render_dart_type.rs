@@ -1,7 +1,7 @@
 use rid_common::{DART_FFI, STRING_TO_NATIVE_INT8};
 
 use crate::{
-    attrs::Category,
+    attrs::{Category, TypeInfoMap},
     parse::{dart_type::DartType, rust_type::RustType},
 };
 
@@ -17,6 +17,9 @@ impl DartType {
                     Enum => "int".to_string(),
                     Struct | Prim => ty.to_string(),
                 }
+            }
+            DartType::Vec(inner) => {
+                format!("List<{inner}>", inner = inner.render_type())
             }
             DartType::Unit => "".to_string(),
         }
@@ -45,14 +48,19 @@ impl DartType {
             ),
             Int32 | Int64 => format!("arg{}", slot),
             Custom(_, _) => format!("arg{}", slot),
+            Vec(_) => format!("arg{}", slot),
             Unit => todo!("render_resolved_ffi_arg"),
         }
     }
 }
 
 impl RustType {
-    pub fn render_dart_type(&self, include_type_attribute: bool) -> String {
-        let dart_type: DartType = self.into();
+    pub fn render_dart_type(
+        &self,
+        type_infos: &TypeInfoMap,
+        include_type_attribute: bool,
+    ) -> String {
+        let dart_type = DartType::from(&self, type_infos);
         if include_type_attribute {
             match dart_type.render_type_attribute() {
                 Some(attr) => format!("{} {}", attr, dart_type.render_type()),
@@ -63,8 +71,11 @@ impl RustType {
         }
     }
 
-    pub fn render_dart_and_ffi_type(&self) -> (String, Option<String>) {
-        let dart_type: DartType = self.into();
+    pub fn render_dart_and_ffi_type(
+        &self,
+        type_infos: &TypeInfoMap,
+    ) -> (String, Option<String>) {
+        let dart_type = DartType::from(&self, type_infos);
         (dart_type.render_type(), dart_type.render_type_attribute())
     }
 }

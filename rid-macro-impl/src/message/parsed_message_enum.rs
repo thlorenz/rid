@@ -1,9 +1,12 @@
 use crate::{
-    attrs::{raw_typedef_ident, EnumConfig, TypeInfoMap},
+    attrs::{raw_typedef_ident, TypeInfoMap},
     parse::rust_type,
 };
 
-use super::{parsed_variant::ParsedMessageVariant, store::code_store_module};
+use super::{
+    parsed_variant::ParsedMessageVariant, store::code_store_module,
+    MessageEnumConfig,
+};
 use quote::{format_ident, quote, quote_spanned, IdentFragment};
 use std::collections::HashMap;
 use syn::{punctuated::Punctuated, token::Comma, Ident, Variant};
@@ -31,14 +34,14 @@ pub struct ParsedMessageEnum {
     pub reply_dart_enum_name: String,
 
     pub ident_lower_camel: String,
-    pub config: EnumConfig,
+    pub config: MessageEnumConfig,
 }
 
 impl ParsedMessageEnum {
     pub fn new(
         ident: &Ident,
         variants: Punctuated<Variant, Comma>,
-        config: EnumConfig,
+        config: MessageEnumConfig,
     ) -> Self {
         let ident_str = ident.to_string();
         let ident_lower_camel = lower_camel_case(&ident_str);

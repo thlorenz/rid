@@ -25,12 +25,15 @@ pub struct ParsedFunction {
 
     /// The type of arg returned by the original function
     pub return_arg: RustType,
+
+    /// Function config with extra information like type_infos [TypeInfoMap]
+    pub config: FunctionConfig,
 }
 
 impl ParsedFunction {
     pub fn new(
         sig: syn::Signature,
-        config: &FunctionConfig,
+        config: FunctionConfig,
         owner: Option<(&syn::Ident, &TypeInfoMap)>,
     ) -> ParsedFunction {
         use syn::*;
@@ -116,6 +119,13 @@ impl ParsedFunction {
             receiver,
             args,
             return_arg,
+            config,
         }
+    }
+
+    /// Information about custom types specified on top of the functio's impl block or the function
+    /// definition itself
+    pub fn type_infos(&self) -> &TypeInfoMap {
+        &self.config.type_infos
     }
 }

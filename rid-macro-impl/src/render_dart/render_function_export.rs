@@ -25,6 +25,7 @@ pub fn render_function_export(
         receiver,
         args,
         return_arg,
+        ..
     } = parsed_function;
 
     let (rid_fn_ident, ..) =
@@ -35,7 +36,9 @@ pub fn render_function_export(
     let dart_args: Vec<DartArg> = args
         .iter()
         .enumerate()
-        .map(|(slot, arg)| DartArg::from(arg, slot))
+        .map(|(slot, arg)| {
+            DartArg::from(arg, parsed_function.type_infos(), slot)
+        })
         .collect();
 
     let fn_body = return_arg.render_dart_function_body(

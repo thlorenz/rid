@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use crate::{
+    attrs::ImplBlockConfig,
     common::state::{get_state, ImplementationType},
     parse::{ParsedFunction, ParsedImplBlock},
     render_common::{
@@ -68,8 +69,9 @@ pub fn rid_export_impl(
 ) -> TokenStream {
     match item {
         syn::Item::Impl(item) => {
-            let attrs = parse_rid_attrs(&item.attrs);
-            let parsed = ParsedImplBlock::new(item, &attrs);
+            let impl_config = ImplBlockConfig::from(&item);
+            let parsed = ParsedImplBlock::new(item, impl_config);
+
             let mut ptr_type_aliases_map =
                 HashMap::<String, TokenStream>::new();
             let mut raw_type_aliases_map =
@@ -136,7 +138,11 @@ pub fn rid_export_impl(
                     &ImplementationType::VecAccess,
                     vec_accesses,
                 );
-                render_vec_accesses(&needed_vec_accesses, "///")
+                render_vec_accesses(
+                    &needed_vec_accesses,
+                    parsed.type_infos(),
+                    "///",
+                )
             } else {
                 vec![]
             };

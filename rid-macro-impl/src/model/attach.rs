@@ -1,6 +1,10 @@
 use crate::{
-    attrs, attrs::StructConfig, common::abort,
-    model::parsed_struct::ParsedStruct, parse::ParsedEnum,
+    attrs,
+    attrs::{parse_rid_args, EnumConfig, StructConfig},
+    common::abort,
+    model::parsed_struct::ParsedStruct,
+    parse::ParsedEnum,
+    rid_dart_impl,
 };
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote_spanned};
@@ -10,7 +14,13 @@ pub fn rid_ffi_model_impl(item: &Item) -> TokenStream {
     match item {
         Item::Struct(struct_item) => {
             let rid_attrs = attrs::parse_rid_attrs(&struct_item.attrs);
-            let struct_config = StructConfig::new(&rid_attrs);
+            let struct_config = StructConfig::from(&struct_item);
+            let dart_class_tokens = rid_dart_impl(
+                struct_item,
+                struct_config.clone(),
+                Default::default(),
+            );
+
             let exports = match &struct_item.fields {
                 Fields::Named(fields) => {
                     let parsed_struct = ParsedStruct::new(
@@ -32,10 +42,12 @@ pub fn rid_ffi_model_impl(item: &Item) -> TokenStream {
             quote_spanned! { struct_item.ident.span() =>
                 #item
                 #exports
+                #dart_class_tokens
             }
         }
         Item::Enum(enum_item) => {
-            let parsed_enum = ParsedEnum::from(enum_item);
+            let enum_config = EnumConfig::from(enum_item);
+            let parsed_enum = ParsedEnum::from(enum_item, enum_config);
             let dart_enum: TokenStream =
                 parsed_enum.render_dart("///").parse().unwrap();
 

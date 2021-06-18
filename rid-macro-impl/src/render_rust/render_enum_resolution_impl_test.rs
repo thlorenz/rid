@@ -3,14 +3,18 @@ use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
 use syn::{Ident, Item};
 
-use crate::{common::dump_tokens, parse::ParsedEnum};
+use crate::{
+    attrs::{EnumConfig, TypeInfoMap},
+    common::dump_tokens,
+    parse::ParsedEnum,
+};
 
 fn render(input: TokenStream) -> TokenStream {
     let item = syn::parse2::<syn::Item>(input).unwrap();
+    let type_infos = TypeInfoMap::default();
     match item {
-        Item::Enum(item) => {
-            ParsedEnum::from(&item).render_enum_resolution_impl()
-        }
+        Item::Enum(item) => ParsedEnum::from(&item, EnumConfig::from(&item))
+            .render_enum_resolution_impl(),
         _ => panic!("Unexpected item, we're trying to parse enums here"),
     }
 }

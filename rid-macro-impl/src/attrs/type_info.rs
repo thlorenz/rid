@@ -80,7 +80,7 @@ impl From<(&str, Category)> for TypeInfo {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct TypeInfoMap(pub HashMap<String, TypeInfo>);
 impl Deref for TypeInfoMap {
     type Target = HashMap<String, TypeInfo>;
@@ -98,6 +98,18 @@ impl DerefMut for TypeInfoMap {
 impl Default for TypeInfoMap {
     fn default() -> Self {
         Self(HashMap::new())
+    }
+}
+impl TypeInfoMap {
+    /// Merges this with another [TypeInfoMap].
+    /// If both have the same key the macro expansion `abort!`s.
+    pub fn merge_into_exclusive(self: &mut Self, src: &Self) {
+        for (key, val) in src.iter() {
+            if self.contains_key(key) {
+                abort!(val.key, "duplicate type info key")
+            }
+            self.insert(key.clone(), val.clone());
+        }
     }
 }
 
