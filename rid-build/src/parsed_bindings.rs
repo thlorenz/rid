@@ -12,10 +12,28 @@ const TYPEDEF_ENUM: &str = "typedef enum ";
 const TYPEDEF_ENUM_LEN: usize = TYPEDEF_ENUM.len();
 
 pub struct ParsedBindings {
+    /// Dart code extracted from the dart code blocks inside the binding
     pub dart_code: String,
+
+    /// Swift generated from the binding's function headers
     pub swift_code: String,
+
+    /// Structs found in the bindings file
     pub structs: Vec<String>,
+
+    /// Enums found inside the bindings file.
+    ///
+    /// NOTE: that at this point **enums aren't re-exported** in the generated code as we generate
+    /// Dart representations of the same type.
+    /// Once we prefix the native enums with 'Raw' like we do for structs we can reexport those
+    /// again.
+    /// They'd be merely of use to devs using the raw API as they aren't referenced anywhere in the
+    /// generated code as variants are represented as `int`s instead. A simple search/replace inside the
+    /// bindgen.h should suffice.
     pub enums: Vec<String>,
+
+    /// The modified binding content
+    /// At this point this is necessary in order to prepare type aliases for dart ffigen
     pub updated_binding: String,
 }
 
