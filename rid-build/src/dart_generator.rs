@@ -9,6 +9,7 @@ static RID_WIDGETS: &str = include_str!("../dart/_rid_widgets.dart");
 static RID_UTILS_FLUTTER: &str =
     include_str!("../dart/_rid_utils_flutter.dart");
 static RID_UTILS_DART: &str = include_str!("../dart/_rid_utils_dart.dart");
+static STORE_STUB_DART: &str = include_str!("../dart/_store_stub.dart");
 
 #[derive(Clone, Copy)]
 pub enum BuildTarget {
@@ -89,6 +90,10 @@ pub(crate) struct DartGenerator<'a> {
     pub(crate) target: &'a BuildTarget,
 
     pub(crate) project: &'a Project,
+
+    /// If `true` the user didn't implement a store yet and we need to stub some methods to make
+    /// things work
+    pub(crate) needs_store_stub: bool,
 }
 
 impl<'a> DartGenerator<'a> {
@@ -108,6 +113,11 @@ impl<'a> DartGenerator<'a> {
         let rid_utils = match self.project {
             Project::Dart => RID_UTILS_DART,
             Project::Flutter(_) => RID_UTILS_FLUTTER,
+        };
+        let store_stub = if self.needs_store_stub {
+            STORE_STUB_DART
+        } else {
+            ""
         };
 
         format!(
@@ -134,7 +144,9 @@ impl<'a> DartGenerator<'a> {
 //
 // Exporting Native Library to call Rust functions directly
 //
-{native_export}"###,
+{native_export}
+
+{store_stub}"###,
             imports = self.dart_imports(),
             dart_ffi_exports = dart_ffi_reexports(),
             struct_exports = self.dart_rust_type_reexports(&structs),
@@ -146,6 +158,7 @@ impl<'a> DartGenerator<'a> {
             string_pointer_from_string_extension =
                 dart_string_pointer_from_string(),
             native_export = load_dynamic_library(dynamic_library_constructor),
+            store_stub = store_stub
         )
         .to_string()
     }

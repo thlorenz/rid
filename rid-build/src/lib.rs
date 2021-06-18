@@ -156,6 +156,7 @@ fn generate(
         path_to_target,
         code_sections: &parsed_bindings,
         project: &project,
+        needs_store_stub: !parsed_bindings.has_store_lock,
     };
     let generated_dart = dart_generator.generate();
 

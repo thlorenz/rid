@@ -27,8 +27,6 @@ impl ParsedStruct {
         let constructor_fields = self.render_constructor_fields(config);
         let constructor_args = self.render_constructor_args(config);
 
-        // TODO(thlorenz): `rid_store_{un}lock` is only present if we have a message unless we
-        // create a stub otherwise
         let dart_class =
             self.render_dart_class(config, &constructor_fields, &class_name);
         if config.dart_class_only {
