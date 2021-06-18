@@ -119,6 +119,10 @@ impl RustType {
         self.kind.is_composite()
     }
 
+    pub fn is_struct(&self) -> bool {
+        self.kind.is_struct()
+    }
+
     pub fn is_vec(&self) -> bool {
         self.kind.is_vec()
     }

@@ -62,6 +62,10 @@ impl TypeInfo {
     pub fn is_enum(&self) -> bool {
         self.cat == Category::Enum
     }
+
+    pub fn is_struct(&self) -> bool {
+        self.cat == Category::Struct
+    }
 }
 
 impl From<(&str, Category)> for TypeInfo {

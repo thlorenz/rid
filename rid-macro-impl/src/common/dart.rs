@@ -54,6 +54,15 @@ impl DartType {
             DartType::Custom(_, _) => false,
         }
     }
+
+    pub fn is_struct(&self) -> bool {
+        match self {
+            DartType::Int32 | DartType::Int64 | DartType::Bool => false,
+            DartType::String => false,
+            DartType::Vec(_) => false,
+            DartType::Custom(inner, _) => !inner.is_enum(),
+        }
+    }
 }
 
 impl Debug for DartType {

@@ -1,6 +1,9 @@
 use rid_common::{DART_FFI, FFI_GEN_BIND};
 
-use crate::parse::ParsedStruct;
+use crate::{
+    attrs::TypeInfoMap,
+    parse::{ParsedStruct, ParsedStructField},
+};
 
 pub struct ParsedStructRenderConfig {
     pub comment: String,
@@ -22,6 +25,7 @@ impl ParsedStruct {
             ident = self.raw_ident
         );
         let constructor_fields = self.render_constructor_fields(config);
+        let constructor_args = self.render_constructor_args(config);
 
         // TODO(thlorenz): `rid_store_{un}lock` is only present if we have a message unless we
         // create a stub otherwise
@@ -40,7 +44,7 @@ impl ParsedStruct {
 {comment} extension Rid_ToDart_ExtOn{ident} on {raw_class_name} {{
 {comment}   {class_name} toDart() {{
 {comment}      ridStoreLock();
-{comment}      final instance = {class_name}._({constructor_fields});
+{comment}      final instance = {class_name}._({constructor_args});
 {comment}      ridStoreUnlock();
 {comment}      return instance;
 {comment}   }}
@@ -50,9 +54,33 @@ impl ParsedStruct {
                 dart_class = dart_class,
                 class_name = class_name,
                 raw_class_name = raw_class_name,
-                constructor_fields = constructor_fields,
+                constructor_args = constructor_args,
                 comment = config.comment
             )
+        }
+    }
+
+    // -----------------
+    // Args to Class constructor
+    // -----------------
+    fn render_constructor_args(
+        &self,
+        config: &ParsedStructRenderConfig,
+    ) -> String {
+        if self.fields.is_empty() {
+            "".to_string()
+        } else {
+            let last_slot = self.fields.len() - 1;
+            self.fields
+                .iter()
+                .map(|x| {
+                    ParsedStructField::render_constructor_arg(
+                        x,
+                        self.type_infos(),
+                    )
+                })
+                .collect::<Vec<String>>()
+                .join(", ")
         }
     }
 
@@ -336,5 +364,19 @@ impl ParsedStruct {
                 comment = config.comment,
             )
         }
+    }
+}
+
+// -----------------
+// Render impls of Struct parts
+// -----------------
+impl ParsedStructField {
+    pub fn render_constructor_arg(&self, type_infos: &TypeInfoMap) -> String {
+        format!(
+            "this.{resolution}",
+            resolution = self
+                .rust_type
+                .render_to_dart_for_arg(type_infos, &self.ident)
+        )
     }
 }

@@ -8,6 +8,14 @@
 ///     return {rid_ffi}.{fn_get_ident}(this, idx);
 ///   }
 ///   Rid_{vec_type}_Iterable iter() => Rid_{vec_type}_Iterable(this);
+///
+///   /// Converts this Vec pointer into a Dart [List&lt;{resolved_dart_item_type}&gt;]
+///   List<{resolved_dart_item_type}> toDart() {
+///     ridStoreLock();
+///     final list = this.iter(){map_to_dart}.toList();
+///     ridStoreUnlock();
+///     return list;
+///   }
 /// }
 /// 
 /// class Rid_{vec_type}_Iterator implements Iterator<{iterated_item_type}> {

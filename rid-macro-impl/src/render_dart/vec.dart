@@ -16,7 +16,7 @@
 ///   /// Vec anymore after this call completes.
 ///   List<{dart_item_type}> toDart({bool autoDispose = true}) {
 ///     ridStoreLock();
-///     final list = this.iter().map((raw) => raw.toDart()).toList();
+///     final list = this.iter(){map_to_dart}.toList();
 ///     if (autoDispose) dispose();
 ///     ridStoreUnlock();
 ///     return list;

@@ -16,7 +16,11 @@ impl ParsedStruct {
     pub fn new(item: &ItemStruct, ident: &Ident, config: StructConfig) -> Self {
         let ident = ident.clone();
         let raw_ident = raw_typedef_ident(&ident);
-        let fields = item.fields.iter().map(ParsedStructField::new).collect();
+        let fields = item
+            .fields
+            .iter()
+            .map(|f| ParsedStructField::new(f, &config.type_infos))
+            .collect();
         Self {
             ident,
             raw_ident,
