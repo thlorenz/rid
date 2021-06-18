@@ -112,9 +112,9 @@ impl<'a> DartGenerator<'a> {
 
         format!(
             r###"{imports}
-// Forwarding dart_ffi types essential to access Rust structs
+// Forwarding dart_ffi types essential to access raw Rust structs
 {dart_ffi_exports}
-// Forwarding Dart Types for Rust structs
+// Forwarding Dart Types for raw Rust structs
 {struct_exports}
 //
 // Open Dynamic Library
