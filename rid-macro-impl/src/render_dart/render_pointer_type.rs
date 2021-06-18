@@ -48,7 +48,7 @@ impl RustType {
                         "{dart_ffi}.Pointer<{ffigen_bind}.{ty}>?",
                         dart_ffi = DART_FFI,
                         ffigen_bind = FFI_GEN_BIND,
-                        ty = inner_type.as_ref().unwrap().rust_ident(),
+                        ty = inner_type.as_ref().unwrap().ident(),
                     );
                     pointer
                 }

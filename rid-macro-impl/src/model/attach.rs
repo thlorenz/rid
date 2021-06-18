@@ -3,7 +3,7 @@ use crate::{
     model::parsed_struct::ParsedStruct, parse::ParsedEnum,
 };
 use proc_macro2::TokenStream;
-use quote::quote_spanned;
+use quote::{format_ident, quote_spanned};
 use syn::{Fields, Item};
 
 pub fn rid_ffi_model_impl(item: &Item) -> TokenStream {
@@ -36,10 +36,22 @@ pub fn rid_ffi_model_impl(item: &Item) -> TokenStream {
         }
         Item::Enum(enum_item) => {
             let parsed_enum = ParsedEnum::from(enum_item);
+            let dart_enum: TokenStream =
+                parsed_enum.render_dart("///").parse().unwrap();
+
+            let export_enum_tokens: TokenStream = format!(
+                "#[no_mangle] pub extern \"C\" fn _export_dart_enum_{} () {{}}",
+                enum_item.ident
+            )
+            .parse()
+            .unwrap();
+
             let resolution_impl = parsed_enum.render_enum_resolution_impl();
             quote_spanned! { enum_item.ident.span() =>
                 #[repr(C)]
                 #item
+                #dart_enum
+                #export_enum_tokens
                 #resolution_impl
             }
         }

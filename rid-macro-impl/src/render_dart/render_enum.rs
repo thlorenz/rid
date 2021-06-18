@@ -1,28 +1,23 @@
-use crate::parse::rust_type::RustType;
+use crate::parse::ParsedEnum;
 
-impl RustType {
-    pub fn render_dart_enum(
-        &self,
-        variants: &[String],
-        comment: &str,
-    ) -> String {
-        assert!(self.is_enum(), "Can only render dart enum for rust enum");
-
-        let type_name = self.rust_ident().to_string();
-        let rust_type_name = self.ident().to_string();
-        let variants = variants.join(", ");
+impl ParsedEnum {
+    pub fn render_dart(&self, comment: &str) -> String {
+        let variants = self
+            .variants
+            .iter()
+            .map(|x| x.ident.to_string())
+            .collect::<Vec<String>>()
+            .join(", ");
 
         format!(
-            r###"
-{comment} Dart enum implementation for Rust {rust_type_name} enum.
-{comment}
+            r###"{comment}
 {comment} ```dart
-{comment} enum {type_name} {{ {variants} }}
+{comment} /// Dart enum implementation for Rust {enum_ident} enum.
+{comment} enum {enum_ident} {{ {variants} }}
 {comment} ```
 "###,
             comment = comment,
-            type_name = type_name,
-            rust_type_name = rust_type_name,
+            enum_ident = self.ident,
             variants = variants,
         )
     }
