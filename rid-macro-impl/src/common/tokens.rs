@@ -78,6 +78,7 @@ pub struct ResolvedEnumFromInt {
     pub tokens: TokenStream,
 }
 
+/// TODO: this is a duplicate of what ParsedEnum now does for us much better
 /// Generates tokens to convert an int to an enum.
 ///
 /// match f {
