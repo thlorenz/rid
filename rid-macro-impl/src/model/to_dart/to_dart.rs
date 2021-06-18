@@ -42,7 +42,7 @@ impl DartRenderImplConfig {
     }
 }
 
-pub fn rid_dart_impl(
+pub fn render_to_dart(
     struct_item: &ItemStruct,
     struct_config: StructConfig,
     render_config: DartRenderImplConfig,

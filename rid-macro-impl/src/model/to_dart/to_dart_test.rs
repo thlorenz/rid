@@ -1,6 +1,6 @@
 use crate::attrs::StructConfig;
 
-use super::{rid_dart_impl, DartRenderImplConfig};
+use super::{render_to_dart, DartRenderImplConfig};
 use proc_macro2::TokenStream;
 use quote::quote;
 use syn::{parse_macro_input, Item};
@@ -11,7 +11,7 @@ fn render(input: proc_macro2::TokenStream) -> TokenStream {
     match item {
         Item::Struct(struct_item) => {
             let struct_config = StructConfig::from(&struct_item);
-            rid_dart_impl(
+            render_to_dart(
                 &struct_item,
                 struct_config,
                 DartRenderImplConfig::for_tests(),

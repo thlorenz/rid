@@ -1,10 +1,10 @@
+use super::to_dart::render_to_dart;
 use crate::{
     attrs,
     attrs::{parse_rid_args, EnumConfig, StructConfig},
     common::abort,
     model::parsed_struct::ParsedStruct,
     parse::ParsedEnum,
-    rid_dart_impl,
 };
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote_spanned};
@@ -15,7 +15,7 @@ pub fn rid_ffi_model_impl(item: &Item) -> TokenStream {
         Item::Struct(struct_item) => {
             let rid_attrs = attrs::parse_rid_attrs(&struct_item.attrs);
             let struct_config = StructConfig::from(&struct_item);
-            let dart_class_tokens = rid_dart_impl(
+            let dart_class_tokens = render_to_dart(
                 struct_item,
                 struct_config.clone(),
                 Default::default(),
