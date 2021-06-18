@@ -1,4 +1,3 @@
-import 'generated/ffigen_binding.dart';
 import 'generated/rid_generated.dart';
 import 'dart:async';
 
@@ -28,7 +27,7 @@ messages() async {
   await store.msgToggleTodo(3);
   log.v(store.debug(LOG_VERBOSE));
 
-  await store.msgSetFilter(Filter.Completed);
+  await store.msgSetFilter(Filter.Completed.index);
   log.v(store.debug(LOG_VERBOSE));
 
   final filteredTodos = store.filtered_todos();

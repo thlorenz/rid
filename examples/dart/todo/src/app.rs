@@ -122,7 +122,9 @@ impl Store {
 // Todo Model
 // -----------------
 #[rid::model]
-#[derive(Debug, rid::Debug, PartialEq, Eq, PartialOrd, rid::Display)]
+#[derive(
+    Debug, rid::Debug, PartialEq, Eq, PartialOrd, rid::Display, rid::Dart,
+)]
 pub struct Todo {
     id: u32,
     title: String,
@@ -145,8 +147,8 @@ impl Display for Todo {
 // -----------------
 // Filter
 // -----------------
-#[derive(Clone, Debug, rid::Debug, rid::Display)]
-#[repr(C)]
+#[rid::model]
+#[derive(Clone, Debug, rid::Display)]
 pub enum Filter {
     Completed,
     Pending,

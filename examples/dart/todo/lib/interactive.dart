@@ -7,11 +7,11 @@ onError(Object error, StackTrace stack) {
   print(stack);
 }
 
-printStatus(Pointer<Store> store) {
+printStatus(Pointer<RawStore> store) {
   final todos = store.todos;
   final total = todos.length;
 
-  final filter = store.filter;
+  final Filter filter = Filter.values[store.filter];
   final matchingTodos = store.filtered_todos();
 
   print("Total Todos:     $total");
@@ -23,7 +23,7 @@ printStatus(Pointer<Store> store) {
   matchingTodos.dispose();
 }
 
-Future<bool> handleCommand(Pointer<Store> model, String line) async {
+Future<bool> handleCommand(Pointer<RawStore> model, String line) async {
   String cmd;
   String payload;
 
@@ -57,7 +57,7 @@ Future<bool> handleCommand(Pointer<Store> model, String line) async {
           : payload == "pen"
               ? Filter.Pending
               : Filter.All;
-      await model.msgSetFilter(filter);
+      await model.msgSetFilter(filter.index);
       break;
     case "ca":
       await model.msgCompleteAll();
