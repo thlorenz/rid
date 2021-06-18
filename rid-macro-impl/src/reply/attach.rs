@@ -25,8 +25,7 @@ pub fn rid_ffi_reply_impl(item: &Item, _: &[NestedMeta]) -> TokenStream {
 
             let into_dart =
                 render_reply_into_dart(&item.ident, &reply_variants);
-            let reply_dart =
-                render_reply_dart(&item.ident, &item.variants, "///");
+            let reply_dart = render_reply_dart(&item, "///");
 
             quote_spanned! { item.ident.span() =>
                 mod __rid_reply_mod {

@@ -1,23 +1,19 @@
 use proc_macro2::TokenStream;
-use syn::{punctuated::Punctuated, Token, Variant};
+use syn::{punctuated::Punctuated, ItemEnum, Token, Variant};
 
 use crate::{
     common::prefixes::reply_class_name_for_enum,
     parse::{
         rust_type::{RustType, TypeKind, Value},
-        ParsedReference,
+        ParsedEnum, ParsedReference,
     },
 };
 
-pub fn render_reply_dart(
-    enum_ident: &syn::Ident,
-    enum_variants: &Punctuated<Variant, Token![,]>,
-    comment: &str,
-) -> TokenStream {
+pub fn render_reply_dart(enum_item: &ItemEnum, comment: &str) -> TokenStream {
+    let enum_ident = &enum_item.ident;
     let rust_type = RustType::from_owned_enum(enum_ident);
-    let variants: Vec<String> =
-        enum_variants.iter().map(|x| x.ident.to_string()).collect();
-    let rendered_enum = rust_type.render_dart_enum(&variants, comment);
+    let parsed_enum = ParsedEnum::from(enum_item);
+    let rendered_enum = parsed_enum.render_dart(comment);
     let dart_enum_name = rust_type.rust_ident().to_string();
 
     let class_name = reply_class_name_for_enum(&dart_enum_name);
