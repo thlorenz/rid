@@ -11,8 +11,11 @@ members=[
   "rid-ffi",
   "rid-macro",
   "rid-macro-impl",
+]
+exclude = [ 
+  "examples/dart/clock",
   "examples/dart/todo",
-  "examples/dart/clock"
+  "examples/dart/wip",
 ]
 
 [dependencies]
