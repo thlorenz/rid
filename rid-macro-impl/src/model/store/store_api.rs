@@ -29,9 +29,12 @@ impl ParsedStruct {
 {comment}   const {Store}(this.{_store});
 {comment}
 {comment}   T _read<T>(T Function({Pointer}<{RawStore}> store) accessor, String? request) {{
-{comment}     return _store.runLocked(accessor, request: request);
+{comment}     return {_store}.runLocked(accessor, request: request);
 {comment}   }}
 {comment}
+{comment}   /// Disposes the store and closes the Rust reply channel in order to allow the app
+{comment}   /// to exit properly. This needs to be called when exiting a Dart application.
+{comment}   Future<void> dispose() => {_store}.dispose();
 {comment}
 {comment}   static {Store}? _instance;
 {comment}   static {Store} get instance {{

@@ -15,14 +15,10 @@ use crate::{
     reply,
 };
 
-use super::{
-    parsed_variant::ParsedMessageVariant, store::code_store_module,
-    ParsedMessageEnum,
-};
+use super::{parsed_variant::ParsedMessageVariant, ParsedMessageEnum};
 
 pub struct MessageRenderConfig {
     pub include_ffi: bool,
-    pub render_store: bool,
     pub render_reply_check: bool,
     pub dart_code_only: bool,
     pub rust_only: bool,
@@ -32,7 +28,6 @@ impl Default for MessageRenderConfig {
     fn default() -> Self {
         Self {
             include_ffi: true,
-            render_store: true,
             render_reply_check: true,
             dart_code_only: false,
             rust_only: false,
@@ -44,7 +39,6 @@ impl MessageRenderConfig {
     pub fn bare() -> Self {
         Self {
             include_ffi: false,
-            render_store: false,
             render_reply_check: false,
             dart_code_only: false,
             rust_only: false,
@@ -70,11 +64,6 @@ impl ParsedMessageEnum {
         let dart_comment = self.render_dart_extension(config);
         let module_ident = &self.module_ident;
 
-        let store_module = if config.render_store {
-            code_store_module(&self.ident, &self.struct_ident)
-        } else {
-            TokenStream::new()
-        };
         let reply_check = if config.render_reply_check {
             self.render_reply_check()
         } else {
@@ -92,7 +81,6 @@ impl ParsedMessageEnum {
 
         (
             quote_spanned! { self.ident.span() =>
-                #store_module
                 mod #module_ident {
                   use super::*;
                   #dart_tokens

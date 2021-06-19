@@ -3,10 +3,7 @@ use crate::{
     parse::rust_type,
 };
 
-use super::{
-    parsed_variant::ParsedMessageVariant, store::code_store_module,
-    MessageEnumConfig,
-};
+use super::{parsed_variant::ParsedMessageVariant, MessageEnumConfig};
 use quote::{format_ident, quote, quote_spanned, IdentFragment};
 use std::collections::HashMap;
 use syn::{punctuated::Punctuated, token::Comma, Ident, Variant};

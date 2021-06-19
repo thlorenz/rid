@@ -3,7 +3,7 @@ use crate::{
     attrs,
     attrs::{parse_rid_args, EnumConfig, StructConfig},
     common::abort,
-    model::parsed_struct::ParsedStruct,
+    model::{parsed_struct::ParsedStruct, store::render_store_module},
     parse::ParsedEnum,
 };
 use proc_macro2::TokenStream;
@@ -21,6 +21,11 @@ pub fn rid_ffi_model_impl(item: &Item, is_store: bool) -> TokenStream {
                 is_store,
                 Default::default(),
             );
+            let store_module = if is_store {
+                render_store_module(&struct_item.ident)
+            } else {
+                TokenStream::new()
+            };
 
             let exports = match &struct_item.fields {
                 Fields::Named(fields) => {
@@ -42,6 +47,7 @@ pub fn rid_ffi_model_impl(item: &Item, is_store: bool) -> TokenStream {
             };
             quote_spanned! { struct_item.ident.span() =>
                 #item
+                #store_module
                 #exports
                 #dart_class_tokens
             }
