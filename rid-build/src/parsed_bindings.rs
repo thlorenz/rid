@@ -12,6 +12,7 @@ const TYPEDEF_ENUM: &str = "typedef enum ";
 const TYPEDEF_ENUM_LEN: usize = TYPEDEF_ENUM.len();
 
 const STORE_LOCK_FN: &str = "void rid_store_lock(void);";
+const REPLY_CHANNEL_FN: &str = "void include_reply(void);";
 
 pub struct ParsedBindings {
     /// Dart code extracted from the dart code blocks inside the binding
@@ -41,6 +42,10 @@ pub struct ParsedBindings {
     /// If `true` we found indicators that the user code used the `#[rid::message]` attr and the
     /// code for the store including Dart `ridStoreLock` and `ridStoreUnlock` will be generated
     pub has_store_lock: bool,
+
+    /// If `true` we found indicators that the user code used the `#[rid::reply]` attr and
+    /// provided a `Reply` enum. As a result a `replyChannel = { dispose() }` is generated.
+    pub has_reply_channel: bool,
 }
 
 enum Section {
@@ -66,6 +71,7 @@ impl ParsedBindings {
         let mut function_headers: Vec<FunctionHeader> = vec![];
 
         let mut has_store_lock = false;
+        let mut has_reply_channel = false;
 
         for (lineno, line) in binding.lines().enumerate() {
             match &inside_section {
@@ -124,6 +130,8 @@ impl ParsedBindings {
                         enums.push(enum_name.to_string());
                     } else if trimmed.starts_with(STORE_LOCK_FN) {
                         has_store_lock = true;
+                    } else if trimmed.starts_with(REPLY_CHANNEL_FN) {
+                        has_reply_channel = true;
                     } else if let Some(header) = parse_function_header(trimmed)
                     {
                         function_headers.push(header);
@@ -168,6 +176,7 @@ impl ParsedBindings {
             enums,
             updated_binding,
             has_store_lock,
+            has_reply_channel,
         }
     }
 }

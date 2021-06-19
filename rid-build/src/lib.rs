@@ -157,6 +157,7 @@ fn generate(
         code_sections: &parsed_bindings,
         project: &project,
         needs_store_stub: !parsed_bindings.has_store_lock,
+        needs_reply_channel_stub: !parsed_bindings.has_reply_channel,
     };
     let generated_dart = dart_generator.generate();
 
