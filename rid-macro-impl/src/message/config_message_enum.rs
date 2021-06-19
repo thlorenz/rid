@@ -18,7 +18,7 @@ pub struct MessageEnumConfig {
 impl MessageEnumConfig {
     pub fn new(
         attrs: &[RidAttr],
-        model_ident: &Ident,
+        model_ident: Ident,
         reply_ident: &Ident,
     ) -> Self {
         let mut debug = false;
@@ -53,7 +53,7 @@ impl MessageEnumConfig {
         Self {
             debug,
             type_infos,
-            to: model_ident.clone(),
+            to: model_ident,
             reply: reply_ident.clone(),
         }
     }

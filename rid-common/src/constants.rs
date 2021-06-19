@@ -34,3 +34,12 @@ pub const RID_MSG_TIMEOUT: &str = "RID_MSG_TIMEOUT";
 
 /// Dart method name to create the Rust store
 pub const RID_CREATE_STORE: &str = "_createStore";
+
+/// Name of the Rust store. The convention is to name it 'Store'.
+/// This makes a lot of things possible or easier that otherwise weren't.
+/// For instance the #[rid::message] needs not be passed the Store type.
+/// Additionally #[rid::export] instance methods can be limited to only be present on the store
+/// which is good practice and avoids memory race conditions.
+/// Additionally these exports can then be re-exported on the higher level API, extending the
+/// Dart 'Store' class.
+pub const STORE: &str = "Store";

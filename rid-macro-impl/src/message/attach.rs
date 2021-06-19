@@ -1,4 +1,5 @@
 use proc_macro2::TokenStream;
+use quote::format_ident;
 use syn::{Item, NestedMeta};
 
 use super::{
@@ -9,6 +10,7 @@ use crate::{
     attrs::{self, parse_rid_args},
     common::{abort, callsite_error},
 };
+use rid_common::STORE;
 
 // https://stackoverflow.com/a/65182902/97443
 pub fn rid_message_impl(
@@ -20,11 +22,13 @@ pub fn rid_message_impl(
         Item::Enum(item) => {
             let rid_attrs = attrs::parse_rid_attrs(&item.attrs);
             let rid_args = parse_rid_args(args);
-            if rid_args.len() == 2 {
+            if rid_args.len() == 1 {
+                // NOTE: hardcode the store ident here instead of removing it everywhere in case we
+                // ever want to not rely on it being name 'Store' for the message implementation.
                 let enum_config = MessageEnumConfig::new(
                     &rid_attrs,
+                    format_ident!("{}", STORE),
                     &rid_args[0],
-                    &rid_args[1],
                 );
                 let parsed_message_enum = ParsedMessageEnum::new(
                     &item.ident,
@@ -36,9 +40,8 @@ pub fn rid_message_impl(
                 abort!(
                     item,
                     "\
-                Please specify exactly one store struct which this message\n\
-                updates and a reply enum with which it responds.\n\
-                Example: #[rid::message(Store, Reply)]"
+                Please specify exactly one reply type which is used\nto respond to messages.\n\
+                Example: #[rid::message(Reply)]"
                 )
             }
         }
