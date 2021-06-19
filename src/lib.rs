@@ -1,3 +1,6 @@
+// -----------------
+// Sub Crates
+// -----------------
 extern crate rid_ffi;
 extern crate rid_macro;
 pub use rid_ffi::{
@@ -5,3 +8,9 @@ pub use rid_ffi::{
     allo_isolate as _allo_isolate,
 };
 pub use rid_macro::*;
+
+// -----------------
+// Modules
+// -----------------
+mod traits;
+pub use traits::RidStore;
