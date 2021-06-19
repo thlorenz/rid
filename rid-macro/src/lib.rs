@@ -16,6 +16,17 @@ const RID_PRINT_MESSAGE: &str = "RID_PRINT_MESSAGE";
 const RID_PRINT_REPLY: &str = "RID_PRINT_REPLY";
 
 // -----------------
+// #[rid::store]
+// -----------------
+#[proc_macro_attribute]
+#[proc_macro_error]
+pub fn store(_attrs: TokenStream, input: TokenStream) -> TokenStream {
+    let item = parse_macro_input!(input as syn::Item);
+    let item_and_impl = rid_ffi_model_impl(&item, true);
+    item_and_impl.into()
+}
+
+// -----------------
 // #[rid::model]
 // -----------------
 #[proc_macro_attribute]
@@ -24,10 +35,10 @@ pub fn model(_attrs: TokenStream, input: TokenStream) -> TokenStream {
     let item = parse_macro_input!(input as syn::Item);
     if let Ok(_) = env::var(RID_PRINT_MODEL) {
         eprintln!("input: {:#?}", &item);
-        rid_ffi_model_impl(&item);
+        rid_ffi_model_impl(&item, false);
         process::exit(0)
     } else {
-        let item_and_impl = rid_ffi_model_impl(&item);
+        let item_and_impl = rid_ffi_model_impl(&item, false);
         item_and_impl.into()
     }
 }

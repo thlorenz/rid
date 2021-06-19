@@ -68,6 +68,10 @@ impl ParsedMessageEnum {
             config,
         }
     }
+
+    pub fn type_infos(&self) -> &TypeInfoMap {
+        &self.config.type_infos
+    }
 }
 
 fn parse_variants(

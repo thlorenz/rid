@@ -439,6 +439,7 @@ name = "rid_macro_impl"
 version = "0.1.0"
 dependencies = [
  "assert_matches",
+ "heck",
  "proc-macro-error",
  "proc-macro2",
  "quote",

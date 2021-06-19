@@ -5,7 +5,7 @@ use proc_macro2::TokenStream;
 use quote::quote;
 use syn::{parse_macro_input, Item};
 
-fn render(input: proc_macro2::TokenStream) -> TokenStream {
+fn render(input: proc_macro2::TokenStream, is_store: bool) -> TokenStream {
     let item = syn::parse2::<syn::Item>(input).unwrap();
 
     match item {
@@ -14,6 +14,7 @@ fn render(input: proc_macro2::TokenStream) -> TokenStream {
             render_to_dart(
                 &struct_item,
                 struct_config,
+                is_store,
                 DartRenderImplConfig::for_tests(),
             )
         }

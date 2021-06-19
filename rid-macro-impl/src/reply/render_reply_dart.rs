@@ -18,6 +18,7 @@ pub fn render_reply_dart(
     let dart_enum_name = rust_type.rust_ident().to_string();
 
     let class_name = reply_class_name_for_enum(&dart_enum_name);
+    let posted_reply_type = reply_class_name_for_enum(&dart_enum_name);
 
     let rendered_reply_class = format!(
         r###"
@@ -41,7 +42,7 @@ pub fn render_reply_dart(
 {comment}   }}
 {comment} }}
 {comment} 
-{comment} void Function(PostedReply)? RID_DEBUG_REPLY = (PostedReply reply) {{
+{comment} void Function({PostedReply})? RID_DEBUG_REPLY = (PostedReply reply) {{
 {comment}   print('$reply');
 {comment} }};
 {comment}
@@ -60,6 +61,7 @@ pub fn render_reply_dart(
 {comment} final ReplyChannel<{class_name}> replyChannel = ReplyChannel.instance(_dl, decode);
 {comment} ```
     "###,
+        PostedReply = posted_reply_type,
         comment = comment,
         enum = dart_enum_name,
         class_name = class_name,

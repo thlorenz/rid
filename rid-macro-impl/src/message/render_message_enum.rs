@@ -263,7 +263,7 @@ impl ParsedMessageEnum {
             )
         };
 
-        let code = format!(
+        let raw_api = format!(
             r###"{reply_with_timeout}
 {comment} extension Rid_Message_ExtOnPointer{struct_ident}For{enum_ident} on {dart_ffi}.Pointer<{ffigen_bind}.{raw_struct_ident}> {{
 {methods}
@@ -278,17 +278,25 @@ impl ParsedMessageEnum {
             comment = comment
         );
 
+        let store_api = self.render_store_api(&comment);
+
         if config.dart_code_only {
-            code
+            format!(
+                "{raw_api}\n{store_api}",
+                raw_api = raw_api,
+                store_api = store_api
+            )
         } else {
             format!(
                 r###"{comment}
 {comment} The below extension provides convenience methods to send messages to rust.
 {comment}
 {comment} ```dart
-{code}
+{raw_api}
+{store_api}
 {comment} ```"###,
-                code = code,
+                raw_api = raw_api,
+                store_api = store_api,
                 comment = comment,
             )
         }
@@ -389,7 +397,7 @@ impl ParsedMessageEnum {
         )
     }
 
-    fn dart_method_name(&self, rust_method_name: &str) -> String {
+    pub fn dart_method_name(&self, rust_method_name: &str) -> String {
         // Cut off "rid_msg_
         let shortened = rust_method_name[8..].to_string();
         // lowercase first char

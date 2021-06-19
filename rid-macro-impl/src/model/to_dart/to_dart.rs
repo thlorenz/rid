@@ -45,26 +45,56 @@ impl DartRenderImplConfig {
 pub fn render_to_dart(
     struct_item: &ItemStruct,
     struct_config: StructConfig,
+    is_store: bool,
     render_config: DartRenderImplConfig,
 ) -> TokenStream {
     let parsed_struct =
         ParsedStruct::new(&struct_item, &struct_item.ident, struct_config);
 
-    // TODO: continue here by using type_infos when converting to DartType
     let comment = if render_config.render_dart_only {
         ""
     } else {
         "///"
     };
+
+    // -----------------
+    // Dart Store API
+    // -----------------
+    let dart_store_api = if is_store {
+        parsed_struct.render_store_api(comment)
+    } else {
+        "".to_string()
+    };
+
+    // -----------------
+    // toDart() including Dart Class
+    // -----------------
     let render_class_config = ParsedStructRenderConfig {
         comment: comment.to_string(),
         dart_class_only: false,
         include_equality: true,
         include_to_string: true,
+        is_store,
     };
-    let dart_extension = parsed_struct
+
+    let to_dart_extension = parsed_struct
         .render_struct_pointer_to_class_extension(&render_class_config);
-    let dart_tokens: TokenStream = dart_extension.parse().unwrap();
+
+    // -----------------
+    // Dart Code Block
+    // -----------------
+    let dart_code = format!(
+        r###"
+{comment} ```dart
+{dart_store_api}
+{to_dart_extension}
+{comment} ```"###,
+        dart_store_api = dart_store_api,
+        to_dart_extension = to_dart_extension,
+        comment = comment
+    );
+    let dart_tokens: TokenStream = dart_code.parse().unwrap();
+
     let ident = &struct_item.ident;
     let mod_ident = format_ident!("__rid_{}_dart_mod", ident);
     let fn_ident = format_ident!("_to_dart_for_{}", ident);

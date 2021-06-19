@@ -2,6 +2,7 @@ use rid_common::{DART_FFI, FFI_GEN_BIND};
 
 use crate::{
     attrs::TypeInfoMap,
+    common::prefixes::store_state_class_ident,
     parse::{ParsedStruct, ParsedStructField},
 };
 
@@ -10,6 +11,7 @@ pub struct ParsedStructRenderConfig {
     pub dart_class_only: bool,
     pub include_equality: bool,
     pub include_to_string: bool,
+    pub is_store: bool,
 }
 
 impl ParsedStruct {
@@ -17,7 +19,11 @@ impl ParsedStruct {
         &self,
         config: &ParsedStructRenderConfig,
     ) -> String {
-        let class_name = self.ident.to_string();
+        let class_name = if config.is_store {
+            store_state_class_ident(&self.ident).to_string()
+        } else {
+            self.ident.to_string()
+        };
         let raw_class_name = format!(
             "{dart_ffi}.Pointer<{ffigen_bind}.{ident}>",
             dart_ffi = DART_FFI,
@@ -34,7 +40,6 @@ impl ParsedStruct {
         } else {
             format!(
                 r###"{comment}
-{comment} ```dart
 {comment} // Dart class representation of {ident}.
 {dart_class}
 {comment}
@@ -46,8 +51,7 @@ impl ParsedStruct {
 {comment}      ridStoreUnlock();
 {comment}      return instance;
 {comment}   }}
-{comment} }}
-{comment} ```"###,
+{comment} }}"###,
                 ident = self.ident,
                 dart_class = dart_class,
                 class_name = class_name,

@@ -10,7 +10,7 @@ use proc_macro2::TokenStream;
 use quote::{format_ident, quote_spanned};
 use syn::{Fields, Item};
 
-pub fn rid_ffi_model_impl(item: &Item) -> TokenStream {
+pub fn rid_ffi_model_impl(item: &Item, is_store: bool) -> TokenStream {
     match item {
         Item::Struct(struct_item) => {
             let rid_attrs = attrs::parse_rid_attrs(&struct_item.attrs);
@@ -18,6 +18,7 @@ pub fn rid_ffi_model_impl(item: &Item) -> TokenStream {
             let dart_class_tokens = render_to_dart(
                 struct_item,
                 struct_config.clone(),
+                is_store,
                 Default::default(),
             );
 

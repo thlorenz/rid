@@ -6,8 +6,8 @@ use crate::{
     common::state::{get_state, ImplementationType},
 };
 use rid_common::{
-    DART_FFI, FFI_GEN_BIND, RID_DEBUG_LOCK, RID_DEBUG_REPLY, RID_FFI,
-    RID_MSG_TIMEOUT,
+    DART_FFI, FFI_GEN_BIND, RID_CREATE_STORE, RID_DEBUG_LOCK, RID_DEBUG_REPLY,
+    RID_FFI, RID_MSG_TIMEOUT,
 };
 pub fn code_store_module(
     msg_ident: &syn::Ident,
@@ -89,7 +89,7 @@ pub fn code_store_module(
 ///   print('Set {rid_msg_timeout} to change the default for if/when messages without reply time out');
 /// }}
 ///
-/// {dart_ffi}.Pointer<{ffigen_bind}.{store_struct}> createStore() {{
+/// {dart_ffi}.Pointer<{ffigen_bind}.{store_struct}> {createStore}() {{
 ///   _initRid();
 ///   return {rid_ffi}.create_store();
 /// }}
@@ -99,6 +99,7 @@ pub fn code_store_module(
     rid_debug_lock = RID_DEBUG_LOCK,
     rid_debug_reply = RID_DEBUG_REPLY,
     rid_msg_timeout = RID_MSG_TIMEOUT,
+    createStore = RID_CREATE_STORE,
     rid_ffi = RID_FFI,
     ffigen_bind = FFI_GEN_BIND,
     dart_ffi = DART_FFI,
