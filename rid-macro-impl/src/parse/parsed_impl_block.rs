@@ -2,6 +2,7 @@ use attrs::{
     parse_rid_attrs, Category, FunctionConfig, ImplBlockConfig, TypeInfo,
     TypeInfoMap,
 };
+use rid_common::STORE;
 
 use super::{
     parsed_function::ParsedFunction,
@@ -81,6 +82,12 @@ impl ParsedImplBlock {
                 | ImplItem::__TestExhaustive(_) => None,
             })
             .collect();
+
+        if ty.rust_ident().to_string().as_str() != STORE {
+            methods.iter().for_each(|x| if x.has_receiver() {
+                abort!(x.fn_ident, "Methods with a receiver, i.e. `&self` can only be exported from the store")
+            })
+        }
 
         if methods.is_empty() {
             abort!(

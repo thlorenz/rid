@@ -128,4 +128,17 @@ impl ParsedFunction {
     pub fn type_infos(&self) -> &TypeInfoMap {
         &self.config.type_infos
     }
+
+    /// Determines if the function has a receiver, i.e is of the following forms:
+    /// ```rust
+    /// fn f(self) {}
+    /// fn f(&self) {}
+    /// fn f(&mut self) {}
+    /// ```
+    pub fn has_receiver(&self) -> bool {
+        match &self.receiver {
+            Some(receiver) => true,
+            None => false,
+        }
+    }
 }

@@ -14,9 +14,6 @@ pub struct ImplBlockConfig {
 
 impl ImplBlockConfig {
     pub fn new(attrs: Vec<RidAttr>) -> Self {
-        // TODO: exactly duplicated from ./config_enum.rs
-        // We may do a TypeInfoMap::From(&[RidAttr]), but then we still should validate + warn
-        // for invalid attrs on a specific type
         let mut type_infos: TypeInfoMap = TypeInfoMap(HashMap::new());
         let mut is_exported = false;
         for attr in &attrs {
