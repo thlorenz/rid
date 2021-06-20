@@ -100,7 +100,7 @@ mod method_exports {
     #[test]
     fn impl_block_with_four_methods_three_with_rid_export_attr_new_aliased_to_init_model(
     ) {
-        let mystruct_str = "MyStruct".to_string();
+        let store_str = "Store".to_string();
 
         let ParsedImplBlock {
             ty: owner_ty,
@@ -108,7 +108,7 @@ mod method_exports {
             ..
         } = parse(quote! {
             #[rid::export]
-            impl MyStruct {
+            impl Store {
                 #[rid::export(initModel)]
                 pub fn new(id: u8) -> Self {
                     Self { id }
@@ -127,10 +127,10 @@ mod method_exports {
             }
         });
 
-        assert_eq!(owner_ty.ident().to_string(), "RawMyStruct", "return ident");
+        assert_eq!(owner_ty.ident().to_string(), "RawStore", "return ident");
         assert_eq!(
             owner_ty.rust_ident().to_string(),
-            "MyStruct",
+            "Store",
             "return rust ident"
         );
         assert_eq!(

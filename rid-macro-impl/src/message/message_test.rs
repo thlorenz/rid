@@ -86,7 +86,8 @@ mod msg_variants_without_fields {
         };
         let expected_dart = r###"
             extension Rid_Message_ExtOnPointerStoreForMsg on dart_ffi.Pointer<ffigen_bind.RawStore> {
-            Future<PostedReply> msgInit({Duration? timeout}) {
+
+              Future<PostedReply> msgInit({Duration? timeout}) {
                 final reqId = replyChannel.reqId;
                 rid_ffi.rid_msg_Init(reqId, );
 
@@ -94,7 +95,7 @@ mod msg_variants_without_fields {
                     ? replyChannel.reply(reqId).then((PostedReply reply) {
                         if (RID_DEBUG_REPLY != null) RID_DEBUG_REPLY!(reply);
                         return reply;
-                    })
+                      })
                     : replyChannel.reply(reqId);
 
                 if (!_isDebugMode) return reply;
@@ -103,7 +104,13 @@ mod msg_variants_without_fields {
                 if (timeout == null) return reply;
                 final msgCall = 'msgInit() with reqId: $reqId';
                 return _replyWithTimeout(reply, msgCall, StackTrace.current, timeout);
+              }
             }
+
+            extension MsgApiFor_Store on Store {
+              Future<PostedReply> msgInit({Duration? timeout}) {
+                return _store.msgInit(timeout: timeout);
+              }
             }
         "###;
         let rust = render_rust(&msg);
@@ -139,41 +146,50 @@ mod msg_variants_without_fields {
             extension Rid_Message_ExtOnPointerStoreForMsg on dart_ffi.Pointer<ffigen_bind.RawStore> {
 
               Future<PostedReply> msgInit({Duration? timeout}) {
-                  final reqId = replyChannel.reqId;
-                  rid_ffi.rid_msg_Init(reqId, );
+                final reqId = replyChannel.reqId;
+                rid_ffi.rid_msg_Init(reqId, );
 
-                  final reply = _isDebugMode && RID_DEBUG_REPLY != null
-                      ? replyChannel.reply(reqId).then((PostedReply reply) {
-                          if (RID_DEBUG_REPLY != null) RID_DEBUG_REPLY!(reply);
-                          return reply;
+                final reply = _isDebugMode && RID_DEBUG_REPLY != null
+                    ? replyChannel.reply(reqId).then((PostedReply reply) {
+                        if (RID_DEBUG_REPLY != null) RID_DEBUG_REPLY!(reply);
+                        return reply;
                       })
-                      : replyChannel.reply(reqId);
+                    : replyChannel.reply(reqId);
 
-                  if (!_isDebugMode) return reply;
+                if (!_isDebugMode) return reply;
 
-                  timeout ??= RID_MSG_TIMEOUT;
-                  if (timeout == null) return reply;
-                  final msgCall = 'msgInit() with reqId: $reqId';
-                  return _replyWithTimeout(reply, msgCall, StackTrace.current, timeout);
+                timeout ??= RID_MSG_TIMEOUT;
+                if (timeout == null) return reply;
+                final msgCall = 'msgInit() with reqId: $reqId';
+                return _replyWithTimeout(reply, msgCall, StackTrace.current, timeout);
               }
 
               Future<PostedReply> msgDeinit({Duration? timeout}) {
-                  final reqId = replyChannel.reqId;
-                  rid_ffi.rid_msg_Deinit(reqId, );
+                final reqId = replyChannel.reqId;
+                rid_ffi.rid_msg_Deinit(reqId, );
 
-                  final reply = _isDebugMode && RID_DEBUG_REPLY != null
-                      ? replyChannel.reply(reqId).then((PostedReply reply) {
-                          if (RID_DEBUG_REPLY != null) RID_DEBUG_REPLY!(reply);
-                          return reply;
+                final reply = _isDebugMode && RID_DEBUG_REPLY != null
+                    ? replyChannel.reply(reqId).then((PostedReply reply) {
+                        if (RID_DEBUG_REPLY != null) RID_DEBUG_REPLY!(reply);
+                        return reply;
                       })
-                      : replyChannel.reply(reqId);
+                    : replyChannel.reply(reqId);
 
-                  if (!_isDebugMode) return reply;
+                if (!_isDebugMode) return reply;
 
-                  timeout ??= RID_MSG_TIMEOUT;
-                  if (timeout == null) return reply;
-                  final msgCall = 'msgDeinit() with reqId: $reqId';
-                  return _replyWithTimeout(reply, msgCall, StackTrace.current, timeout);
+                timeout ??= RID_MSG_TIMEOUT;
+                if (timeout == null) return reply;
+                final msgCall = 'msgDeinit() with reqId: $reqId';
+                return _replyWithTimeout(reply, msgCall, StackTrace.current, timeout);
+              }
+            }
+
+            extension MsgApiFor_Store on Store {
+              Future<PostedReply> msgInit({Duration? timeout}) {
+                return _store.msgInit(timeout: timeout);
+              }
+              Future<PostedReply> msgDeinit({Duration? timeout}) {
+                return _store.msgDeinit(timeout: timeout);
               }
             }
         "###;
@@ -183,7 +199,6 @@ mod msg_variants_without_fields {
         let rust = render_rust(&msg);
         let dart = render_dart(&msg);
 
-        dump_code(&dart);
         assert_eq!(rust.to_string().trim(), expected_rust.to_string().trim());
         assert_eq!(normalize_code(&dart), normalize_code(expected_dart));
     }
@@ -216,22 +231,28 @@ mod msg_variants_with_primitive_fields {
             extension Rid_Message_ExtOnPointerStoreForMsg on dart_ffi.Pointer<ffigen_bind.RawStore> {
 
               Future<PostedReply> msgAdd(@dart_ffi.Int32() int arg0, {Duration? timeout}) {
-                  final reqId = replyChannel.reqId;
-                  rid_ffi.rid_msg_Add(reqId, arg0);
+                final reqId = replyChannel.reqId;
+                rid_ffi.rid_msg_Add(reqId, arg0);
 
-                  final reply = _isDebugMode && RID_DEBUG_REPLY != null
-                      ? replyChannel.reply(reqId).then((PostedReply reply) {
-                          if (RID_DEBUG_REPLY != null) RID_DEBUG_REPLY!(reply);
-                          return reply;
+                final reply = _isDebugMode && RID_DEBUG_REPLY != null
+                    ? replyChannel.reply(reqId).then((PostedReply reply) {
+                        if (RID_DEBUG_REPLY != null) RID_DEBUG_REPLY!(reply);
+                        return reply;
                       })
-                      : replyChannel.reply(reqId);
+                    : replyChannel.reply(reqId);
 
-                  if (!_isDebugMode) return reply;
+                if (!_isDebugMode) return reply;
 
-                  timeout ??= RID_MSG_TIMEOUT;
-                  if (timeout == null) return reply;
-                  final msgCall = 'msgAdd($arg0) with reqId: $reqId';
-                  return _replyWithTimeout(reply, msgCall, StackTrace.current, timeout);
+                timeout ??= RID_MSG_TIMEOUT;
+                if (timeout == null) return reply;
+                final msgCall = 'msgAdd($arg0) with reqId: $reqId';
+                return _replyWithTimeout(reply, msgCall, StackTrace.current, timeout);
+              }
+            }
+
+            extension MsgApiFor_Store on Store {
+              Future<PostedReply> msgAdd(@dart_ffi.Int32() int arg0, {Duration? timeout}) {
+                return _store.msgAdd(arg0, timeout: timeout);
               }
             }
         "###;
@@ -269,24 +290,30 @@ mod msg_variants_with_primitive_fields {
         };
         let expected_dart = r###"
             extension Rid_Message_ExtOnPointerStoreForMsg on dart_ffi.Pointer<ffigen_bind.RawStore> {
-           
+
               Future<PostedReply> msgAdd(@dart_ffi.Int32() int arg0, String arg1, {Duration? timeout}) {
                 final reqId = replyChannel.reqId;
                 rid_ffi.rid_msg_Add(reqId, arg0, arg1.toNativeInt8());
-           
+
                 final reply = _isDebugMode && RID_DEBUG_REPLY != null
                     ? replyChannel.reply(reqId).then((PostedReply reply) {
                         if (RID_DEBUG_REPLY != null) RID_DEBUG_REPLY!(reply);
                         return reply;
                       })
                     : replyChannel.reply(reqId);
-           
+
                 if (!_isDebugMode) return reply;
-           
+
                 timeout ??= RID_MSG_TIMEOUT;
                 if (timeout == null) return reply;
                 final msgCall = 'msgAdd($arg0, $arg1) with reqId: $reqId';
                 return _replyWithTimeout(reply, msgCall, StackTrace.current, timeout);
+              }
+            }
+
+            extension MsgApiFor_Store on Store {
+              Future<PostedReply> msgAdd(@dart_ffi.Int32() int arg0, String arg1, {Duration? timeout}) {
+                return _store.msgAdd(arg0, arg1, timeout: timeout);
               }
             }
         "###;
@@ -325,24 +352,29 @@ mod msg_variants_with_enum_fields {
         };
         let expected_dart = r###"
             extension Rid_Message_ExtOnPointerStoreForMsg on dart_ffi.Pointer<ffigen_bind.RawStore> {
-
               Future<PostedReply> msgSetFilter(int arg0, {Duration? timeout}) {
-                final reqId = replyChannel.reqId;
-                rid_ffi.rid_msg_SetFilter(reqId, arg0);
+                  final reqId = replyChannel.reqId;
+                  rid_ffi.rid_msg_SetFilter(reqId, arg0);
 
-                final reply = _isDebugMode && RID_DEBUG_REPLY != null
-                    ? replyChannel.reply(reqId).then((PostedReply reply) {
-                        if (RID_DEBUG_REPLY != null) RID_DEBUG_REPLY!(reply);
-                        return reply;
+                  final reply = _isDebugMode && RID_DEBUG_REPLY != null
+                      ? replyChannel.reply(reqId).then((PostedReply reply) {
+                          if (RID_DEBUG_REPLY != null) RID_DEBUG_REPLY!(reply);
+                          return reply;
                       })
-                    : replyChannel.reply(reqId);
+                      : replyChannel.reply(reqId);
 
-                if (!_isDebugMode) return reply;
+                  if (!_isDebugMode) return reply;
 
-                timeout ??= RID_MSG_TIMEOUT;
-                if (timeout == null) return reply;
-                final msgCall = 'msgSetFilter($arg0) with reqId: $reqId';
-                return _replyWithTimeout(reply, msgCall, StackTrace.current, timeout);
+                  timeout ??= RID_MSG_TIMEOUT;
+                  if (timeout == null) return reply;
+                  final msgCall = 'msgSetFilter($arg0) with reqId: $reqId';
+                  return _replyWithTimeout(reply, msgCall, StackTrace.current, timeout);
+              }
+            }
+
+            extension MsgApiFor_Store on Store {
+              Future<PostedReply> msgSetFilter(Filter arg0, {Duration? timeout}) {
+                return _store.msgSetFilter(arg0.index, timeout: timeout);
               }
             }
         "###;

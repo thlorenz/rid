@@ -359,7 +359,6 @@ mod impl_instance_methods {
             }
         };
 
-        dump_tokens(&res.tokens);
         assert_eq!(res.tokens.to_string(), expected.to_string());
         assert_eq!(res.type_aliases, "Pointer_RawModel");
     }
