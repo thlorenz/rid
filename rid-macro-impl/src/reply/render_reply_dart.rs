@@ -58,7 +58,7 @@ pub fn render_reply_dart(
 {comment}   return {class_name}._(type, reqId, data);
 {comment} }}
 {comment} 
-{comment} final ReplyChannel<{class_name}> replyChannel = ReplyChannel.instance(_dl, decode);
+{comment} final ReplyChannel<{class_name}> replyChannel = ReplyChannel.instance(_dl, decode, _isDebugMode);
 {comment} ```
     "###,
         PostedReply = posted_reply_type,

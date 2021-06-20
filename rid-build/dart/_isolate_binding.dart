@@ -35,6 +35,7 @@ typedef _dart_rid_init_isolate = void Function(
 void initIsolate(
   dart_ffi.DynamicLibrary dl,
   int port,
+  bool isDebugMode,
 ) {
   // allo isolate crate initialization
   final _store_dart_post_cobject_Dart _store_dart_post_cobject =
@@ -46,11 +47,12 @@ void initIsolate(
   final _dart_rid_init_isolate _rid_init_isolate =
       _rid_init_isolate_ptr.asFunction<_dart_rid_init_isolate>();
 
-  if (!_initializedIsolate) {
+  if (!_initializedIsolate || isDebugMode) {
     _initializedIsolate = true;
     _store_dart_post_cobject(dart_ffi.NativeApi.postCObject);
-    _rid_init_isolate(
-      port,
-    );
+    _rid_init_isolate(port);
+  } else if (_initializedIsolate) {
+    throw Exception(
+        "The isolate can only be initialized once when not run in debug mode");
   }
 }

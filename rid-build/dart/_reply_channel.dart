@@ -22,10 +22,10 @@ class ReplyChannel<TReply extends IReply> {
   late final _zonedAdd;
   int _lastReqId = 0;
 
-  ReplyChannel._(this._dl, this._decode)
+  ReplyChannel._(this._dl, this._decode, bool isDebugMode)
       : _sink = StreamController.broadcast() {
     _receivePort = RawReceivePort(_onReceivedReply, 'rid::reply_channel::port');
-    initIsolate(this._dl, _receivePort.sendPort.nativePort);
+    initIsolate(this._dl, _receivePort.sendPort.nativePort, isDebugMode);
     _zonedAdd = _zone.registerUnaryCallback(_add);
   }
 
@@ -44,7 +44,6 @@ class ReplyChannel<TReply extends IReply> {
   }
 
   Stream<TReply> get stream => _sink.stream;
-  // TODO: allow passing a timeout and possibly a default per store timeout
   Future<TReply> reply(int reqId) {
     assert(reqId != 0, "Invalid requestID ");
     return stream
@@ -78,9 +77,15 @@ class ReplyChannel<TReply extends IReply> {
 
   static bool _initialized = false;
   static ReplyChannel<TReply> instance<TReply extends IReply>(
-      DynamicLibrary dl, Decode<TReply> decode) {
-    assert(!_initialized, 'Can only initialize one ReplyChannel once');
+    DynamicLibrary dl,
+    Decode<TReply> decode,
+    bool isDebugMode,
+  ) {
+    if (_initialized && !isDebugMode) {
+      throw Exception(
+          "The reply channel can only be initialized once unless running in debug mode");
+    }
     _initialized = true;
-    return ReplyChannel<TReply>._(dl, decode);
+    return ReplyChannel<TReply>._(dl, decode, isDebugMode);
   }
 }
