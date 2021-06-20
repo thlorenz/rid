@@ -13,18 +13,29 @@ use crate::{
 
 impl DartType {
     fn render_type(&self) -> String {
+        use DartType::*;
         match self {
-            DartType::Int32 | DartType::Int64 => "int".to_string(),
-            DartType::Bool => "bool".to_string(),
-            DartType::String => "String".to_string(),
-            DartType::Custom(info, ty) => {
+            Int32(nullable) | Int64(nullable) if *nullable => {
+                "int?".to_string()
+            }
+            Int32(_) | Int64(_) => "int".to_string(),
+            Bool(nullable) if *nullable => "bool?".to_string(),
+            Bool(_) => "bool".to_string(),
+            String(nullable) if *nullable => "String?".to_string(),
+            String(_) => "String".to_string(),
+            Custom(nullable, info, ty) => {
                 use Category::*;
                 match info.cat {
+                    Enum if *nullable => "int?".to_string(),
                     Enum => "int".to_string(),
+                    Struct | Prim if *nullable => format!("{}?", ty),
                     Struct | Prim => ty.to_string(),
                 }
             }
-            DartType::Vec(inner) => {
+            Vec(nullable, inner) if *nullable => {
+                format!("List<{inner}>?", inner = inner.render_type())
+            }
+            Vec(_, inner) => {
                 format!("List<{inner}>", inner = inner.render_type())
             }
             DartType::Unit => "".to_string(),
@@ -33,10 +44,10 @@ impl DartType {
 
     fn render_type_attribute(&self) -> Option<String> {
         match self {
-            DartType::Int32 => {
+            DartType::Int32(_) => {
                 Some(format!("@{dart_ffi}.Int32()", dart_ffi = DART_FFI))
             }
-            DartType::Int64 => {
+            DartType::Int64(_) => {
                 Some(format!("@{dart_ffi}.Int64()", dart_ffi = DART_FFI))
             }
             _ => None,
@@ -46,15 +57,31 @@ impl DartType {
     pub fn render_resolved_ffi_arg(&self, slot: usize) -> String {
         use DartType::*;
         match self {
-            Bool => format!("arg{} ? 1 : 0", slot),
-            String => format!(
+            Bool(nullable) if *nullable => {
+                format!(
+                    "arg{slot} == null ? 0 : arg{slot} ? 1 : 0",
+                    slot = slot
+                )
+            }
+            Bool(_) => format!("arg{} ? 1 : 0", slot),
+            // TODO(thlorenz): I doubt his is correct
+            String(nullable) if *nullable => format!(
+                "arg{slot}?.{toNativeInt8}()",
+                slot = slot,
+                toNativeInt8 = STRING_TO_NATIVE_INT8
+            ),
+            String(_) => format!(
                 "arg{slot}.{toNativeInt8}()",
                 slot = slot,
                 toNativeInt8 = STRING_TO_NATIVE_INT8
             ),
-            Int32 | Int64 => format!("arg{}", slot),
-            Custom(_, _) => format!("arg{}", slot),
-            Vec(_) => format!("arg{}", slot),
+            // TODO(thlorenz): All the below also would resolve to a different type when nullable
+            Int32(nullable) | Int64(nullable) if *nullable => {
+                format!("arg{}", slot)
+            }
+            Int32(_) | Int64(_) => format!("arg{}", slot),
+            Custom(_, _, _) => format!("arg{}", slot),
+            Vec(_, _) => format!("arg{}", slot),
             Unit => todo!("render_resolved_ffi_arg"),
         }
     }
@@ -62,7 +89,7 @@ impl DartType {
     pub fn render_to_dart_for_arg(&self, arg_ident: &Ident) -> String {
         match self.render_to_dart() {
             Some(to_dart) => format!(
-                "{arg_ident}.{to_dart}",
+                "{arg_ident}{to_dart}",
                 arg_ident = arg_ident,
                 to_dart = to_dart
             ),
@@ -73,20 +100,31 @@ impl DartType {
     pub fn render_to_dart(&self) -> Option<String> {
         use DartType::*;
         match self {
-            Int32 | Int64 | Bool => None,
+            Int32(nullable) | Int64(nullable) | Bool(nullable) if *nullable => {
+                Some("?".to_string())
+            }
+            Int32(_) | Int64(_) | Bool(_) => None,
             // NOTE: Raw Strings are already converted to Dart Strings
-            String => None,
-            Custom(info, _) => {
+            String(nullable) if *nullable => Some("?".to_string()),
+            String(_) => None,
+            Custom(nullable, info, _) if *nullable => {
                 if info.is_struct() {
-                    // TODO(thlorenz): not 100% sure about this one
-                    Some("toDart()".to_string())
+                    Some("?.toDart()".to_string())
+                } else {
+                    Some("?".to_string())
+                }
+            }
+            Custom(_, info, _) => {
+                if info.is_struct() {
+                    Some(".toDart()".to_string())
                 } else {
                     None
                 }
             }
             // NOTE: All vecs are expected have a `toDart` extension method implemented
             // which maps all it's items `toDart` before converting it `toList`
-            Vec(_) => Some("toDart()".to_string()),
+            Vec(nullable, _) if *nullable => Some("?.toDart()".to_string()),
+            Vec(_, _) => Some(".toDart()".to_string()),
             Unit => {
                 abort!(
                     format_ident!("()"),

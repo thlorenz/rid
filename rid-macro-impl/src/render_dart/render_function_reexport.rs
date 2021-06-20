@@ -62,7 +62,7 @@ impl ParsedFunction {
         let to_dart = match DartType::from(&return_arg, self.type_infos())
             .render_to_dart()
         {
-            Some(to_dart) => format!(".{}", to_dart),
+            Some(to_dart) => to_dart,
             None => "".to_string(),
         };
 
