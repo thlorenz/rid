@@ -11,6 +11,7 @@ use crate::{
     common::{
         derive_error, prefixes::reply_class_name_for_enum, tokens::resolve_ptr,
     },
+    render_dart::RenderDartTypeOpts,
     render_rust::{ffi_prelude, RustArg},
     reply,
 };
@@ -315,7 +316,10 @@ impl ParsedMessageEnum {
                 let ffi_arg = f.dart_ty.render_resolved_ffi_arg(f.slot);
                 DartArg {
                     arg: format!("arg{}", f.slot),
-                    ty: f.rust_ty.render_dart_type(&type_infos, true),
+                    ty: f.rust_ty.render_dart_type(
+                        &type_infos,
+                        RenderDartTypeOpts::attr_raw(),
+                    ),
                     ffi_arg,
                 }
             })

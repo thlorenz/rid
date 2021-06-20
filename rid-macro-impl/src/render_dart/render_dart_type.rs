@@ -11,7 +11,17 @@ use crate::{
     },
 };
 impl DartType {
-    fn render_type(&self) -> String {
+    /// Renders this type to a valid Dart representation.
+    /// Depending on `raw` certain types are represented differently.
+    ///
+    /// ### Non-Raw Specifics
+    ///
+    /// Enum: is passed just by it's named type, i.e. 'Filter' normally
+    ///
+    /// ### Raw Specifics
+    ///
+    /// Enum: is passed as 'int'
+    fn render_type(&self, raw: bool) -> String {
         use DartType::*;
         match self {
             Int32(nullable) | Int64(nullable) if *nullable => {
@@ -25,17 +35,29 @@ impl DartType {
             Custom(nullable, info, ty) => {
                 use Category::*;
                 match info.cat {
-                    Enum if *nullable => "int?".to_string(),
-                    Enum => "int".to_string(),
+                    Enum if *nullable => {
+                        if raw {
+                            "int?".to_string()
+                        } else {
+                            format!("{ty}?", ty = ty)
+                        }
+                    }
+                    Enum => {
+                        if raw {
+                            "int".to_string()
+                        } else {
+                            ty.to_string()
+                        }
+                    }
                     Struct | Prim if *nullable => format!("{}?", ty),
                     Struct | Prim => ty.to_string(),
                 }
             }
             Vec(nullable, inner) if *nullable => {
-                format!("List<{inner}>?", inner = inner.render_type())
+                format!("List<{inner}>?", inner = inner.render_type(raw))
             }
             Vec(_, inner) => {
-                format!("List<{inner}>", inner = inner.render_type())
+                format!("List<{inner}>", inner = inner.render_type(raw))
             }
             DartType::Unit => "".to_string(),
         }
@@ -102,7 +124,7 @@ impl DartType {
                 match info.cat {
                     // i.e. () { final x = store.filter; return x != null ? Filter.values[x] : null; }()
                     Enum => format!(
-                        "() {{ final x = {snip}; return x != null ? {type_name}.value[x] : null; }}()",
+                        "() {{ final x = {snip}; return x != null ? {type_name}.values[x] : null; }}()",
                         type_name = type_name,
                         snip = snip
                     ),
@@ -117,7 +139,7 @@ impl DartType {
                 match info.cat {
                     // i.e. Filter.values[store.filter]
                     Enum => format!(
-                        "{type_name}.value[{snip}?]",
+                        "{type_name}.values[{snip}]",
                         type_name = type_name,
                         snip = snip
                     ),
@@ -143,37 +165,79 @@ impl DartType {
     }
 }
 
+pub struct RenderDartTypeOpts {
+    pub raw: bool,
+    pub include_type_attribute: bool,
+}
+
+impl RenderDartTypeOpts {
+    pub fn attr_raw() -> Self {
+        Self {
+            raw: true,
+            include_type_attribute: true,
+        }
+    }
+    pub fn raw() -> Self {
+        Self {
+            raw: true,
+            include_type_attribute: false,
+        }
+    }
+    pub fn attr() -> Self {
+        Self {
+            raw: false,
+            include_type_attribute: true,
+        }
+    }
+    pub fn plain() -> Self {
+        Self {
+            raw: false,
+            include_type_attribute: false,
+        }
+    }
+}
+
 impl RustType {
     pub fn render_dart_type(
         &self,
         type_infos: &TypeInfoMap,
-        include_type_attribute: bool,
+        opts: RenderDartTypeOpts,
     ) -> String {
         let dart_type = DartType::from(&self, type_infos);
+        let RenderDartTypeOpts {
+            raw,
+            include_type_attribute,
+        } = opts;
+
         if include_type_attribute {
             match dart_type.render_type_attribute() {
-                Some(attr) => format!("{} {}", attr, dart_type.render_type()),
-                None => dart_type.render_type(),
+                Some(attr) => {
+                    format!("{} {}", attr, dart_type.render_type(raw))
+                }
+                None => dart_type.render_type(raw),
             }
         } else {
-            dart_type.render_type()
+            dart_type.render_type(raw)
         }
     }
 
     pub fn render_dart_and_ffi_type(
         &self,
         type_infos: &TypeInfoMap,
+        raw: bool,
     ) -> (String, Option<String>) {
         let dart_type = DartType::from(&self, type_infos);
-        (dart_type.render_type(), dart_type.render_type_attribute())
+        (
+            dart_type.render_type(raw),
+            dart_type.render_type_attribute(),
+        )
     }
 
     pub fn render_to_dart_for_arg(
         &self,
         type_infos: &TypeInfoMap,
-        arg_ident: &Ident,
+        snip: &str,
     ) -> String {
-        DartType::from(&self, type_infos)
-            .render_to_dart_for_snippet(arg_ident.to_string().as_str())
+        DartType::from(&self, type_infos).render_to_dart_for_snippet(snip)
     }
 }

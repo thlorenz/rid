@@ -4,7 +4,7 @@ use crate::{
     attrs::{parse_rid_args, EnumConfig, StructConfig},
     common::abort,
     model::{parsed_struct::ParsedStruct, store::render_store_module},
-    parse::ParsedEnum,
+    parse::{self, ParsedEnum},
 };
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote_spanned};
@@ -15,14 +15,54 @@ pub fn rid_ffi_model_impl(item: &Item, is_store: bool) -> TokenStream {
         Item::Struct(struct_item) => {
             let rid_attrs = attrs::parse_rid_attrs(&struct_item.attrs);
             let struct_config = StructConfig::from(&struct_item);
-            let dart_class_tokens = render_to_dart(
-                struct_item,
+            let parsed_struct = parse::ParsedStruct::new(
+                &struct_item,
+                &struct_item.ident,
                 struct_config.clone(),
-                is_store,
-                Default::default(),
             );
+            let dart_class_tokens =
+                render_to_dart(&parsed_struct, is_store, Default::default());
+
             let store_module = if is_store {
                 render_store_module(&struct_item.ident)
+            } else {
+                TokenStream::new()
+            };
+
+            // TODO(thlorenz): This needs to go in its own file
+            let store_wrapper_tokens = if is_store {
+                let comment = "///";
+                let field_wrappers =
+                    parsed_struct.render_field_wrappers(comment);
+                let field_wrapper_tokens: TokenStream = format!(
+                    r###"
+{comment} ```dart
+{comment} /// Wrappers to access fields with the higher level API which is memory safe.
+{comment} extension FieldAccessWrappersOn_{Store} on {Store} {{
+{field_wrappers}
+{comment} }}
+{comment} ```"###,
+                    Store = parsed_struct.ident,
+                    field_wrappers = field_wrappers.join("\n"),
+                    comment = comment,
+                )
+                .parse()
+                .unwrap();
+
+                let mod_ident =
+                    format_ident!("{}_field_wrappers", parsed_struct.ident);
+                let fn_ident = format_ident!(
+                    "_include_{}_field_wrappers",
+                    parsed_struct.ident
+                );
+                quote_spanned! { struct_item.ident.span() =>
+                    #[allow(non_snake_case)]
+                    mod #mod_ident {
+                        #field_wrapper_tokens
+                        #[no_mangle]
+                        pub extern "C" fn #fn_ident() {}
+                    }
+                }
             } else {
                 TokenStream::new()
             };
@@ -50,6 +90,7 @@ pub fn rid_ffi_model_impl(item: &Item, is_store: bool) -> TokenStream {
                 #store_module
                 #exports
                 #dart_class_tokens
+                #store_wrapper_tokens
             }
         }
         Item::Enum(enum_item) => {

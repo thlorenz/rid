@@ -5,6 +5,8 @@ use crate::{
     render_common::VecAccess,
 };
 
+use super::RenderDartTypeOpts;
+
 const TEMPLATE_OLD: &str = std::include_str!("./vec_old.dart");
 const TEMPLATE: &str = std::include_str!("./vec.dart");
 
@@ -58,8 +60,9 @@ impl VecAccess {
         // TODO: this is not working for primitive types since they use RidVecs.
         //  - we can try to reuse the template, but then we cannot include `Pointer<...>` as return
         //  type in it, or we use a different template, i.e. `rid_vec.dart` for those
-        let dart_item_type =
-            &self.item_type.render_dart_type(type_infos, false);
+        let dart_item_type = &self
+            .item_type
+            .render_dart_type(type_infos, RenderDartTypeOpts::raw());
 
         let map_to_dart = if self.item_type.is_struct() {
             format!(".map((raw) => raw.toDart())")

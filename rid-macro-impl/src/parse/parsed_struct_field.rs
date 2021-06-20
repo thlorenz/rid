@@ -2,12 +2,13 @@ use syn::Field;
 
 use crate::{attrs::TypeInfoMap, common::abort};
 
-use super::rust_type::RustType;
+use super::{dart_type::DartType, rust_type::RustType};
 
 #[derive(Debug)]
 pub struct ParsedStructField {
     pub ident: syn::Ident,
     pub rust_type: RustType,
+    pub dart_type: DartType,
 }
 
 impl ParsedStructField {
@@ -22,6 +23,11 @@ impl ParsedStructField {
                 "Not supporting custom types yet when deriving DartState"
             ),
         };
-        Self { ident, rust_type }
+        let dart_type = DartType::from(&rust_type, type_infos);
+        Self {
+            ident,
+            rust_type,
+            dart_type,
+        }
     }
 }

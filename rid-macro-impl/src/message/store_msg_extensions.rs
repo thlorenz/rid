@@ -2,7 +2,10 @@ use heck::MixedCase;
 use rid_common::{DART_FFI, FFI_GEN_BIND, RID_CREATE_STORE};
 use syn::Ident;
 
-use crate::common::prefixes::{reply_class_name_for_enum, store_field_ident};
+use crate::{
+    common::prefixes::{reply_class_name_for_enum, store_field_ident},
+    render_dart::RenderDartTypeOpts,
+};
 
 use super::{parsed_variant::ParsedMessageVariant, ParsedMessageEnum};
 
@@ -52,7 +55,10 @@ impl ParsedMessageEnum {
             .iter()
             .map(|f| DartArg {
                 arg: format!("arg{}", f.slot),
-                ty: f.rust_ty.render_dart_type(&self.type_infos(), true),
+                ty: f.rust_ty.render_dart_type(
+                    &self.type_infos(),
+                    RenderDartTypeOpts::attr(),
+                ),
             })
             .enumerate()
             .collect();
@@ -60,6 +66,8 @@ impl ParsedMessageEnum {
         let (args_decl, args_call) = args_info.iter().fold(
             ("".to_string(), "".to_string()),
             |(decl_acc, args_acc), (idx, DartArg { arg, ty })| {
+                let field = &variant.fields[*idx];
+                let to_raw = if field.is_enum() { ".index" } else { "" };
                 (
                     format!(
                         "{acc}{ty} {arg}, ",
@@ -67,7 +75,12 @@ impl ParsedMessageEnum {
                         ty = ty,
                         arg = arg
                     ),
-                    format!("{acc}{arg}, ", acc = args_acc, arg = arg),
+                    format!(
+                        "{acc}{arg}{to_raw}, ",
+                        acc = args_acc,
+                        arg = arg,
+                        to_raw = to_raw
+                    ),
                 )
             },
         );

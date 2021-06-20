@@ -136,8 +136,9 @@ impl ParsedStruct {
             .fields
             .iter()
             .map(|x| {
-                let (ty, ffi_ty) =
-                    x.rust_type.render_dart_and_ffi_type(self.type_infos());
+                let (ty, ffi_ty) = x
+                    .rust_type
+                    .render_dart_and_ffi_type(self.type_infos(), false);
                 match ffi_ty {
                     Some(ffi_ty) => format!(
                         "{comment}    {ffi_ty}\n{comment}   final {ty} {name};",
@@ -374,11 +375,7 @@ impl ParsedStruct {
 // -----------------
 impl ParsedStructField {
     pub fn render_constructor_arg(&self, type_infos: &TypeInfoMap) -> String {
-        format!(
-            "this.{resolution}",
-            resolution = self
-                .rust_type
-                .render_to_dart_for_arg(type_infos, &self.ident)
-        )
+        self.rust_type
+            .render_to_dart_for_arg(type_infos, &format!("this.{}", self.ident))
     }
 }

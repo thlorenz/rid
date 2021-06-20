@@ -7,6 +7,7 @@ use crate::{
     render_common::{
         fn_ident_and_impl_ident_string, RenderFunctionExportConfig,
     },
+    render_dart::RenderDartTypeOpts,
 };
 
 use super::DartArg;
@@ -39,7 +40,8 @@ impl ParsedFunction {
         let dart_fn_name = fn_ident.to_string().to_mixed_case();
 
         let raw_fn_ident = fn_ident_alias.as_ref().unwrap_or(fn_ident);
-        let return_type = return_arg.render_dart_type(self.type_infos(), false);
+        let return_type = return_arg
+            .render_dart_type(self.type_infos(), RenderDartTypeOpts::plain());
 
         let input_parameters = dart_args
             .iter()

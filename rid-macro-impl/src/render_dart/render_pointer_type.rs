@@ -11,15 +11,17 @@ use crate::{
         ParsedReference,
     },
     render_common::PointerTypeAlias,
+    render_dart::RenderDartTypeOpts,
 };
 
 impl RustType {
     pub fn render_dart_pointer_type(&self) -> String {
         use TypeKind as K;
         match &self.kind {
-            K::Primitive(_) => {
-                self.render_dart_type(&TypeInfoMap::default(), false)
-            }
+            K::Primitive(_) => self.render_dart_type(
+                &TypeInfoMap::default(),
+                RenderDartTypeOpts::raw(),
+            ),
             K::Unit => abort!(
                 self.rust_ident(),
                 "Should not export rust method that returns nothing"

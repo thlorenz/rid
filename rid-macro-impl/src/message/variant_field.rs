@@ -39,4 +39,8 @@ impl MessageVariantField {
             slot,
         }
     }
+
+    pub fn is_enum(&self) -> bool {
+        self.rust_ty.is_enum()
+    }
 }

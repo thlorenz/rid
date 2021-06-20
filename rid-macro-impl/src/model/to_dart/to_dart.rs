@@ -43,14 +43,10 @@ impl DartRenderImplConfig {
 }
 
 pub fn render_to_dart(
-    struct_item: &ItemStruct,
-    struct_config: StructConfig,
+    parsed_struct: &ParsedStruct,
     is_store: bool,
     render_config: DartRenderImplConfig,
 ) -> TokenStream {
-    let parsed_struct =
-        ParsedStruct::new(&struct_item, &struct_item.ident, struct_config);
-
     let comment = if render_config.render_dart_only {
         ""
     } else {
@@ -95,7 +91,7 @@ pub fn render_to_dart(
     );
     let dart_tokens: TokenStream = dart_code.parse().unwrap();
 
-    let ident = &struct_item.ident;
+    let ident = &parsed_struct.ident;
     let mod_ident = format_ident!("__rid_{}_dart_mod", ident);
     let fn_ident = format_ident!("_to_dart_for_{}", ident);
     quote_spanned! { ident.span() =>
