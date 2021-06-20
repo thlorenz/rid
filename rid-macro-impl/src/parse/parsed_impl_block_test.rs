@@ -64,6 +64,7 @@ mod self_aliasing {
                     ..
                 },
             config: _,
+            ..
         } = &methods[0];
 
         assert_eq!(fn_ident.to_string(), "new", "function name");
@@ -158,6 +159,7 @@ mod method_exports {
             args,
             return_arg: RustType { kind: ret_kind, .. },
             config: _,
+            ..
         } = &methods[0];
 
         assert_eq!(fn_ident.to_string(), "new", "function ident");
@@ -186,6 +188,7 @@ mod method_exports {
             args,
             return_arg: RustType { kind: ret_ty, .. },
             config: _,
+            ..
         } = &methods[1];
 
         assert_eq!(fn_ident.to_string(), "get_id", "function ident");
@@ -209,6 +212,7 @@ mod method_exports {
             args,
             return_arg: RustType { kind: ret_ty, .. },
             config: _,
+            ..
         } = &methods[2];
         assert_eq!(fn_ident.to_string(), "set_id", "function ident");
         assert_eq!(fn_ident_alias, &None, "no export ident");

@@ -1,4 +1,4 @@
-use syn::Lifetime;
+use syn::{Ident, Lifetime};
 
 use crate::attrs::TypeInfo;
 
@@ -35,5 +35,9 @@ impl ParsedReceiver {
             }
         };
         ParsedReceiver { reference: r, info }
+    }
+
+    pub fn ident(&self) -> &Ident {
+        &self.info.key
     }
 }

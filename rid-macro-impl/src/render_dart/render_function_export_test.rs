@@ -34,8 +34,7 @@ fn render_impl(input: proc_macro2::TokenStream, owner: &str) -> String {
         parse(input, Some((&type_info.key, &TypeInfoMap(map))));
 
     let config = Some(RenderFunctionExportConfig::bare());
-    render_function_export(
-        &parsed_function,
+    parsed_function.render_function_export(
         Some(type_info.key.clone()),
         "",
         config,

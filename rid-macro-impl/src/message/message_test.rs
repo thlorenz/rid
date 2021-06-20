@@ -1,5 +1,6 @@
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
+use rid_common::STORE;
 use syn::{parse_macro_input, Ident, Item};
 
 use crate::{
@@ -15,14 +16,16 @@ fn render(
     config: &MessageRenderConfig,
 ) -> (TokenStream, String) {
     let item = syn::parse2::<syn::Item>(input).unwrap();
-    let rid_args: Vec<Ident> =
-        vec![format_ident!("Store"), format_ident!("Reply")];
+    let rid_args: Vec<Ident> = vec![format_ident!("Reply")];
     let rid_attrs: Vec<RidAttr> = vec![];
     match item {
         Item::Enum(item) => {
             let rid_attrs = attrs::parse_rid_attrs(&item.attrs);
-            let enum_config =
-                MessageEnumConfig::new(&rid_attrs, &rid_args[0], &rid_args[1]);
+            let enum_config = MessageEnumConfig::new(
+                &rid_attrs,
+                format_ident!("{}", STORE),
+                &rid_args[0],
+            );
             let parsed_enum = ParsedMessageEnum::new(
                 &item.ident,
                 item.variants.clone(),

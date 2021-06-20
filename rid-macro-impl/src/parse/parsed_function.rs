@@ -7,6 +7,7 @@ use super::{
 use crate::{
     attrs::{Category, FunctionConfig, RidAttr, TypeInfo, TypeInfoMap},
     common::abort,
+    render_dart::DartArg,
 };
 
 #[derive(Debug)]
@@ -22,6 +23,9 @@ pub struct ParsedFunction {
 
     /// Function args besides the receiver
     pub args: Vec<RustType>,
+
+    /// The `args` converted into `DartArg` to use when rendering Dart code
+    pub dart_args: Vec<DartArg>,
 
     /// The type of arg returned by the original function
     pub return_arg: RustType,
@@ -113,6 +117,12 @@ impl ParsedFunction {
 
         let fn_ident_alias = config.fn_export_alias.clone();
 
+        let dart_args: Vec<DartArg> = args
+            .iter()
+            .enumerate()
+            .map(|(slot, arg)| DartArg::from(arg, &config.type_infos, slot))
+            .collect();
+
         Self {
             fn_ident: ident,
             fn_ident_alias,
@@ -120,6 +130,7 @@ impl ParsedFunction {
             args,
             return_arg,
             config,
+            dart_args,
         }
     }
 
@@ -127,18 +138,5 @@ impl ParsedFunction {
     /// definition itself
     pub fn type_infos(&self) -> &TypeInfoMap {
         &self.config.type_infos
-    }
-
-    /// Determines if the function has a receiver, i.e is of the following forms:
-    /// ```rust
-    /// fn f(self) {}
-    /// fn f(&self) {}
-    /// fn f(&mut self) {}
-    /// ```
-    pub fn has_receiver(&self) -> bool {
-        match &self.receiver {
-            Some(receiver) => true,
-            None => false,
-        }
     }
 }

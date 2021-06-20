@@ -84,7 +84,7 @@ impl ParsedImplBlock {
             .collect();
 
         if ty.rust_ident().to_string().as_str() != STORE {
-            methods.iter().for_each(|x| if x.has_receiver() {
+            methods.iter().for_each(|x| if x.receiver.is_some() {
                 abort!(x.fn_ident, "Methods with a receiver, i.e. `&self` can only be exported from the store")
             })
         }

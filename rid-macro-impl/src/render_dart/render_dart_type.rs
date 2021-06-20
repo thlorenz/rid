@@ -1,3 +1,4 @@
+use quote::format_ident;
 use rid_common::{DART_FFI, STRING_TO_NATIVE_INT8};
 use syn::Ident;
 
@@ -59,26 +60,39 @@ impl DartType {
     }
 
     pub fn render_to_dart_for_arg(&self, arg_ident: &Ident) -> String {
+        match self.render_to_dart() {
+            Some(to_dart) => format!(
+                "{arg_ident}.{to_dart}",
+                arg_ident = arg_ident,
+                to_dart = to_dart
+            ),
+            None => arg_ident.to_string(),
+        }
+    }
+
+    pub fn render_to_dart(&self) -> Option<String> {
         use DartType::*;
         match self {
-            Int32 | Int64 | Bool => arg_ident.to_string(),
+            Int32 | Int64 | Bool => None,
             // NOTE: Raw Strings are already converted to Dart Strings
-            String => arg_ident.to_string(),
+            String => None,
             Custom(info, _) => {
                 if info.is_struct() {
                     // TODO(thlorenz): not 100% sure about this one
-                    format!("{arg_ident}.toDart()", arg_ident = arg_ident)
+                    Some("toDart()".to_string())
                 } else {
-                    arg_ident.to_string()
+                    None
                 }
             }
             // NOTE: All vecs are expected have a `toDart` extension method implemented
             // which maps all it's items `toDart` before converting it `toList`
-            Vec(_) => format!("{arg_ident}.toDart()", arg_ident = arg_ident),
-            Unit => abort!(
-                arg_ident,
-                "render_to_dart_for_arg makes no sense for Unit types"
-            ),
+            Vec(_) => Some("toDart()".to_string()),
+            Unit => {
+                abort!(
+                    format_ident!("()"),
+                    "render_to_dart makes no sense for Unit types"
+                )
+            }
         }
     }
 }
