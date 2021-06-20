@@ -10,7 +10,6 @@ use crate::{
         rust_type::{self, RustType, TypeKind},
     },
 };
-
 impl DartType {
     fn render_type(&self) -> String {
         use DartType::*;
@@ -86,45 +85,54 @@ impl DartType {
         }
     }
 
-    pub fn render_to_dart_for_arg(&self, arg_ident: &Ident) -> String {
-        match self.render_to_dart() {
-            Some(to_dart) => format!(
-                "{arg_ident}{to_dart}",
-                arg_ident = arg_ident,
-                to_dart = to_dart
-            ),
-            None => arg_ident.to_string(),
-        }
-    }
-
-    pub fn render_to_dart(&self) -> Option<String> {
+    pub fn render_to_dart_for_snippet(&self, snip: &str) -> String {
         use DartType::*;
         match self {
             Int32(nullable) | Int64(nullable) | Bool(nullable) if *nullable => {
-                Some("?".to_string())
+                format!("{snip}?", snip = snip)
             }
-            Int32(_) | Int64(_) | Bool(_) => None,
+            Int32(_) | Int64(_) | Bool(_) => snip.to_string(),
             // NOTE: Raw Strings are already converted to Dart Strings
-            String(nullable) if *nullable => Some("?".to_string()),
-            String(_) => None,
-            Custom(nullable, info, _) if *nullable => {
-                if info.is_struct() {
-                    Some("?.toDart()".to_string())
-                } else {
-                    Some("?".to_string())
+            String(nullable) if *nullable => {
+                format!("{snip}?", snip = snip)
+            }
+            String(_) => snip.to_string(),
+            Custom(nullable, info, type_name) if *nullable => {
+                use Category::*;
+                match info.cat {
+                    // i.e. () { final x = store.filter; return x != null ? Filter.values[x] : null; }()
+                    Enum => format!(
+                        "() {{ final x = {snip}; return x != null ? {type_name}.value[x] : null; }}()",
+                        type_name = type_name,
+                        snip = snip
+                    ),
+                    Struct => {
+                        format!("{snip}?.toDart()", snip = snip)
+                    }
+                    Prim => format!("{snip}?", snip = snip),
                 }
             }
-            Custom(_, info, _) => {
-                if info.is_struct() {
-                    Some(".toDart()".to_string())
-                } else {
-                    None
+            Custom(_, info, type_name) => {
+                use Category::*;
+                match info.cat {
+                    // i.e. Filter.values[store.filter]
+                    Enum => format!(
+                        "{type_name}.value[{snip}?]",
+                        type_name = type_name,
+                        snip = snip
+                    ),
+                    Struct => {
+                        format!("{snip}.toDart()", snip = snip)
+                    }
+                    Prim => snip.to_string(),
                 }
             }
             // NOTE: All vecs are expected have a `toDart` extension method implemented
             // which maps all it's items `toDart` before converting it `toList`
-            Vec(nullable, _) if *nullable => Some("?.toDart()".to_string()),
-            Vec(_, _) => Some(".toDart()".to_string()),
+            Vec(nullable, _) if *nullable => {
+                format!("{snip}?.toDart()", snip = snip)
+            }
+            Vec(_, _) => format!("{snip}.toDart()", snip = snip),
             Unit => {
                 abort!(
                     format_ident!("()"),
@@ -165,6 +173,7 @@ impl RustType {
         type_infos: &TypeInfoMap,
         arg_ident: &Ident,
     ) -> String {
-        DartType::from(&self, type_infos).render_to_dart_for_arg(arg_ident)
+        DartType::from(&self, type_infos)
+            .render_to_dart_for_snippet(arg_ident.to_string().as_str())
     }
 }

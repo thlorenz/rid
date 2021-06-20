@@ -59,12 +59,16 @@ impl ParsedFunction {
             .collect::<Vec<String>>()
             .join(", ");
 
-        let to_dart = match DartType::from(&return_arg, self.type_infos())
-            .render_to_dart()
-        {
-            Some(to_dart) => to_dart,
-            None => "".to_string(),
-        };
+        let instance = STORE.to_lowercase();
+        let get_value_snip = format!(
+            "{instance}.{raw_fn_name}({passed_args})",
+            raw_fn_name = raw_fn_ident,
+            instance = instance,
+            passed_args = passed_args,
+        );
+
+        let value_to_dart = DartType::from(&return_arg, self.type_infos())
+            .render_to_dart_for_snippet(&get_value_snip);
 
         // NOTE: that we depend on the Store `_read` instance method here, if we need this to work
         // on other #[rid::model] instance we need to use `Store.instance.runLocked(...)` directly
@@ -72,16 +76,14 @@ impl ParsedFunction {
         format!(
             r###"
 {comment}{indent}{return_type} {fn_name}({input_parameters}) => _read(
-{comment}{indent}    ({instance}) => {instance}.{raw_fn_name}({passed_args}){toDart}, '{instance}.{fn_name}({to_string_args})');
+{comment}{indent}    ({instance}) => {value_to_dart}, '{instance}.{fn_name}({to_string_args})');
         "###,
             return_type = return_type,
             fn_name = dart_fn_name,
-            raw_fn_name = raw_fn_ident,
-            instance = STORE.to_lowercase(),
+            instance = instance,
+            value_to_dart = value_to_dart,
             input_parameters = input_parameters,
-            passed_args = passed_args,
             to_string_args = to_string_args,
-            toDart = to_dart,
             comment = comment,
             indent = indent
         )
