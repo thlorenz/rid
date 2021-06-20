@@ -88,11 +88,9 @@ impl ParsedMessageEnum {
             reply_class_name_for_enum(&self.reply_dart_enum_name);
 
         format!(
-            r###"
-{comment}  Future<{PostedReply}> {msgApiMethod}({args_decl}{{Duration? timeout}}) {{
-{comment}    return {_store}.{msgMethod}({args}timeout: timeout);
-{comment}  }}
-"###,
+            r###"{comment}   Future<{PostedReply}> {msgApiMethod}({args_decl}{{Duration? timeout}}) {{
+{comment}     return {_store}.{msgMethod}({args}timeout: timeout);
+{comment}   }}"###,
             _store = store_field,
             PostedReply = posted_reply_type,
             msgApiMethod = api_method_name,
