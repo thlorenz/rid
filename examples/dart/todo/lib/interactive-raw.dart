@@ -7,19 +7,23 @@ onError(Object error, StackTrace stack) {
   print(stack);
 }
 
-printStatus(Store store) {
+printStatus(Pointer<RawStore> store) {
   final todos = store.todos;
   final total = todos.length;
 
+  final Filter filter = Filter.values[store.filter];
+  final matchingTodos = store.filtered_todos();
+
   print("Total Todos:     $total");
-  print("Filter:          ${store.filter}");
+  print("Filter:          ${filter.display()}");
   print("\nMatching Todos:");
-  for (final todo in store.filteredTodos()) {
-    print("    $todo");
+  for (final todo in matchingTodos.iter()) {
+    print("    ${todo.display()}");
   }
+  matchingTodos.dispose();
 }
 
-Future<bool> handleCommand(Store model, String line) async {
+Future<bool> handleCommand(Pointer<RawStore> model, String line) async {
   String cmd;
   String payload;
 
@@ -53,7 +57,7 @@ Future<bool> handleCommand(Store model, String line) async {
           : payload == "pen"
               ? Filter.Pending
               : Filter.All;
-      await model.msgSetFilter(filter);
+      await model.msgSetFilter(filter.index);
       break;
     case "ca":
       await model.msgCompleteAll();
@@ -102,7 +106,9 @@ interactive() async {
         print("\x1B[2J\x1B[0;0H");
       }
 
-      printStatus(store);
+      // Not strictly necessary to run this locked since no threads are
+      // updating our store in the background, but good practice.
+      store.raw.runLocked(printStatus);
 
       printCommands();
       stdout.write("\n> ");
@@ -111,7 +117,7 @@ interactive() async {
         break;
       }
       if (input != null && input.length > 1) {
-        ok = await handleCommand(store, input.trim());
+        ok = await handleCommand(store.raw, input.trim());
       }
     }
   }

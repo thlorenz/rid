@@ -1,5 +1,6 @@
 #![allow(dead_code)]
 
+use rid::RidStore;
 use std::fmt::Display;
 
 #[macro_use]
@@ -8,18 +9,17 @@ extern crate log;
 // -----------------
 // Store
 // -----------------
-#[rid::model]
+#[rid::store]
 #[rid::structs(Todo)]
 #[rid::enums(Filter)]
-#[derive(Debug, rid::Debug)]
+#[derive(Debug)]
 pub struct Store {
     last_added_id: u32,
     todos: Vec<Todo>,
     filter: Filter,
 }
 
-#[rid::export]
-impl Store {
+impl RidStore<Msg> for Store {
     fn create() -> Self {
         Self {
             last_added_id: 0,
@@ -93,7 +93,10 @@ impl Store {
             }
         };
     }
+}
 
+#[rid::export]
+impl Store {
     fn update_todo<F: FnOnce(&mut Todo)>(&mut self, id: u32, update: F) {
         match self.todos.iter_mut().find(|x| x.id == id) {
             Some(todo) => update(todo),
@@ -122,9 +125,7 @@ impl Store {
 // Todo Model
 // -----------------
 #[rid::model]
-#[derive(
-    Debug, rid::Debug, PartialEq, Eq, PartialOrd, rid::Display, rid::Dart,
-)]
+#[derive(Debug, PartialEq, Eq, PartialOrd, rid::Display)]
 pub struct Todo {
     id: u32,
     title: String,
@@ -168,7 +169,7 @@ impl Display for Filter {
 // -----------------
 // Msg
 // -----------------
-#[rid::message(Store, Reply)]
+#[rid::message(Reply)]
 #[rid::enums(Filter)]
 #[derive(Debug)]
 pub enum Msg {
