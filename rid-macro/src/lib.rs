@@ -6,8 +6,8 @@ use proc_macro::TokenStream;
 use proc_macro_error::proc_macro_error;
 
 use rid_macro_impl::{
-    rid_debug_impl, rid_display_impl, rid_export_impl, rid_ffi_model_impl,
-    rid_ffi_reply_impl, rid_message_impl,
+    rid_display_impl, rid_export_impl, rid_ffi_model_impl, rid_ffi_reply_impl,
+    rid_message_impl,
 };
 use syn::{self, parse_macro_input};
 
@@ -134,14 +134,4 @@ pub fn enums(_attrs: TokenStream, input: TokenStream) -> TokenStream {
 pub fn display(input: TokenStream) -> TokenStream {
     let item = parse_macro_input!(input as syn::DeriveInput);
     rid_display_impl(&item, Default::default()).into()
-}
-
-// -----------------
-// #[derive(rid::Debug)]
-// -----------------
-#[proc_macro_derive(Debug)]
-#[proc_macro_error]
-pub fn debug(input: TokenStream) -> TokenStream {
-    let item = parse_macro_input!(input as syn::DeriveInput);
-    rid_debug_impl(&item, Default::default()).into()
 }
