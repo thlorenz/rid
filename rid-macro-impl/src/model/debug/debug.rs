@@ -44,27 +44,6 @@ impl RenderDebugConfig {
     }
 }
 
-pub fn rid_debug_impl(
-    input: &DeriveInput,
-    config: RenderDebugConfig,
-) -> TokenStream {
-    match &input.data {
-        Data::Struct(data) => {
-            let rust_type = RustType::from_owned_struct(&input.ident);
-            render_debug(rust_type, &None, config.clone())
-        }
-        Data::Enum(DataEnum { variants, .. }) => {
-            let rust_type = RustType::from_owned_enum(&input.ident);
-            let variants = Some(extract_variant_names(variants));
-            render_debug(rust_type, &variants, config.clone())
-        }
-        Data::Union(data) => abort!(
-            input.ident,
-            "Cannot derive debug for an untagged Union type"
-        ),
-    }
-}
-
 pub fn render_debug(
     rust_type: RustType,
     enum_variants: &Option<Vec<String>>,

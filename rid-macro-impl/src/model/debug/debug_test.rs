@@ -1,15 +1,38 @@
-use super::{rid_debug_impl, DebugImplConfig};
+use crate::{common::extract_variant_names, parse::rust_type::RustType};
+
+use super::{render_debug, RenderDebugConfig};
 use proc_macro2::TokenStream;
 use quote::quote;
-use syn::parse_macro_input;
-
-fn render(input: proc_macro2::TokenStream) -> TokenStream {
-    let item = syn::parse2::<syn::DeriveInput>(input).unwrap();
-    rid_debug_impl(&item, DebugImplConfig::for_tests())
-}
+use syn::{parse_macro_input, Data, DataEnum, DeriveInput};
 
 // TODO: we aren't testing the generated dart code
 // TODO: we should not render the #[no_mangle]... preamble during tests
+
+fn render_struct_or_enum_derive(
+    input: &DeriveInput,
+    config: RenderDebugConfig,
+) -> TokenStream {
+    match &input.data {
+        Data::Struct(data) => {
+            let rust_type = RustType::from_owned_struct(&input.ident);
+            render_debug(rust_type, &None, config.clone())
+        }
+        Data::Enum(DataEnum { variants, .. }) => {
+            let rust_type = RustType::from_owned_enum(&input.ident);
+            let variants = Some(extract_variant_names(variants));
+            render_debug(rust_type, &variants, config.clone())
+        }
+        Data::Union(data) => {
+            panic!("Cannot derive debug for an untagged Union type")
+        }
+    }
+}
+
+fn render(input: proc_macro2::TokenStream) -> TokenStream {
+    let item = syn::parse2::<syn::DeriveInput>(input).unwrap();
+    render_struct_or_enum_derive(&item, RenderDebugConfig::for_tests())
+}
+
 mod enums_debug_impl {
     use super::*;
 
