@@ -1,10 +1,12 @@
-#[rid::model]
-#[derive(Debug, rid::Debug)]
+use rid::RidStore;
+
+#[rid::store]
+#[derive(Debug)]
 pub struct Store {
     count: u32,
 }
 
-impl Store {
+impl RidStore<Msg> for Store {
     fn create() -> Self {
         Self { count: 0 }
     }
@@ -23,7 +25,7 @@ impl Store {
     }
 }
 
-#[rid::message(Store, Reply)]
+#[rid::message(Reply)]
 #[derive(Debug)]
 pub enum Msg {
     Inc,

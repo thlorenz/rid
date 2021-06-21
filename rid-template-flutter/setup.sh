@@ -42,7 +42,6 @@ perl -pi -w -e "s/<package>/$APP_NAME/;" $APP_ROOT/README.md
 cp $TEMPLATE_ROOT/flutter/pubspec.yaml $APP_ROOT/pubspec.yaml
 perl -pi -w -e "s/<package>/$APP_NAME/;" $APP_ROOT/pubspec.yaml
 
-cp $TEMPLATE_ROOT/flutter/lib/adder.dart $APP_ROOT/lib/adder.dart
 cp $TEMPLATE_ROOT/flutter/lib/main.dart $APP_ROOT/lib/main.dart
 
 echo .DS_Store   >> $APP_ROOT/.gitignore
@@ -53,7 +52,6 @@ echo build/      >> $APP_ROOT/.gitignore
 
 # Build all Targets and have binding files copied and setup flutter plugin to hook things up
 $APP_ROOT/sh/bindgen
-$APP_ROOT/sh/ffigen
 
 $APP_ROOT/sh/android
 $APP_ROOT/sh/ios
@@ -61,4 +59,7 @@ $APP_ROOT/sh/macos
 
 cd $APP_ROOT/plugin
 flutter clean && flutter create .
-rm -rf example test CHANGELOG.md README.md .idea
+rm -rf plugin.dart example test CHANGELOG.md README.md .idea
+
+cd $APP_ROOT
+flutter pub get

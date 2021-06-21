@@ -1,15 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:plugin/plugin.dart';
+import 'package:plugin/generated/rid_api.dart';
 
 void main() {
-  final store = createStore();
-  runApp(MyApp(store));
+  runApp(MyApp());
 }
 
 class MyApp extends StatelessWidget {
-  final Pointer<RawStore> _store;
-
-  const MyApp(this._store, {Key? key}) : super(key: key);
+  final Store _store = Store.instance;
 
   @override
   Widget build(BuildContext context) {
@@ -24,7 +21,7 @@ class MyApp extends StatelessWidget {
 }
 
 class MyHomePage extends StatefulWidget {
-  final Pointer<RawStore> _store;
+  final Store _store;
   MyHomePage(this._store, {Key? key, required this.title}) : super(key: key);
   final String title;
   @override
@@ -78,14 +75,14 @@ class _MyHomePageState extends State<MyHomePage> {
   void _addTen() async {
     final res = await widget._store.msgAdd(10);
     debugPrint('$res');
-    debugPrint("${widget._store.debug(true)}");
+    debugPrint("${widget._store.raw.debug(true)}");
     setState(() {});
   }
 
   void _incrementCounter() {
     widget._store.msgInc().then((res) {
       debugPrint('$res');
-      debugPrint("${widget._store.debug(true)}");
+      debugPrint("${widget._store.raw.debug(true)}");
       setState(() {});
     });
   }
