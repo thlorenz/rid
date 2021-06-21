@@ -1,7 +1,7 @@
 import 'package:clock/generated/rid_generated.dart';
 
 class StopWatch {
-  final Pointer<Store> store;
+  final Store store;
 
   StopWatch(this.store);
 

@@ -1,16 +1,18 @@
 use std::{thread, time};
 
+use rid::RidStore;
+
 // -----------------
 // Store
 // -----------------
-#[rid::model]
-#[derive(Debug, rid::Debug)]
+#[rid::store]
+#[derive(Debug)]
 pub struct Store {
     running: bool,
     elapsed_secs: u32,
 }
 
-impl Store {
+impl RidStore<Msg> for Store {
     fn create() -> Self {
         Self {
             running: false,
@@ -35,24 +37,27 @@ impl Store {
             }
         }
     }
+}
 
+impl Store {
     fn start(&mut self) {
-        self.running = true;
-        thread::spawn(move || {
-            while store::read().running {
-                store::write().elapsed_secs += 1;
-                rid::post(Reply::Tick);
-                thread::sleep(time::Duration::from_secs(1));
-            }
-        });
+        if !self.running {
+            self.running = true;
+            thread::spawn(move || {
+                while store::read().running {
+                    store::write().elapsed_secs += 1;
+                    rid::post(Reply::Tick);
+                    thread::sleep(time::Duration::from_secs(1));
+                }
+            });
+        }
     }
 }
 
 // -----------------
 // Msg
 // -----------------
-
-#[rid::message(Store, Reply)]
+#[rid::message(Reply)]
 pub enum Msg {
     Start,
     Stop,
