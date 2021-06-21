@@ -12,23 +12,23 @@ messages() async {
   await store.msgAddTodo("Hola");
   await store.msgAddTodo("Mundo");
 
-  log.v(store.raw.debug(LOG_VERBOSE));
+  log.v(store.debug(LOG_VERBOSE));
 
   await store.msgCompleteTodo(1);
-  log.v(store.raw.debug(LOG_VERBOSE));
+  log.v(store.debug(LOG_VERBOSE));
 
   await store.msgRestartTodo(1);
-  log.v(store.raw.debug(LOG_VERBOSE));
+  log.v(store.debug(LOG_VERBOSE));
 
   await store.msgRemoveTodo(1);
-  log.v(store.raw.debug(LOG_VERBOSE));
+  log.v(store.debug(LOG_VERBOSE));
 
   await store.msgToggleTodo(2);
   await store.msgToggleTodo(3);
-  log.v(store.raw.debug(LOG_VERBOSE));
+  log.v(store.debug(LOG_VERBOSE));
 
   await store.msgSetFilter(Filter.Completed);
-  log.v(store.raw.debug(LOG_VERBOSE));
+  log.v(store.debug(LOG_VERBOSE));
 
   final filteredTodos = store.filteredTodos();
   log.i("len: ${filteredTodos.length}");
@@ -39,13 +39,13 @@ messages() async {
   log.v(secondFiltered.toString());
 
   await store.msgRemoveCompleted();
-  log.v(store.raw.debug(LOG_VERBOSE));
+  log.v(store.debug(LOG_VERBOSE));
 
   await store.msgCompleteAll();
-  log.v(store.raw.debug(LOG_VERBOSE));
+  log.v(store.debug(LOG_VERBOSE));
 
   await store.msgRestartAll();
-  log.v(store.raw.debug(LOG_VERBOSE));
+  log.v(store.debug(LOG_VERBOSE));
 
   log.d("restarting non-existent todo");
   await store.msgRestartTodo(5);
