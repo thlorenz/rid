@@ -68,12 +68,9 @@ impl Project {
             .to_path_buf()
     }
 
-    pub(crate) fn path_to_rid_generated_dart(
-        &self,
-        project_root: &Path,
-    ) -> PathBuf {
+    pub(crate) fn path_to_rid_dart_api(&self, project_root: &Path) -> PathBuf {
         self.path_to_generated_dir(project_root)
-            .join("rid_generated.dart")
+            .join("rid_api.dart")
             .to_path_buf()
     }
 

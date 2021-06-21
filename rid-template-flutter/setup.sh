@@ -23,7 +23,6 @@ flutter create --platforms=android,ios,macos --template=plugin $APP_ROOT/plugin
 cd $APP_ROOT/plugin
 rm -rf example test CHANGELOG.md README.md .idea
 
-echo "export './generated/rid_generated.dart';" > lib/plugin.dart
 cp $TEMPLATE_ROOT/flutter/plugin/ios/Classes/SwiftPlugin.swift ios/Classes/SwiftPlugin.swift
 cp $TEMPLATE_ROOT/flutter/plugin/ios/plugin.podspec ios/plugin.podspec
 cp $TEMPLATE_ROOT/flutter/plugin/macos/Classes/Plugin.swift macos/Classes/Plugin.swift 
