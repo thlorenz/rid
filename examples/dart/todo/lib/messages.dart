@@ -1,4 +1,4 @@
-import 'generated/rid_generated.dart';
+import 'generated/rid_api.dart';
 import 'dart:async';
 
 import 'log.dart';
