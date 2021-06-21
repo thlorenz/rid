@@ -1,3 +1,4 @@
+use heck::MixedCase;
 use rid_common::{DART_FFI, FFI_GEN_BIND};
 
 use crate::{
@@ -144,13 +145,13 @@ impl ParsedStruct {
                         "{comment}    {ffi_ty}\n{comment}   final {ty} {name};",
                         ffi_ty = ffi_ty,
                         ty = ty,
-                        name = x.ident,
+                        name = x.ident.to_string().to_mixed_case(),
                         comment = config.comment
                     ),
                     None => format!(
                         "{comment}   final {ty} {name};",
                         ty = ty,
-                        name = x.ident,
+                        name = x.ident.to_string().to_mixed_case(),
                         comment = config.comment
                     ),
                 }
@@ -188,7 +189,12 @@ impl ParsedStruct {
             let last_slot = self.fields.len() - 1;
             self.fields
                 .iter()
-                .map(|x| format!("this.{name}", name = x.ident,))
+                .map(|x| {
+                    format!(
+                        "this.{name}",
+                        name = x.ident.to_string().to_mixed_case()
+                    )
+                })
                 .collect::<Vec<String>>()
                 .join(", ")
         }
@@ -236,7 +242,7 @@ impl ParsedStruct {
                 .map(|x| {
                     format!(
                         "{comment}      {field}.hashCode",
-                        field = x.ident,
+                        field = x.ident.to_string().to_mixed_case(),
                         comment = config.comment
                     )
                 })
@@ -284,7 +290,7 @@ impl ParsedStruct {
                 .map(|x| {
                     format!(
                         "{comment}          {field} == other.{field}",
-                        field = x.ident,
+                        field = x.ident.to_string().to_mixed_case(),
                         comment = config.comment
                     )
                 })
@@ -336,7 +342,12 @@ impl ParsedStruct {
             let fields = self
                 .fields
                 .iter()
-                .map(|x| format!("{field}: ${field}", field = x.ident,))
+                .map(|x| {
+                    format!(
+                        "{field}: ${field}",
+                        field = x.ident.to_string().to_mixed_case()
+                    )
+                })
                 .collect::<Vec<String>>()
                 .join(&field_separator);
 
