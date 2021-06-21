@@ -26,7 +26,7 @@ pub fn render_struct(struct_item: &ItemStruct, is_store: bool) -> TokenStream {
     // Dart Class
     // -----------------
     let dart_class_tokens =
-        render_to_dart(&parsed_struct, is_store, Default::default());
+        render_to_dart(&parsed_struct, is_store, &derive, Default::default());
 
     // -----------------
     // derive(Debug)

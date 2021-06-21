@@ -1,14 +1,22 @@
 use rid_common::{DART_FFI, FFI_GEN_BIND, RID_CREATE_STORE};
 use syn::Ident;
 
-use crate::{common::prefixes::store_field_ident, parse::ParsedStruct};
+use crate::{
+    attrs::Derive, common::prefixes::store_field_ident, parse::ParsedStruct,
+};
 
 impl ParsedStruct {
-    pub fn render_store_api(&self, comment: &str) -> String {
+    pub fn render_store_api(&self, derive: &Derive, comment: &str) -> String {
         let store_ident: &Ident = &self.ident;
         let raw_store_ident: &Ident = &self.raw_ident;
 
         let store_field = store_field_ident(store_ident);
+
+        let debug_api = if derive.debug {
+            format!("{comment}   String debug([bool pretty = false]) => _store.debug(pretty);", comment = comment)
+        } else {
+            "".to_string()
+        };
 
         format!(
             r###"
@@ -33,6 +41,7 @@ impl ParsedStruct {
 {comment}   }}
 {comment}
 {comment}   {Store}State toDartState() => _store.toDart();
+{debug_api}
 {comment}
 {comment}   /// Disposes the store and closes the Rust reply channel in order to allow the app
 {comment}   /// to exit properly. This needs to be called when exiting a Dart application.
@@ -56,6 +65,7 @@ impl ParsedStruct {
             Pointer = format!("{dart_ffi}.Pointer", dart_ffi = DART_FFI),
             _store = store_field,
             createStore = RID_CREATE_STORE,
+            debug_api = debug_api,
             comment = comment
         )
     }

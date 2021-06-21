@@ -8,7 +8,7 @@ use syn::{
 };
 
 use crate::{
-    attrs::{self, add_idents_to_type_map, StructConfig, TypeInfoMap},
+    attrs::{self, add_idents_to_type_map, Derive, StructConfig, TypeInfoMap},
     common::{
         abort,
         state::{get_state, ImplementationType},
@@ -45,6 +45,7 @@ impl DartRenderImplConfig {
 pub fn render_to_dart(
     parsed_struct: &ParsedStruct,
     is_store: bool,
+    derive: &Derive,
     render_config: DartRenderImplConfig,
 ) -> TokenStream {
     let comment = if render_config.render_dart_only {
@@ -57,7 +58,7 @@ pub fn render_to_dart(
     // Dart Store API
     // -----------------
     let dart_store_api = if is_store {
-        parsed_struct.render_store_api(comment)
+        parsed_struct.render_store_api(derive, comment)
     } else {
         "".to_string()
     };
