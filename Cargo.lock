@@ -395,6 +395,7 @@ dependencies = [
 name = "rid"
 version = "0.1.0"
 dependencies = [
+ "rid_devtools",
  "rid_ffi",
  "rid_macro",
 ]
@@ -413,6 +414,10 @@ dependencies = [
 
 [[package]]
 name = "rid_common"
+version = "0.1.0"
+
+[[package]]
+name = "rid_devtools"
 version = "0.1.0"
 
 [[package]]

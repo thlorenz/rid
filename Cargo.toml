@@ -8,6 +8,7 @@ edition = "2018"
 members=[
   "rid-build",
   "rid-common",
+  "rid-devtools",
   "rid-ffi",
   "rid-macro",
   "rid-macro-impl",
@@ -21,3 +22,4 @@ exclude = [
 [dependencies]
 rid_macro = { path = "rid-macro" }
 rid_ffi = { path = "rid-ffi" }
+rid_devtools = { path = "rid-devtools" }
