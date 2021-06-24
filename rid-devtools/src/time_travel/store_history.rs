@@ -3,7 +3,13 @@ use std::time::SystemTime;
 
 use super::time_stamp_map::TimeStampMap;
 
-pub struct StoreHistory<TState: Clone, TMsg: Clone, TReply: Clone> {
+/// All timestamps are suffixed `_ts` and except for [start_ts] are in milliseconds
+pub struct StoreHistory<TState, TMsg, TReply>
+where
+    TState: Clone,
+    TMsg: Clone,
+    TReply: Clone,
+{
     /// Recorded states of the store
     pub states: TimeStampMap<TState>,
 
@@ -17,7 +23,7 @@ pub struct StoreHistory<TState: Clone, TMsg: Clone, TReply: Clone> {
     start: SystemTime,
 
     /// Minimum millisecond delta between two recorded states
-    state_delta_millis: u16,
+    state_delta: u16,
 
     /// Tracks when the last state was recorded.
     last_state_ts: Option<u128>,
@@ -25,10 +31,17 @@ pub struct StoreHistory<TState: Clone, TMsg: Clone, TReply: Clone> {
     /// Minimum millisecond delta between two recorded replies.
     /// For replies to user messages this will not be throttling, but for replies created by a
     /// worker on another threads, i.e. ticks it might.
-    reply_delta_millis: u16,
+    reply_delta: u16,
 
     /// Tracks when the last reply was recorded.
     last_reply_ts: Option<u128>,
+
+    /// Milliseconds from App Start to the last recorded history item
+    pub last_recording_ts: Option<u128>,
+
+    /// Milliseconds at which we currently are in the history, by default this is equal
+    /// [last_recording_ts]
+    pub cursor_ts: Option<u128>,
 }
 
 impl<TState: Clone, TMsg: Clone, TReply: Clone>
@@ -60,10 +73,12 @@ impl<TState: Clone, TMsg: Clone, TReply: Clone>
             messages: TimeStampMap::new(),
             replies: TimeStampMap::new(),
             start: SystemTime::now(),
-            state_delta_millis,
+            state_delta: state_delta_millis,
             last_state_ts: None,
-            reply_delta_millis,
+            reply_delta: reply_delta_millis,
             last_reply_ts: None,
+            last_recording_ts: None,
+            cursor_ts: None,
         }
     }
 
@@ -75,61 +90,143 @@ impl<TState: Clone, TMsg: Clone, TReply: Clone>
         let time_stamp = self.time_stamp();
         let should_record = self.last_state_ts.map_or(true, |last_state_ts| {
             let dt = time_stamp - last_state_ts;
-            dt >= self.state_delta_millis.into()
+            dt >= self.state_delta.into()
         });
 
         if should_record {
+            self.remove_recordings_after_cursor();
+
             self.last_state_ts = Some(time_stamp);
             self.states.insert(time_stamp, state.clone());
+            self.last_recording_ts = Some(time_stamp);
+            self.cursor_ts = self.last_recording_ts;
         }
     }
 
     pub fn record_msg(&mut self, msg: &TMsg) {
+        self.remove_recordings_after_cursor();
+
         let time_stamp = self.time_stamp();
         self.messages.insert(time_stamp, msg.clone());
+        self.last_recording_ts = Some(time_stamp);
+        self.cursor_ts = self.last_recording_ts;
     }
 
     pub fn record_reply(&mut self, reply: &TReply) {
         let time_stamp = self.time_stamp();
         let should_record = self.last_reply_ts.map_or(true, |last_reply_ts| {
             let dt = time_stamp - last_reply_ts;
-            dt >= self.reply_delta_millis.into()
+            dt >= self.reply_delta.into()
         });
 
         if should_record {
+            self.remove_recordings_after_cursor();
+
             self.last_reply_ts = Some(time_stamp);
             self.replies.insert(time_stamp, reply.clone());
+            self.last_recording_ts = Some(time_stamp);
+            self.cursor_ts = self.last_recording_ts;
         }
+    }
+
+    // TODO(tt): need to make tick_like _replies_ use a store::write that needs to ignore the tick while
+    // the user is scrubbing history.
+    // The write used by incoming messages however needs to trigger a recording and thus the below.
+    // However what if there are msgs on Dart that are triggered automatically?
+
+    /// When we record a value, that means that the user interacted with the application outside of
+    /// moving the time travel slider.
+    /// In that case we must assume we want to continue from that spot and thus forget all states,
+    /// messages and replies that follow.
+    fn remove_recordings_after_cursor(&mut self) {
+        match self.cursor_ts {
+            Some(cursor_ts) if self.cursor_ts != self.last_recording_ts => {
+                self.replies.remove_items_gt(cursor_ts);
+                self.messages.remove_items_gt(cursor_ts);
+                self.states.remove_items_gt(cursor_ts);
+                self.cursor_ts = self.last_recording_ts;
+            }
+            _ => {}
+        }
+    }
+
+    // -----------------
+    // Mapping functions
+    // -----------------
+    pub fn state_change_timestamps(&self) -> Vec<u128> {
+        self.states.keys().into_iter().map(|x| x.clone()).collect()
     }
 
     // -----------------
     // Wrappers around [TimeStampMap] queries
     // -----------------
 
-    pub fn state_right_after(&self, ts: u128) -> Option<&TState> {
-        self.states.item_right_after(ts)
+    // State
+    pub fn state_ge(&self, ts: u128) -> Option<&TState> {
+        self.states.item_ge(ts)
     }
 
-    pub fn state_right_before(&self, ts: u128) -> Option<&TState> {
-        self.states.item_right_before(ts)
+    pub fn state_gt(&self, ts: u128) -> Option<&TState> {
+        self.states.item_gt(ts)
     }
 
-    pub fn reply_right_after(&self, ts: u128) -> Option<&TReply> {
-        self.replies.item_right_after(ts)
+    pub fn state_le(&self, ts: u128) -> Option<&TState> {
+        self.states.item_le(ts)
     }
 
-    pub fn reply_right_before(&self, ts: u128) -> Option<&TReply> {
-        self.replies.item_right_before(ts)
+    pub fn state_lt(&self, ts: u128) -> Option<&TState> {
+        self.states.item_lt(ts)
     }
 
-    pub fn message_right_after(&self, ts: u128) -> Option<&TMsg> {
-        self.messages.item_right_after(ts)
+    pub fn states_up_to(&self, ts: u128) -> Vec<&TState> {
+        self.states.items_up_to(ts)
     }
 
-    pub fn message_right_before(&self, ts: u128) -> Option<&TMsg> {
-        self.messages.item_right_before(ts)
+    // Replies
+    pub fn reply_ge(&self, ts: u128) -> Option<&TReply> {
+        self.replies.item_ge(ts)
     }
 
+    pub fn reply_gt(&self, ts: u128) -> Option<&TReply> {
+        self.replies.item_gt(ts)
+    }
+
+    pub fn reply_le(&self, ts: u128) -> Option<&TReply> {
+        self.replies.item_le(ts)
+    }
+
+    pub fn reply_lt(&self, ts: u128) -> Option<&TReply> {
+        self.replies.item_lt(ts)
+    }
+
+    pub fn replies(&self, ts: u128) -> Vec<&TReply> {
+        self.replies.items_up_to(ts)
+    }
+
+    // Messages
+    pub fn message_ge(&self, ts: u128) -> Option<&TMsg> {
+        self.messages.item_ge(ts)
+    }
+
+    pub fn message_gt(&self, ts: u128) -> Option<&TMsg> {
+        self.messages.item_gt(ts)
+    }
+
+    pub fn message_le(&self, ts: u128) -> Option<&TMsg> {
+        self.messages.item_le(ts)
+    }
+
+    pub fn message_lt(&self, ts: u128) -> Option<&TMsg> {
+        self.messages.item_lt(ts)
+    }
+
+    pub fn messages_up_to(&self, ts: u128) -> Vec<&TMsg> {
+        self.messages.items_up_to(ts)
+    }
+
+    // -----------------
+    // Utilities
+    // -----------------
     fn time_stamp(&self) -> u128 {
         SystemTime::now()
             .duration_since(self.start)
