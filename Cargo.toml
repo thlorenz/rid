@@ -15,6 +15,7 @@ members=[
 exclude = [ 
   "examples/dart/clock",
   "examples/dart/todo",
+  "examples/dart/wasm",
   "examples/dart/wip",
 ]
 

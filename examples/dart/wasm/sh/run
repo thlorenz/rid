@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+
+dart                          \
+  --enable-asserts            \
+  --packages=.packages        \
+  package:wasm_example/main.dart 

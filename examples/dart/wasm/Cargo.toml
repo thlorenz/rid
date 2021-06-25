@@ -1,0 +1,24 @@
+[package]
+name = "wasm_example"
+version = "0.1.0"
+authors = ["Thorsten Lorenz <thlorenz@gmx.de>"]
+edition = "2018"
+
+[lib]
+name = "wasm_example"
+crate-type = ["cdylib"]
+path = "src/lib.rs"
+doctest = false
+test = true
+
+[[bin]]
+name = "rid_build"
+path = "rid_build.rs"
+
+[dependencies]
+rid = { path = "../../../" }
+rid_build = { path = "../../../rid-build" }
+getrandom = { version = "0.2", features = ["js"] }
+
+[build-dependencies]
+rid_build = { path = "../../../rid-build" }
