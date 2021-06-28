@@ -24,7 +24,8 @@ PostedReply wasmDecode(ReplyStruct reply) {
 }
 
 const WIP_WASM = 'target/wasm32-unknown-unknown/debug/wasm_example.wasm';
-final _dl = wasm_bind.WasmLibrary.init(WIP_WASM);
+const WIP_WASM_WASI = 'target/wasm32-wasi/debug/wasm_example.wasm';
+final _dl = wasm_bind.WasmLibrary.init(WIP_WASM_WASI);
 final rid_ffi = _dl;
 // } ELSE {
 // final dart_ffi.DynamicLibrary _dl = _open();

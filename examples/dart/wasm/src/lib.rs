@@ -22,6 +22,7 @@ impl RidStore<Msg> for Store {
         match msg {
             Msg::Inc => {
                 self.count += 1;
+                eprintln!("rust: counting");
                 self.post(Reply::Inced(req_id));
             }
             Msg::Dump => {
