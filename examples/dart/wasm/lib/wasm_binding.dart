@@ -79,16 +79,18 @@ class WasmLibrary {
   late final WasmFunction _rid_cstring_free = _lookup('rid_cstring_free');
 
   // --- rid_rawstore_debug_pretty ---
-  int rid_rawstore_debug_pretty(ffi.Pointer<RawStore> store) {
-    return _rid_rawstore_debug_pretty.apply([store.address]);
+  ffi.Pointer<ffi.Int8> rid_rawstore_debug_pretty(ffi.Pointer<RawStore> store) {
+    final address = _rid_rawstore_debug_pretty.apply([store.address]);
+    return ffi.Pointer.fromAddress(address);
   }
 
   late final WasmFunction _rid_rawstore_debug_pretty =
       _lookup('rid_rawstore_debug_pretty');
 
   // --- rid_rawstore_debug ---
-  int rid_rawstore_debug(ffi.Pointer<RawStore> store) {
-    return _rid_rawstore_debug.apply([store.address]);
+  ffi.Pointer<ffi.Int8> rid_rawstore_debug(ffi.Pointer<RawStore> store) {
+    final address = _rid_rawstore_debug.apply([store.address]);
+    return ffi.Pointer.fromAddress(address);
   }
 
   late final WasmFunction _rid_rawstore_debug = _lookup('rid_rawstore_debug');
@@ -139,16 +141,21 @@ class WasmLibrary {
   // Reply Polling Wrappers
   // -----------------
   // --- rid_rawreplystruct_debug_pretty ---
-  int rid_rawreplystruct_debug_pretty(ffi.Pointer<RawReplyStruct> replystruct) {
-    return _rid_rawreplystruct_debug_pretty.apply([replystruct.address]);
+  ffi.Pointer<ffi.Int8> rid_rawreplystruct_debug_pretty(
+      ffi.Pointer<RawReplyStruct> replystruct) {
+    final address =
+        _rid_rawreplystruct_debug_pretty.apply([replystruct.address]);
+    return ffi.Pointer.fromAddress(address);
   }
 
   late final WasmFunction _rid_rawreplystruct_debug_pretty =
       _lookup('rid_rawreplystruct_debug_pretty');
 
   // --- rid_rawreplystruct_debug ---
-  int rid_rawreplystruct_debug(ffi.Pointer<RawReplyStruct> replystruct) {
-    return _rid_rawreplystruct_debug.apply([replystruct.address]);
+  ffi.Pointer<ffi.Int8> rid_rawreplystruct_debug(
+      ffi.Pointer<RawReplyStruct> replystruct) {
+    final address = _rid_rawreplystruct_debug.apply([replystruct.address]);
+    return ffi.Pointer.fromAddress(address);
   }
 
   late final WasmFunction _rid_rawreplystruct_debug =
@@ -187,6 +194,17 @@ class WasmLibrary {
   late final WasmFunction _handled_reply = _lookup('handled_reply');
 
   // -----------------
+  // Extension Method Delegates
+  // -----------------
+  String ptrInt8ToDartString(ffi.Pointer<ffi.Int8> ptr, [int? len]) {
+    return decodeUtf8String(WasmLibrary.instance.memView, ptr.address);
+  }
+
+  void ptrInt8Free(ffi.Pointer<ffi.Int8> ptr) {
+    rid_cstring_free(ptr);
+  }
+
+  // -----------------
   // Initializers
   // -----------------
   static WasmLibrary? _instance;
@@ -222,23 +240,4 @@ int _end(Uint8List codeUnits, int start) {
   int end = start;
   while (codeUnits[end] != 0) end++;
   return end;
-}
-
-// -----------------
-// Extensions
-// -----------------
-// Unify Types to Native Library, i.e. use  dart_ffi.Pointer<dart_ffi.Int8> here
-// then _inside_ the `toDartString` method call see which we we should convert
-// depending if this is wasm or not.
-// Maybe these methods should sit on the NativeLibary + WasmLibrary respectively
-// as extensions and we end up calling the correcty one this way.
-extension Rid_ExtOnInt on int {
-  String toDartString([int? len]) {
-    return decodeUtf8String(WasmLibrary.instance.memView, this);
-  }
-
-  void free() {
-    final ffi.Pointer<ffi.Int8> ptr = ffi.Pointer.fromAddress(this);
-    rid_ffi.rid_cstring_free(ptr);
-  }
 }
