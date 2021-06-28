@@ -15,7 +15,7 @@ impl RidStore<Msg> for Store {
         match msg {
             Msg::Inc => {
                 self.count += 1;
-                rid::post(Reply::Inced(req_id));
+                //                rid::post(Reply::Inced(req_id));
             }
             Msg::Dump => {
                 rid::post(Reply::Dumped(req_id));
