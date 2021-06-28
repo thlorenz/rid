@@ -5,10 +5,14 @@ Future<void> main() async {
   final store = Store.instance;
   print('store: ${store.debug(true)}');
 
-  final reply = await store.msgInc();
-  print('reply: $reply');
+  await store.msgInc();
   print('store: ${store.debug(true)}');
-  final storeState = store.toDartState();
-  print('$storeState');
+  await store.msgInc();
+  print('store: ${store.debug(true)}');
+  await store.msgInc();
+  print('store: ${store.debug(true)}');
+  await store.msgInc();
+  print('store: ${store.debug(true)}');
+
   store.dispose();
 }

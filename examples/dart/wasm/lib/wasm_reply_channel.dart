@@ -1,9 +1,6 @@
 import 'dart:async';
-import 'dart:ffi';
-import 'dart:isolate';
+import 'package:wasm_example/generated/rid_api.dart';
 import 'package:wasm_example/wasm_binding.dart';
-
-import 'wasm_isolate_binding.dart' show initIsolate;
 
 const String RESPONSE_SEPARATOR = '^';
 
@@ -12,7 +9,7 @@ abstract class IReply {
   String? get data;
 }
 
-typedef Decode<TReply> = TReply Function(int packedBase, String? data);
+typedef Decode<TReply> = TReply Function(ReplyStruct reply);
 
 // TODO: error handling (could be part of Post data)
 class ReplyChannel<TReply extends IReply> {
@@ -20,28 +17,37 @@ class ReplyChannel<TReply extends IReply> {
   final StreamController<TReply> _sink;
   final Decode<TReply> _decode;
   final WasmLibrary _dl;
-  late final RawReceivePort _receivePort;
   late final _zonedAdd;
+  late final Timer _pollTimer;
   int _lastReqId = 0;
 
   ReplyChannel._(this._dl, this._decode, bool isDebugMode)
       : _sink = StreamController.broadcast() {
-    _receivePort = RawReceivePort(_onReceivedReply, 'rid::reply_channel::port');
-    initIsolate(this._dl, _receivePort.sendPort.nativePort, isDebugMode);
     _zonedAdd = _zone.registerUnaryCallback(_add);
+    _pollReplies();
   }
 
-  void _onReceivedReply(String reply) {
+  void _pollReplies() {
+    _pollTimer = Timer.periodic(Duration(milliseconds: 100), (_) {
+      // TODO: ugly hack to prevent printing polling logs for now
+      final save = RID_DEBUG_LOCK;
+      RID_DEBUG_LOCK = null;
+      final reply = Store.instance.pollReply();
+      RID_DEBUG_LOCK = save;
+      if (reply != null) {
+        _onReceivedReply(reply);
+        _dl.handled_reply(reply.reqId);
+      }
+    });
+  }
+
+  void _onReceivedReply(ReplyStruct reply) {
     _zone.runUnary(_zonedAdd, reply);
   }
 
-  void _add(String reply) {
+  void _add(ReplyStruct reply) {
     if (!_sink.isClosed) {
-      final sepIdx = reply.indexOf(RESPONSE_SEPARATOR);
-      final base = int.parse(reply.substring(0, sepIdx));
-      final String? data =
-          reply.length > sepIdx ? reply.substring(sepIdx + 1) : null;
-      _sink.add(_decode(base, data));
+      _sink.add(_decode(reply));
     }
   }
 
@@ -63,17 +69,13 @@ class ReplyChannel<TReply extends IReply> {
     });
   }
 
-  int get nativePort {
-    return _receivePort.sendPort.nativePort;
-  }
-
   int get reqId {
     _lastReqId++;
     return _lastReqId;
   }
 
   Future<void> dispose() {
-    _receivePort.close();
+    if (_pollTimer.isActive) _pollTimer.cancel();
     return _sink.close();
   }
 
