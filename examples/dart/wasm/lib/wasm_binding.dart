@@ -220,7 +220,8 @@ class WasmLibrary {
     final WasmModule module = WasmModule(moduleData);
     print(module.describe());
 
-    final builder = module.builder();
+    final builder = module.builder()
+      ..enableWasi(captureStdout: false, captureStderr: false);
     final instance = builder.build();
 
     _instance = WasmLibrary(instance);
