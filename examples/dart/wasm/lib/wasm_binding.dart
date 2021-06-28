@@ -29,6 +29,16 @@ class WasmLibrary {
   late final WasmFunction _rid_store_lock;
   late final WasmFunction _rid_store_unlock;
 
+  // Reply Polling
+  late final WasmFunction _rid_rawreplystruct_debug;
+  late final WasmFunction _rid_rawreplystruct_debug_pretty;
+  late final WasmFunction _rid_replystruct_ty;
+  late final WasmFunction _rid_replystruct_req_id;
+  late final WasmFunction _rid_store_posted_replies;
+  late final WasmFunction _rid_export_RawStore_poll_reply;
+
+  late final WasmFunction _handled_reply;
+
   WasmLibrary(this._wasmInstance) {
     _create_store = _wasmInstance.lookupFunction('create_store');
     _rid_store_count = _wasmInstance.lookupFunction('rid_store_count');
@@ -41,6 +51,21 @@ class WasmLibrary {
         _wasmInstance.lookupFunction("rid_rawstore_debug_pretty");
     _rid_store_lock = _wasmInstance.lookupFunction("rid_store_lock");
     _rid_store_unlock = _wasmInstance.lookupFunction("rid_store_unlock");
+
+    // Reply Polling
+    _rid_rawreplystruct_debug =
+        _wasmInstance.lookupFunction("rid_rawreplystruct_debug");
+    _rid_rawreplystruct_debug_pretty =
+        _wasmInstance.lookupFunction("rid_rawreplystruct_debug_pretty");
+    _rid_replystruct_ty = _wasmInstance.lookupFunction('rid_replystruct_ty');
+    _rid_replystruct_req_id =
+        _wasmInstance.lookupFunction('rid_replystruct_req_id');
+
+    _rid_store_posted_replies =
+        _wasmInstance.lookupFunction("rid_store_posted_replies");
+    _rid_export_RawStore_poll_reply =
+        _wasmInstance.lookupFunction("rid_export_RawStore_poll_reply");
+    _handled_reply = _wasmInstance.lookupFunction("handled_reply");
   }
 
   WasmMemory get memory {
@@ -102,6 +127,50 @@ class WasmLibrary {
 
   void rid_store_free() {
     return _rid_store_free.apply([]);
+  }
+
+  // Not needed
+  ffi.Pointer<Vec_RawReplyStruct> rid_store_posted_replies(
+      ffi.Pointer<RawStore> store) {
+    return _rid_store_posted_replies.apply([store]);
+  }
+
+  int rid_vec_ReplyStruct_len(ffi.Pointer<Vec_RawReplyStruct> _) {
+    throw UnimplementedError("rid_vec_ReplyStruct_len");
+  }
+
+  ffi.Pointer<RawReplyStruct> rid_vec_ReplyStruct_get(
+      ffi.Pointer<Vec_RawReplyStruct> _, int _idx) {
+    throw UnimplementedError("rid_vec_ReplyStruct_get");
+  }
+
+  // -----------------
+  // Reply Polling Wrappers
+  // -----------------
+  int rid_rawreplystruct_debug_pretty(ffi.Pointer<RawReplyStruct> replystruct) {
+    return _rid_rawreplystruct_debug_pretty.apply([replystruct.address]);
+  }
+
+  int rid_rawreplystruct_debug(ffi.Pointer<RawReplyStruct> replystruct) {
+    return _rid_rawreplystruct_debug.apply([replystruct.address]);
+  }
+
+  int rid_replystruct_ty(ffi.Pointer<RawReplyStruct> replystruct) {
+    return _rid_replystruct_ty.apply([replystruct.address]);
+  }
+
+  int rid_replystruct_req_id(ffi.Pointer<RawReplyStruct> replystruct) {
+    return _rid_replystruct_req_id.apply([replystruct.address]);
+  }
+
+  ffi.Pointer<RawReplyStruct> rid_export_RawStore_poll_reply(
+      ffi.Pointer<RawStore> store) {
+    final int address = _rid_export_RawStore_poll_reply.apply([store.address]);
+    return ffi.Pointer.fromAddress(address);
+  }
+
+  void handled_reply(int req_id) {
+    return _handled_reply.apply([req_id]);
   }
 
   // -----------------
