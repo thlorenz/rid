@@ -1,22 +1,18 @@
 import '../wasm_binding.dart' as wasm_bind;
 import '../wasm_reply_channel.dart';
 
-
-
-
-  Future<PostedReply> msgInc({Duration? timeout}) {
-    final reqId = replyChannel.reqId;
-    rid_ffi.rid_msg_Inc(
-      reqId,
-    );
-    return Future.value(PostedReply._(Reply.Inced, reqId, null));
+extension Rid_ExtOnPointerInt8 on dart_ffi.Pointer<dart_ffi.Int8> {
+  String toDartString([int? len]) {
+    return rid_ffi.ptrInt8ToDartString(this);
   }
 
+  void free() {
+    return rid_ffi.ptrInt8Free(this);
+  }
+}
 
 final ReplyChannel<PostedReply> replyChannel =
     ReplyChannel.instance(_dl, wasmDecode, _isDebugMode);
-
-
 
 
 //
@@ -28,8 +24,8 @@ PostedReply wasmDecode(ReplyStruct reply) {
 }
 
 const WIP_WASM = 'target/wasm32-unknown-unknown/debug/wasm_example.wasm';
-final rid_ffi = wasm_bind.WasmLibrary.init(WIP_WASM);
-final _dl = rid_ffi;
+final _dl = wasm_bind.WasmLibrary.init(WIP_WASM);
+final rid_ffi = _dl;
 // } ELSE {
 // final dart_ffi.DynamicLibrary _dl = _open();
 // final rid_ffi = ffigen_bind.NativeLibrary(_dl);
