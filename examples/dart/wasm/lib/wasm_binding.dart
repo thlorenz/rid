@@ -3,8 +3,8 @@ import 'dart:ffi' as ffi;
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:wasm_interop/wasm_interop.dart';
 import 'package:ffi/ffi.dart' as package_ffi;
-import 'package:wasm/wasm.dart';
 import 'package:wasm_example/generated/rid_api.dart';
 
 const Utf8Codec utf8Codec = Utf8Codec();
@@ -15,26 +15,20 @@ String toDartString(ffi.Pointer<ffi.Int32> ptr, [int? len]) {
 }
 
 class WasmLibrary {
-  final WasmInstance _wasmInstance;
-  final dynamic Function(String name) _lookup;
+  final Instance _wasmInstance;
 
-  WasmLibrary(this._wasmInstance) : _lookup = _wasmInstance.lookupFunction;
+  WasmLibrary(this._wasmInstance);
 
-  WasmMemory get memory {
-    return _wasmInstance.memory;
+  T _lookup<T>(String name) {
+    return _wasmInstance.functions[name]! as T;
+  }
+
+  Memory get memory {
+    return _wasmInstance.memories['memory']!;
   }
 
   Uint8List get memView {
-    return _wasmInstance.memory.view;
-  }
-
-  WasmFunction lookupFunction<T extends Function, F extends Function>(
-      String name) {
-    return _wasmInstance.lookupFunction(name) as WasmFunction;
-  }
-
-  WasmFunction lookup<T extends ffi.NativeType>(String name) {
-    return _wasmInstance.lookupFunction(name) as WasmFunction;
+    return _wasmInstance.memories['memory']!.buffer.asUint8List();
   }
 
   // -----------------
@@ -43,77 +37,78 @@ class WasmLibrary {
 
   // --- create_store ---
   ffi.Pointer<RawStore> create_store() {
-    final address = _create_store.apply([]);
+    final address = _create_store();
     return ffi.Pointer<RawStore>.fromAddress(address);
   }
 
-  late final WasmFunction _create_store = _lookup('create_store');
+  late final int Function() _create_store = _lookup('create_store');
 
   // --- rid_store_count ---
   int rid_store_count(ffi.Pointer<RawStore> ptr) {
-    return _rid_store_count.apply([ptr.address]);
+    return _rid_store_count(ptr.address);
   }
 
-  late final WasmFunction _rid_store_count = _lookup('rid_store_count');
+  late final int Function(int) _rid_store_count = _lookup('rid_store_count');
 
   // --- rid_msg_Dump ---
   void rid_msg_Dump(int req_id) {
-    _rid_msg_Dump.apply([req_id]);
+    _rid_msg_Dump(req_id);
   }
 
-  late final WasmFunction _rid_msg_Dump = _lookup('rid_msg_Dump');
+  late final void Function(int) _rid_msg_Dump = _lookup('rid_msg_Dump');
 
   // --- rid_msg_Inc ---
   void rid_msg_Inc(int req_id) {
-    _rid_msg_Inc.apply([req_id]);
+    _rid_msg_Inc(req_id);
   }
 
-  late final WasmFunction _rid_msg_Inc = _lookup('rid_msg_Inc');
+  late final void Function(int) _rid_msg_Inc = _lookup('rid_msg_Inc');
 
   // --- rid_cstring_free ---
   void rid_cstring_free(ffi.Pointer<ffi.Int8> ptr) {
-    _rid_cstring_free.apply([ptr.address]);
+    _rid_cstring_free(ptr.address);
   }
 
-  late final WasmFunction _rid_cstring_free = _lookup('rid_cstring_free');
+  late final void Function(int) _rid_cstring_free = _lookup('rid_cstring_free');
 
   // --- rid_rawstore_debug_pretty ---
   ffi.Pointer<ffi.Int8> rid_rawstore_debug_pretty(ffi.Pointer<RawStore> store) {
-    final address = _rid_rawstore_debug_pretty.apply([store.address]);
+    final address = _rid_rawstore_debug_pretty(store.address);
     return ffi.Pointer.fromAddress(address);
   }
 
-  late final WasmFunction _rid_rawstore_debug_pretty =
+  late final int Function(int) _rid_rawstore_debug_pretty =
       _lookup('rid_rawstore_debug_pretty');
 
   // --- rid_rawstore_debug ---
   ffi.Pointer<ffi.Int8> rid_rawstore_debug(ffi.Pointer<RawStore> store) {
-    final address = _rid_rawstore_debug.apply([store.address]);
+    final address = _rid_rawstore_debug(store.address);
     return ffi.Pointer.fromAddress(address);
   }
 
-  late final WasmFunction _rid_rawstore_debug = _lookup('rid_rawstore_debug');
+  late final int Function(int) _rid_rawstore_debug =
+      _lookup('rid_rawstore_debug');
 
   // --- rid_store_lock ---
   void rid_store_lock() {
-    return _rid_store_lock.apply([]);
+    return _rid_store_lock();
   }
 
-  late final WasmFunction _rid_store_lock = _lookup('rid_store_lock');
+  late final void Function() _rid_store_lock = _lookup('rid_store_lock');
 
   // --- rid_store_unlock ---
   void rid_store_unlock() {
-    return _rid_store_unlock.apply([]);
+    return _rid_store_unlock();
   }
 
-  late final WasmFunction _rid_store_unlock = _lookup('rid_store_unlock');
+  late final void Function() _rid_store_unlock = _lookup('rid_store_unlock');
 
   // --- rid_store_free ---
   void rid_store_free() {
-    return _rid_store_free.apply([]);
+    return _rid_store_free();
   }
 
-  late final WasmFunction _rid_store_free = _lookup('rid_store_free');
+  late final void Function() _rid_store_free = _lookup('rid_store_free');
 
   // -----------------
   // Reply Polling Wrappers
@@ -121,65 +116,66 @@ class WasmLibrary {
   // --- rid_rawreplystruct_debug_pretty ---
   ffi.Pointer<ffi.Int8> rid_rawreplystruct_debug_pretty(
       ffi.Pointer<RawReplyStruct> replystruct) {
-    final address =
-        _rid_rawreplystruct_debug_pretty.apply([replystruct.address]);
+    final address = _rid_rawreplystruct_debug_pretty(replystruct.address);
     return ffi.Pointer.fromAddress(address);
   }
 
-  late final WasmFunction _rid_rawreplystruct_debug_pretty =
+  late final int Function(int) _rid_rawreplystruct_debug_pretty =
       _lookup('rid_rawreplystruct_debug_pretty');
 
   // --- rid_rawreplystruct_debug ---
   ffi.Pointer<ffi.Int8> rid_rawreplystruct_debug(
       ffi.Pointer<RawReplyStruct> replystruct) {
-    final address = _rid_rawreplystruct_debug.apply([replystruct.address]);
+    final address = _rid_rawreplystruct_debug(replystruct.address);
     return ffi.Pointer.fromAddress(address);
   }
 
-  late final WasmFunction _rid_rawreplystruct_debug =
+  late final int Function(int) _rid_rawreplystruct_debug =
       _lookup('rid_rawreplystruct_debug');
 
   // --- rid_replystruct_ty ---
   int rid_replystruct_ty(ffi.Pointer<RawReplyStruct> replystruct) {
-    return _rid_replystruct_ty.apply([replystruct.address]);
+    return _rid_replystruct_ty(replystruct.address);
   }
 
-  late final WasmFunction _rid_replystruct_ty = _lookup('rid_replystruct_ty');
+  late final int Function(int) _rid_replystruct_ty =
+      _lookup('rid_replystruct_ty');
 
   // --- rid_replystruct_req_id ---
   int rid_replystruct_req_id(ffi.Pointer<RawReplyStruct> replystruct) {
-    return _rid_replystruct_req_id.apply([replystruct.address]);
+    return _rid_replystruct_req_id(replystruct.address);
   }
 
-  late final WasmFunction _rid_replystruct_req_id =
+  late final int Function(int) _rid_replystruct_req_id =
       _lookup('rid_replystruct_req_id');
 
   // --- rid_export_RawStore_poll_reply ---
   ffi.Pointer<RawReplyStruct> rid_export_RawStore_poll_reply(
       ffi.Pointer<RawStore> store) {
-    final int address = _rid_export_RawStore_poll_reply.apply([store.address]);
+    final int address = _rid_export_RawStore_poll_reply(store.address);
     return ffi.Pointer.fromAddress(address);
   }
 
-  late final WasmFunction _rid_export_RawStore_poll_reply =
+  late final int Function(int) _rid_export_RawStore_poll_reply =
       _lookup('rid_export_RawStore_poll_reply');
 
   // --- handled_reply ---
   void rid_handled_reply(int req_id) {
-    return _rid_handled_reply.apply([req_id]);
+    return _rid_handled_reply(req_id);
   }
 
-  late final WasmFunction _rid_handled_reply = _lookup('rid_handled_reply');
+  late final void Function(int) _rid_handled_reply =
+      _lookup('rid_handled_reply');
 
   // --- poll_reply ---
   ReplyStruct? rid_poll_reply() {
-    final address = _rid_poll_reply.apply([]);
+    final address = _rid_poll_reply();
     if (address == 0x0) return null;
     final ffi.Pointer<RawReplyStruct> ptr = ffi.Pointer.fromAddress(address);
     return ptr.toDart();
   }
 
-  late final WasmFunction _rid_poll_reply = _lookup('rid_poll_reply');
+  late final int Function() _rid_poll_reply = _lookup('rid_poll_reply');
 
   // -----------------
   // Extension Method Delegates
@@ -202,15 +198,11 @@ class WasmLibrary {
     return _instance!;
   }
 
-  static WasmLibrary init(String pathToWasm) {
+  static Future<WasmLibrary> init(String pathToWasm) async {
     final file = File(pathToWasm);
     final moduleData = file.readAsBytesSync();
-    final WasmModule module = WasmModule(moduleData);
-    print(module.describe());
-
-    final builder = module.builder()
-      ..enableWasi(captureStdout: false, captureStderr: false);
-    final instance = builder.build();
+    final Instance instance = await Instance.fromBytesAsync(moduleData);
+    // print(module.describe());
 
     _instance = WasmLibrary(instance);
     return WasmLibrary.instance;
