@@ -4,6 +4,6 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 
 WASM_FILE=$DIR/../target/wasm32-wasi/debug/wasm_example.wasm
 
-cargo build --target wasm32-wasi
+cargo build --target wasm32-wasi --lib
 
 wasm-dis $WASM_FILE > wasm_example_wasi.wat

@@ -1,6 +1,9 @@
 import '../wasm_binding.dart' as wasm_bind;
 import '../wasm_reply_channel.dart';
 
+final ReplyChannel<PostedReply> replyChannel =
+    ReplyChannel.instance(_dl, wasmDecode, _isDebugMode);
+
 extension Rid_ExtOnPointerInt8 on dart_ffi.Pointer<dart_ffi.Int8> {
   String toDartString([int? len]) {
     return rid_ffi.ptrInt8ToDartString(this);
@@ -10,10 +13,6 @@ extension Rid_ExtOnPointerInt8 on dart_ffi.Pointer<dart_ffi.Int8> {
     return rid_ffi.ptrInt8Free(this);
   }
 }
-
-final ReplyChannel<PostedReply> replyChannel =
-    ReplyChannel.instance(_dl, wasmDecode, _isDebugMode);
-
 
 //
 // Exporting Native Library to call Rust functions directly
