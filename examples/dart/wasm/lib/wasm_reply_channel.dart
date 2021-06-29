@@ -32,11 +32,11 @@ class ReplyChannel<TReply extends IReply> {
       // TODO: ugly hack to prevent printing polling logs for now
       final save = RID_DEBUG_LOCK;
       RID_DEBUG_LOCK = null;
-      final reply = Store.instance.pollReply();
+      final reply = _dl.rid_poll_reply();
       RID_DEBUG_LOCK = save;
       if (reply != null) {
         _onReceivedReply(reply);
-        _dl.handled_reply(reply.reqId);
+        _dl.rid_handled_reply(reply.reqId);
       }
     });
   }

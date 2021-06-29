@@ -5,7 +5,6 @@ import 'dart:typed_data';
 
 import 'package:ffi/ffi.dart' as package_ffi;
 import 'package:wasm/wasm.dart';
-import 'package:wasm_example/generated/ffigen_binding.dart';
 import 'package:wasm_example/generated/rid_api.dart';
 
 const Utf8Codec utf8Codec = Utf8Codec();
@@ -116,27 +115,6 @@ class WasmLibrary {
 
   late final WasmFunction _rid_store_free = _lookup('rid_store_free');
 
-  // Not needed
-  // --- rid_store_posted_replies ---
-  ffi.Pointer<Vec_RawReplyStruct> rid_store_posted_replies(
-      ffi.Pointer<RawStore> store) {
-    return _rid_store_posted_replies.apply([store]);
-  }
-
-  late final WasmFunction _rid_store_posted_replies =
-      _lookup('rid_store_posted_replies');
-
-  // --- rid_vec_ReplyStruct_len ---
-  int rid_vec_ReplyStruct_len(ffi.Pointer<Vec_RawReplyStruct> _) {
-    throw UnimplementedError("rid_vec_ReplyStruct_len");
-  }
-
-  // --- rid_vec_ReplyStruct_get ---
-  ffi.Pointer<RawReplyStruct> rid_vec_ReplyStruct_get(
-      ffi.Pointer<Vec_RawReplyStruct> _, int _idx) {
-    throw UnimplementedError("rid_vec_ReplyStruct_get");
-  }
-
   // -----------------
   // Reply Polling Wrappers
   // -----------------
@@ -187,11 +165,21 @@ class WasmLibrary {
       _lookup('rid_export_RawStore_poll_reply');
 
   // --- handled_reply ---
-  void handled_reply(int req_id) {
-    return _handled_reply.apply([req_id]);
+  void rid_handled_reply(int req_id) {
+    return _rid_handled_reply.apply([req_id]);
   }
 
-  late final WasmFunction _handled_reply = _lookup('handled_reply');
+  late final WasmFunction _rid_handled_reply = _lookup('rid_handled_reply');
+
+  // --- poll_reply ---
+  ReplyStruct? rid_poll_reply() {
+    final address = _rid_poll_reply.apply([]);
+    if (address == 0x0) return null;
+    final ffi.Pointer<RawReplyStruct> ptr = ffi.Pointer.fromAddress(address);
+    return ptr.toDart();
+  }
+
+  late final WasmFunction _rid_poll_reply = _lookup('rid_poll_reply');
 
   // -----------------
   // Extension Method Delegates
