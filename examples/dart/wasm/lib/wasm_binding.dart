@@ -6,17 +6,28 @@ import 'package:wasm_interop/wasm_interop.dart';
 
 const Utf8Codec utf8Codec = Utf8Codec();
 
-abstract class OpaquePointer {
+abstract class Opaque {
   final int _address;
 
-  OpaquePointer(this._address);
+  Opaque(this._address);
 
   int get address => _address;
 }
 
 // For the native API we could type alias RawReplyStructPointer to Pointer<RawReplyStruct>
-class RawReplyStructPointer extends OpaquePointer {
-  RawReplyStructPointer(int address) : super(address);
+class RawReplyStruct extends Opaque {
+  RawReplyStruct(int address) : super(address);
+}
+
+class Pointer<T extends Opaque> {
+  final T _opaque;
+
+  Pointer._(this._opaque);
+  factory Pointer.fromAddress(T opaque) {
+    return Pointer._(opaque);
+  }
+
+  int get address => _opaque.address;
 }
 
 class ReplyStruct {
@@ -40,7 +51,7 @@ class ReplyStruct {
   }
 }
 
-extension Rid_ToDart_ExtOnReplyStruct on RawReplyStructPointer {
+extension Rid_ToDart_ExtOnReplyStruct on Pointer<RawReplyStruct> {
   ReplyStruct toDart() {
     WasmLibrary.instance.rid_store_lock();
     final instance = ReplyStruct._(this.ty, this.req_id);
@@ -49,9 +60,20 @@ extension Rid_ToDart_ExtOnReplyStruct on RawReplyStructPointer {
   }
 }
 
-extension Rid_Model_ExtOnPointerRawReplyStruct on RawReplyStructPointer {
-  int get ty => WasmLibrary.instance.rid_replystruct_ty(this.address);
-  int get req_id => WasmLibrary.instance.rid_replystruct_req_id(this.address);
+extension Rid_Model_ExtOnPointerRawReplyStruct on Pointer<RawReplyStruct> {
+  int get ty => WasmLibrary.instance.rid_replystruct_ty(this);
+  int get req_id => WasmLibrary.instance.rid_replystruct_req_id(this);
+}
+
+extension rid_rawreplystruct_debug_ExtOnReplyStruct on Pointer<RawReplyStruct> {
+  String debug([bool pretty = false]) {
+    final ptr = pretty
+        ? WasmLibrary.instance.rid_rawreplystruct_debug_pretty(this)
+        : WasmLibrary.instance.rid_rawreplystruct_debug(this);
+    final s = WasmLibrary.instance.decodeUtf8String(ptr);
+    WasmLibrary.instance.rid_cstring_free(ptr);
+    return s;
+  }
 }
 
 class WasmLibrary {
@@ -156,43 +178,35 @@ class WasmLibrary {
   // Reply Polling Wrappers
   // -----------------
   // --- rid_rawreplystruct_debug_pretty ---
-  int rid_rawreplystruct_debug_pretty(int replystructAddr) {
-    return _rid_rawreplystruct_debug_pretty(replystructAddr);
+  int rid_rawreplystruct_debug_pretty(Pointer<RawReplyStruct> ptr) {
+    return _rid_rawreplystruct_debug_pretty(ptr.address);
   }
 
   late final int Function(int) _rid_rawreplystruct_debug_pretty =
       _lookup('rid_rawreplystruct_debug_pretty');
 
-  int rid_rawreplystruct_debug(int replystructAddr) {
-    return _rid_rawreplystruct_debug(replystructAddr);
+  int rid_rawreplystruct_debug(Pointer<RawReplyStruct> ptr) {
+    return _rid_rawreplystruct_debug(ptr.address);
   }
 
   late final int Function(int) _rid_rawreplystruct_debug =
       _lookup('rid_rawreplystruct_debug');
 
   // --- rid_replystruct_ty ---
-  int rid_replystruct_ty(int replystructAddr) {
-    return _rid_replystruct_ty(replystructAddr);
+  int rid_replystruct_ty(Pointer<RawReplyStruct> ptr) {
+    return _rid_replystruct_ty(ptr.address);
   }
 
   late final int Function(int) _rid_replystruct_ty =
       _lookup('rid_replystruct_ty');
 
   // --- rid_replystruct_req_id ---
-  int rid_replystruct_req_id(int replystructAddr) {
-    return _rid_replystruct_req_id(replystructAddr);
+  int rid_replystruct_req_id(Pointer<RawReplyStruct> ptr) {
+    return _rid_replystruct_req_id(ptr.address);
   }
 
   late final int Function(int) _rid_replystruct_req_id =
       _lookup('rid_replystruct_req_id');
-
-  // --- rid_export_RawStore_poll_reply ---
-  int rid_export_RawStore_poll_reply(int storeAddr) {
-    return _rid_export_RawStore_poll_reply(storeAddr);
-  }
-
-  late final int Function(int) _rid_export_RawStore_poll_reply =
-      _lookup('rid_export_RawStore_poll_reply');
 
   // --- handled_reply ---
   void rid_handled_reply(int req_id) {
@@ -203,10 +217,10 @@ class WasmLibrary {
       _lookup('rid_handled_reply');
 
   // --- poll_reply ---
-  ReplyStruct? rid_poll_reply() {
+  Pointer<RawReplyStruct>? rid_poll_reply() {
     final address = _rid_poll_reply();
     if (address == 0x0) return null;
-    return RawReplyStructPointer(address).toDart();
+    return Pointer.fromAddress(RawReplyStruct(address));
   }
 
   late final int Function() _rid_poll_reply = _lookup('rid_poll_reply');
