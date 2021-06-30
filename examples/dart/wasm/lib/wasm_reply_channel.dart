@@ -1,3 +1,4 @@
+/*
 import 'dart:async';
 import 'package:wasm_example/generated/rid_api.dart';
 import 'package:wasm_example/wasm_binding.dart';
@@ -93,3 +94,6 @@ class ReplyChannel<TReply extends IReply> {
     return ReplyChannel<TReply>._(dl, decode, isDebugMode);
   }
 }
+
+
+ */
