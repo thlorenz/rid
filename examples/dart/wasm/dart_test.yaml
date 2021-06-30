@@ -1,0 +1,4 @@
+platforms: [chrome]
+js_trace: true
+verbose_trace: true
+chain_stack_traces: true

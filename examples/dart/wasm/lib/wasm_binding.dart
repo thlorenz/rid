@@ -1,18 +1,17 @@
 import 'dart:convert';
-import 'dart:ffi' as ffi;
 import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:wasm_interop/wasm_interop.dart';
-import 'package:ffi/ffi.dart' as package_ffi;
-import 'package:wasm_example/generated/rid_api.dart';
 
 const Utf8Codec utf8Codec = Utf8Codec();
 
+/*
 String toDartString(ffi.Pointer<ffi.Int32> ptr, [int? len]) {
   final ffi.Pointer<package_ffi.Utf8> stringPtr = ptr.cast();
   return stringPtr.toDartString(length: len);
 }
+*/
 
 class WasmLibrary {
   final Instance _wasmInstance;
@@ -36,16 +35,15 @@ class WasmLibrary {
   // -----------------
 
   // --- create_store ---
-  ffi.Pointer<RawStore> create_store() {
-    final address = _create_store();
-    return ffi.Pointer<RawStore>.fromAddress(address);
+  int create_store() {
+    return _create_store();
   }
 
   late final int Function() _create_store = _lookup('create_store');
 
   // --- rid_store_count ---
-  int rid_store_count(ffi.Pointer<RawStore> ptr) {
-    return _rid_store_count(ptr.address);
+  int rid_store_count(int storeAddr) {
+    return _rid_store_count(storeAddr);
   }
 
   late final int Function(int) _rid_store_count = _lookup('rid_store_count');
@@ -59,27 +57,32 @@ class WasmLibrary {
 
   // --- rid_msg_Inc ---
   void rid_msg_Inc(int req_id) {
-    _rid_msg_Inc(req_id);
+    _rid_msg_Inc(req_id.toString());
   }
 
-  late final void Function(int) _rid_msg_Inc = _lookup('rid_msg_Inc');
+  late final void Function(/* BigInt */ String) _rid_msg_Inc =
+      _lookup('rid_msg_Inc');
 
   // --- rid_cstring_free ---
-  void rid_cstring_free(ffi.Pointer<ffi.Int8> ptr) {
-    _rid_cstring_free(ptr.address);
+  void rid_cstring_free(int strAddr) {
+    _rid_cstring_free(strAddr);
   }
 
   late final void Function(int) _rid_cstring_free = _lookup('rid_cstring_free');
 
   // --- rid_rawstore_debug_pretty ---
-  ffi.Pointer<ffi.Int8> rid_rawstore_debug_pretty(ffi.Pointer<RawStore> store) {
-    final address = _rid_rawstore_debug_pretty(store.address);
-    return ffi.Pointer.fromAddress(address);
+  int rid_rawstore_debug_pretty(int storeAddr) {
+    return _rid_rawstore_debug_pretty(storeAddr);
   }
 
   late final int Function(int) _rid_rawstore_debug_pretty =
       _lookup('rid_rawstore_debug_pretty');
 
+  String decodeUtf8String(int address) {
+    return decodeUtf8ListString(memView, address);
+  }
+
+  /*
   // --- rid_rawstore_debug ---
   ffi.Pointer<ffi.Int8> rid_rawstore_debug(ffi.Pointer<RawStore> store) {
     final address = _rid_rawstore_debug(store.address);
@@ -188,6 +191,7 @@ class WasmLibrary {
     rid_cstring_free(ptr);
   }
 
+*/
   // -----------------
   // Initializers
   // -----------------
@@ -198,21 +202,24 @@ class WasmLibrary {
     return _instance!;
   }
 
-  static Future<WasmLibrary> init(String pathToWasm) async {
-    final file = File(pathToWasm);
-    final moduleData = file.readAsBytesSync();
+  static Future<WasmLibrary> init(Uint8List moduleData) async {
     final Instance instance = await Instance.fromBytesAsync(moduleData);
     // print(module.describe());
 
     _instance = WasmLibrary(instance);
     return WasmLibrary.instance;
   }
+
+  static Future<WasmLibrary> initFromFile(String pathToWasm) async {
+    final file = File(pathToWasm);
+    return init(file.readAsBytesSync());
+  }
 }
 
 // -----------------
 // Util Methods
 // -----------------
-String decodeUtf8String(Uint8List codeUnits, int address) {
+String decodeUtf8ListString(Uint8List codeUnits, int address) {
   final end = _end(codeUnits, address);
   return utf8Codec.decode(codeUnits.sublist(address, end));
 }
