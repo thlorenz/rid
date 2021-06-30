@@ -21,7 +21,7 @@ void main() {
       print('store count: $count');
 
       final reply = lib.rid_poll_reply();
-      print('reply: $reply');
+      print('reply: ${reply?.debug(true)}');
 
       final dbgAddr = lib.rid_rawstore_debug_pretty(store);
       final str = lib.decodeUtf8String(dbgAddr);
