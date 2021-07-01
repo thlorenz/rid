@@ -1,23 +1,36 @@
 @TestOn('js')
 import 'package:test/test.dart';
+import 'package:wasm_example/wasm/utils.dart';
 import 'package:wasm_example/wasm_binding.dart';
 
 int reqId = 1;
 
 void main() {
+  ROOT_URL = 'http://localhost:8080';
   group('Store Interaction', () {
     test('init store and interacting with it works', () async {
       final store = await Store.instance;
-      print('store count: ${store.count}');
+      expect(store.count, 0);
 
-      PostedReply reply = await store.msgInc();
-      print('reply: $reply');
-      print('store count: ${store.count}');
+      {
+        final reply = await store.msgInc();
+        expect(reply.type, Reply.Inced);
+        expect(store.count, 1);
+      }
 
-      reply = await store.msgInc();
-      print('reply: $reply');
+      {
+        final reply = await store.msgAdd(9);
+        expect(reply.type, Reply.Added);
+        expect(store.count, 10);
+      }
 
-      print('store: ${store.debug(true)}');
+      {
+        final reply = await store.msgAdd(100);
+        expect(reply.type, Reply.Added);
+        expect(store.count, 110);
+
+        expect(store.debug(), 'Store { count: 110 }');
+      }
     });
   });
 }

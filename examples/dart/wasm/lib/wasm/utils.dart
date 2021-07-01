@@ -3,7 +3,7 @@ import 'dart:typed_data';
 
 import 'package:universal_io/io.dart';
 
-final ROOT_URL = window.location.origin;
+String ROOT_URL = window.location.origin;
 Future<Uint8List> loadWasmFile(String wasmFile) async {
   final path = '$ROOT_URL/$wasmFile';
   try {

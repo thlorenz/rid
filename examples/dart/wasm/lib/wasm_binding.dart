@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:wasm_example/wasm/utils.dart';
@@ -435,11 +434,6 @@ class WasmLibrary {
     replyChannel =
         ReplyChannel.instance(WasmLibrary.instance, wasmDecode, _isDebugMode);
     return WasmLibrary.instance;
-  }
-
-  static Future<WasmLibrary> initFromFile(String pathToWasm) async {
-    final file = File(pathToWasm);
-    return init(file.readAsBytesSync());
   }
 }
 
