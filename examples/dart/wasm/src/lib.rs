@@ -5,7 +5,7 @@ mod replies;
 #[rid::structs(ReplyStruct)]
 #[derive(Debug, Clone)]
 pub struct Store {
-    count: u8,
+    count: u32,
 }
 
 impl RidStore<Msg> for Store {
@@ -20,8 +20,9 @@ impl RidStore<Msg> for Store {
                 eprintln!("rust: counting");
                 replies::post(Reply::Inced(req_id));
             }
-            Msg::Dump => {
-                replies::post(Reply::Dumped(req_id));
+            Msg::Add(n) => {
+                self.count += n;
+                replies::post(Reply::Added(req_id, n.to_string()));
             }
         }
     }
@@ -31,7 +32,7 @@ impl RidStore<Msg> for Store {
 #[derive(Debug, Clone)]
 pub enum Msg {
     Inc,
-    Dump,
+    Add(u32),
 }
 
 // -----------------
@@ -41,5 +42,5 @@ pub enum Msg {
 #[derive(Debug, Clone)]
 pub enum Reply {
     Inced(u64),
-    Dumped(u64),
+    Added(u64, String),
 }

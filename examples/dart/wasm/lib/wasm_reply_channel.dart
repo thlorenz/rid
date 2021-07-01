@@ -1,6 +1,4 @@
-/*
 import 'dart:async';
-import 'package:wasm_example/generated/rid_api.dart';
 import 'package:wasm_example/wasm_binding.dart';
 
 const String RESPONSE_SEPARATOR = '^';
@@ -33,7 +31,8 @@ class ReplyChannel<TReply extends IReply> {
       // TODO: ugly hack to prevent printing polling logs for now
       final save = RID_DEBUG_LOCK;
       RID_DEBUG_LOCK = null;
-      final reply = _dl.rid_poll_reply();
+      // TODO: need to Readlock replies
+      final reply = _dl.rid_poll_reply()?.toDart();
       RID_DEBUG_LOCK = save;
       if (reply != null) {
         _onReceivedReply(reply);
@@ -55,9 +54,11 @@ class ReplyChannel<TReply extends IReply> {
   Stream<TReply> get stream => _sink.stream;
   Future<TReply> reply(int reqId) {
     assert(reqId != 0, "Invalid requestID ");
-    return stream
-        .firstWhere((res) => res.reqId == reqId)
-        .onError((error, stackTrace) {
+    return stream.firstWhere((reply) {
+      final replyId = reply.reqId;
+      if (replyId == null) return false;
+      return reqId == replyId;
+    }).onError((error, stackTrace) {
       print(
           "The responseChannel was disposed while a message was waiting for a reply.\n"
           "Did you forget to `await` the reply to the message with reqId: '$reqId'?\n"
@@ -94,6 +95,3 @@ class ReplyChannel<TReply extends IReply> {
     return ReplyChannel<TReply>._(dl, decode, isDebugMode);
   }
 }
-
-
- */

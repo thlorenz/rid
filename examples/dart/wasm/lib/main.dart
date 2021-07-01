@@ -1,19 +1,20 @@
 import 'dart:async';
-import 'package:wasm_example/generated/rid_api.dart';
+
+import 'package:wasm_example/wasm_binding.dart';
 
 Future<void> main() async {
-  await initRid();
-  final store = Store.instance;
-  print('store: ${store.debug(true)}');
+  final store = await Store.instance;
+  print('create_store: ${store.debug(true)}');
 
   await store.msgInc();
-  print('store: ${store.debug(true)}');
+  print('store count: ${store.count}');
+
   await store.msgInc();
-  print('store: ${store.debug(true)}');
-  await store.msgInc();
-  print('store: ${store.debug(true)}');
-  await store.msgInc();
+
   print('store: ${store.debug(true)}');
 
-  store.dispose();
+  await store.msgAdd(10);
+  print('store: ${store.debug(true)}');
+  await store.msgAdd(100);
+  print('store: ${store.debug(true)}');
 }

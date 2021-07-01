@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+
+ROOT=$DIR/..
+mkdir -p $ROOT/web
+
+dart2js                \
+  $ROOT/lib/main.dart  \
+  -o $ROOT/web/main.js

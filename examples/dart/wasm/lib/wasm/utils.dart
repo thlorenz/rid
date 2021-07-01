@@ -1,9 +1,11 @@
+import 'dart:html';
 import 'dart:typed_data';
 
 import 'package:universal_io/io.dart';
 
+final ROOT_URL = window.location.origin;
 Future<Uint8List> loadWasmFile(String wasmFile) async {
-  final path = 'http://localhost:8080/$wasmFile';
+  final path = '$ROOT_URL/$wasmFile';
   try {
     // http-server --cors
     final httpClient = HttpClient();
