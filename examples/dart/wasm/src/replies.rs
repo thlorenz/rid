@@ -63,7 +63,7 @@ impl From<Reply> for ReplyStruct {
     fn from(reply: Reply) -> Self {
         match reply {
             Reply::Inced(req_id) => Self { ty: 0, req_id },
-            Reply::Dumped(req_id) => Self { ty: 1, req_id },
+            Reply::Added(req_id, _) => Self { ty: 1, req_id },
         }
     }
 }
