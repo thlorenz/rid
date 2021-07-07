@@ -32,13 +32,11 @@ pub fn post(reply: Reply) {
     replies_write().push(reply.into())
 }
 
-pub fn replies_read() -> ::std::sync::RwLockReadGuard<'static, Vec<ReplyStruct>>
-{
+pub fn replies_read() -> ::std::sync::RwLockReadGuard<'static, Vec<ReplyStruct>> {
     RidRepliesAccess::instance().lock.read().unwrap()
 }
 
-pub fn replies_write(
-) -> ::std::sync::RwLockWriteGuard<'static, Vec<ReplyStruct>> {
+pub fn replies_write() -> ::std::sync::RwLockWriteGuard<'static, Vec<ReplyStruct>> {
     RidRepliesAccess::instance().lock.write().unwrap()
 }
 
@@ -57,13 +55,45 @@ pub extern "C" fn rid_handled_reply(req_id: u64) {
 pub struct ReplyStruct {
     ty: u8,
     req_id: u64,
+    data: String,
+}
+
+impl ReplyStruct {
+    fn with_req_id(ty: u8, req_id: u64) -> Self {
+        Self {
+            ty,
+            req_id,
+            data: "".to_string(),
+        }
+    }
+    fn with_data(ty: u8, req_id: u64, data: String) -> Self {
+        Self { ty, req_id, data }
+    }
 }
 
 impl From<Reply> for ReplyStruct {
     fn from(reply: Reply) -> Self {
         match reply {
-            Reply::Inced(req_id) => Self { ty: 0, req_id },
-            Reply::Added(req_id, _) => Self { ty: 1, req_id },
+            Reply::AddedTodo(req_id, data) => ReplyStruct::with_data(0, req_id, data),
+            Reply::RemovedTodo(req_id, data) => ReplyStruct::with_data(1, req_id, data),
+            Reply::RemovedCompleted(req_id) => ReplyStruct::with_req_id(2, req_id),
+            Reply::CompletedTodo(req_id, data) => ReplyStruct::with_data(3, req_id, data),
+            Reply::RestartedTodo(req_id, data) => ReplyStruct::with_data(4, req_id, data),
+            Reply::ToggledTodo(req_id, data) => ReplyStruct::with_data(5, req_id, data),
+            Reply::CompletedAll(req_id) => ReplyStruct::with_req_id(6, req_id),
+            Reply::RestartedAll(req_id) => ReplyStruct::with_req_id(7, req_id),
+            Reply::SetFilter(req_id) => ReplyStruct::with_req_id(8, req_id),
+            Reply::SetAutoExpireCompletedTodos(req_id) => ReplyStruct::with_req_id(9, req_id),
+            Reply::CompletedTodoExpired => Self {
+                ty: 10,
+                req_id: 0,
+                data: "".to_string(),
+            },
+            Reply::Tick(data) => Self {
+                ty: 11,
+                req_id: 0,
+                data,
+            },
         }
     }
 }

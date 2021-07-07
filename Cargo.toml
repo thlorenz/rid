@@ -22,3 +22,5 @@ exclude = [
 [dependencies]
 rid_macro = { path = "rid-macro" }
 rid_ffi = { path = "rid-ffi" }
+
+getrandom = { version = "0.2", features = ["js"] }

@@ -1,20 +1,19 @@
 import 'dart:async';
 
-import 'package:wasm_example/wasm_binding.dart';
+import 'package:wasm_example/generated/rid_api.dart';
 
+import 'wasm/utils.dart';
+
+const WASM_FILE = 'target/wasm32-unknown-unknown/debug/wasm_example.wasm';
 Future<void> main() async {
-  final store = await Store.instance;
-  print('create_store: ${store.debug(true)}');
+  HTTP_HOST = 'localhost:8080';
+  await initWasm(WASM_FILE);
+  print(rid_ffi.toString());
 
-  await store.msgInc();
-  print('store count: ${store.count}');
-
-  await store.msgInc();
-
+  final store = Store.instance;
   print('store: ${store.debug(true)}');
 
-  await store.msgAdd(10);
-  print('store: ${store.debug(true)}');
-  await store.msgAdd(100);
+  rid_ffi.rid_diagnose_filtered_todos(store.raw);
+
   print('store: ${store.debug(true)}');
 }

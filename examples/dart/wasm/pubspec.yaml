@@ -10,12 +10,19 @@ ffigen:
     entry-points:
       - 'lib/generated/bindings.h'
 
+wasmjsgen:
+  output: 'lib/generated/ffigen_binding.dart'
+  headers:
+    entry-points:
+      - 'lib/generated/bindings.h'
+
 dependencies: 
   ffi: ^1.0.0
   ffigen: ^2.2.4
-  wasm_interop:
-    path: '../../../../wasm/wasm.dart/wasm_interop'
+  wasm_interop: ^2.0.0
   universal_io: ^2.0.4
+  wasmjsgen:
+    path: ../../../../wasmjsgen/
 
 dev_dependencies:
   build_runner: any

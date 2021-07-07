@@ -3,9 +3,9 @@ import 'dart:typed_data';
 
 import 'package:universal_io/io.dart';
 
-String ROOT_URL = window.location.origin;
-Future<Uint8List> loadWasmFile(String wasmFile) async {
-  final path = '$ROOT_URL/$wasmFile';
+String HTTP_HOST = window.location.host;
+Future<Uint8List> loadWasmFromNetwork(String wasmFile) async {
+  final path = 'http://$HTTP_HOST/$wasmFile';
   try {
     // http-server --cors
     final httpClient = HttpClient();

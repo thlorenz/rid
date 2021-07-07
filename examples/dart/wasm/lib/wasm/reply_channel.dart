@@ -1,5 +1,5 @@
 import 'dart:async';
-import 'package:wasm_example/wasm_binding.dart';
+import '../generated/rid_api.dart';
 
 const String RESPONSE_SEPARATOR = '^';
 
@@ -15,7 +15,7 @@ class ReplyChannel<TReply extends IReply> {
   final _zone = Zone.current;
   final StreamController<TReply> _sink;
   final Decode<TReply> _decode;
-  final WasmLibrary _dl;
+  final NativeLibrary _dl;
   late final _zonedAdd;
   late final Timer _pollTimer;
   int _lastReqId = 0;
@@ -32,7 +32,9 @@ class ReplyChannel<TReply extends IReply> {
       final save = RID_DEBUG_LOCK;
       RID_DEBUG_LOCK = null;
       // TODO: need to Readlock replies
-      final reply = _dl.rid_poll_reply()?.toDart();
+      final ptr = _dl.rid_poll_reply();
+      final castPtr = Pointer.fromAddress(RawReplyStruct(ptr.address));
+      final reply = ptr.address == 0x0 ? null : castPtr.toDart();
       RID_DEBUG_LOCK = save;
       if (reply != null) {
         _onReceivedReply(reply);
@@ -83,7 +85,7 @@ class ReplyChannel<TReply extends IReply> {
 
   static bool _initialized = false;
   static ReplyChannel<TReply> instance<TReply extends IReply>(
-    WasmLibrary dl,
+    NativeLibrary dl,
     Decode<TReply> decode,
     bool isDebugMode,
   ) {
