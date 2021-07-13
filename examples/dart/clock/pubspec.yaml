@@ -5,6 +5,7 @@ environment:
 
 #  pub run ffigen --verbose severe (optional) --config <outside.config>
 ffigen:
+  llvm-lib: '/usr/lib'
   output: 'lib/generated/ffigen_binding.dart'
   headers:
     entry-points:

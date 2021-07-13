@@ -1,4 +1,4 @@
-import 'package:clock/generated/rid_generated.dart';
+import 'package:clock/generated/rid_api.dart';
 
 class StopWatch {
   final Store store;

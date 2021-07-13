@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:clock/generated/rid_generated.dart';
+import 'package:clock/generated/rid_api.dart';
 import 'package:clock/keyboard_handler.dart';
 import 'package:clock/stop_watch.dart';
 
