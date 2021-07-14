@@ -10,7 +10,7 @@ use std::{
 use rid::RidStore;
 
 const COMPLETED_EXPIRY_MILLIS: u64 = 7000;
-const EXPIRY_STEP: u64 = 10;
+const EXPIRY_STEP: u64 = 7;
 
 // -----------------
 // Store
@@ -23,7 +23,6 @@ pub struct Store {
     last_added_id: u32,
     todos: Vec<Todo>,
     filter: Filter,
-    filtered_todos: Vec<u32>,
     settings: Settings,
 }
 
@@ -57,7 +56,6 @@ impl RidStore<Msg> for Store {
             last_added_id: 3,
             todos: vec![first_todo, second_todo, third_todo, fourth_todo],
             filter: Filter::All,
-            filtered_todos: vec![],
             settings: Settings {
                 auto_expire_completed_todos: false,
                 completed_expiry_millis: COMPLETED_EXPIRY_MILLIS,
@@ -128,35 +126,6 @@ impl RidStore<Msg> for Store {
                 replies::post(Reply::SetAutoExpireCompletedTodos(req_id));
             }
         };
-    }
-}
-
-#[allow(non_snake_case)]
-#[allow(non_camel_case_types)]
-#[allow(dead_code)]
-mod expanded {
-    use super::*;
-
-    type RawStore = Store;
-    type RawTodo = Todo;
-    type Pointer_RawTodo = *const RawTodo;
-    type Pointer_RawStore = *const RawStore;
-    #[no_mangle]
-    #[allow(non_snake_case)]
-    pub extern "C" fn rid_diagnose_filtered_todos(ptr: *mut RawStore) {
-        let receiver: &mut Store = unsafe {
-            if !!ptr.is_null() {
-                panic!("assertion failed: !ptr.is_null()")
-            };
-            ptr.as_mut().unwrap()
-        };
-        // TODO: identified the problem as not being able to return a RidVec
-        // safer_ffi didn't work either .. seems to be a wasm issue
-        receiver.filtered_todos = receiver
-            .filtered_todos()
-            .iter()
-            .map(|todo| todo.id)
-            .collect()
     }
 }
 
@@ -344,3 +313,7 @@ pub enum Reply {
     CompletedTodoExpired,
     Tick(String),
 }
+
+#[no_mangle]
+#[allow(non_snake_case)]
+pub extern "C" fn rid_export_RawStore_filtered_todos_diag(_ptr: *const Store) {}
