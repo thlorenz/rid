@@ -28,6 +28,12 @@ impl FlutterPlatform {
             swift_plugin_file: None,
         }
     }
+    pub fn linux() -> Self {
+        Self {
+            binding_file: None,
+            swift_plugin_file: None,
+        }
+    }
 }
 
 #[derive(Debug)]
