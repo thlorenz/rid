@@ -11,6 +11,8 @@ doctest = false
 rid_common = { path = "../rid-common" }
 rid_ffi = { path = "../rid-ffi" }
 cbindgen = "0.18.0"
+getrandom = { version = "0.2", features = ["js"] }
+
 anyhow = "1.0.38"
 simple_logger = "1.11.0"
 log = "0.4.14"
