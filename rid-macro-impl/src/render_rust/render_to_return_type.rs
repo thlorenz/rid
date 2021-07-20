@@ -50,7 +50,11 @@ impl Value {
             CString => {
                 quote_spanned! { res_ident.span() => let #res_pointer = #res_ident.into_raw(); }
             }
-            String => todo!("Value::render_to_return::String"),
+            String => quote_spanned! { res_ident.span() =>
+                let cstring = ::std::ffi::CString::new(#res_ident.as_str())
+                    .expect(&format!("Invalid string encountered"));
+                let #res_pointer = cstring.into_raw();
+            },
             Str => todo!("Value::render_to_return::Str"),
             Custom(type_info, type_name) => match type_info.cat {
                 C::Enum => {

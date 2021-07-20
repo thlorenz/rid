@@ -83,8 +83,9 @@ impl Value {
         use Category as C;
         use Value::*;
         match self {
-            CString => todo!("Value::render_dart_pointer_type ::CString"),
-            String => todo!("Value::render_dart_pointer_type ::String"),
+            // TODO(thlorenz): implement to_return_type for dart with the string conversion
+            CString => "String".to_string(),
+            String => "String".to_string(),
             Str => todo!("Value::render_dart_pointer_type ::Str"),
             Custom(type_info, _) => match type_info.cat {
                 // NOTE: assumes that enums are `repr(C)`.
