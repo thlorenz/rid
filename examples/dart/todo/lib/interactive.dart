@@ -88,6 +88,7 @@ printCommands() {
 
 interactive() async {
   final store = Store.instance;
+  final Pointer<RawRawStore> raw = store.raw;
   {
     await store.msgAddTodo("Complete this Todo via:     cmp 1");
     await store.msgAddTodo("Delete this Todo via:       del 2");
