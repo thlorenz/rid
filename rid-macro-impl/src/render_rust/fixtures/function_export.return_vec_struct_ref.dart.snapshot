@@ -1,10 +1,10 @@
- extension Rid_Vec_ExtOnPointerRidVec_Pointer_RawMyStruct on ffigen_bind.RidVec_Pointer_RawMyStruct {
+ extension Rid_Vec_ExtOnPointerRidVec_Pointer_MyStruct on ffigen_bind.RidVec_Pointer_MyStruct {
    dart_ffi.Pointer<ffigen_bind.RawMyStruct> operator [](int idx) {
      final len = this.length;
      if (!(0 <= idx && idx < len)) {
        throw AssertionError("Out of range access on List<dart_ffi.Pointer<ffigen_bind.RawMyStruct>>[$idx] of length $len");
      }
-     return rid_ffi.rid_get_item_Pointer_RawMyStruct(this, idx);
+     return rid_ffi.rid_get_item_Pointer_MyStruct(this, idx);
    }
 
     **WARNING**: You cannot use this Vec pointer anymore after this call
@@ -22,18 +22,18 @@
      return list;
    }
    void dispose() {
-     rid_ffi.rid_free_vec_Pointer_RawMyStruct(this);
+     rid_ffi.rid_free_vec_Pointer_MyStruct(this);
    }
 
-   Rid_RidVec_Pointer_RawMyStruct_Iterable iter() => Rid_RidVec_Pointer_RawMyStruct_Iterable(this);
+   Rid_RidVec_Pointer_MyStruct_Iterable iter() => Rid_RidVec_Pointer_MyStruct_Iterable(this);
  }
 
- class Rid_RidVec_Pointer_RawMyStruct_Iterator implements Iterator<dart_ffi.Pointer<ffigen_bind.RawMyStruct>> {
+ class Rid_RidVec_Pointer_MyStruct_Iterator implements Iterator<dart_ffi.Pointer<ffigen_bind.RawMyStruct>> {
    int _currentIdx = -1;
-   final ffigen_bind.RidVec_Pointer_RawMyStruct _vec;
+   final ffigen_bind.RidVec_Pointer_MyStruct _vec;
    final int _limit;
 
-   Rid_RidVec_Pointer_RawMyStruct_Iterator(this._vec) : _limit = _vec.length - 1;
+   Rid_RidVec_Pointer_MyStruct_Iterator(this._vec) : _limit = _vec.length - 1;
 
    dart_ffi.Pointer<ffigen_bind.RawMyStruct> get current => _vec[_currentIdx];
 
@@ -44,11 +44,11 @@
    }
  }
 
- class Rid_RidVec_Pointer_RawMyStruct_Iterable with
+ class Rid_RidVec_Pointer_MyStruct_Iterable with
      dart_collection.IterableMixin<dart_ffi.Pointer<ffigen_bind.RawMyStruct>> {
-   final ffigen_bind.RidVec_Pointer_RawMyStruct _vec;
-   Rid_RidVec_Pointer_RawMyStruct_Iterable(this._vec);
+   final ffigen_bind.RidVec_Pointer_MyStruct _vec;
+   Rid_RidVec_Pointer_MyStruct_Iterable(this._vec);
 
    Iterator<dart_ffi.Pointer<ffigen_bind.RawMyStruct>> get iterator =>
-     Rid_RidVec_Pointer_RawMyStruct_Iterator(this._vec);
+     Rid_RidVec_Pointer_MyStruct_Iterator(this._vec);
  }

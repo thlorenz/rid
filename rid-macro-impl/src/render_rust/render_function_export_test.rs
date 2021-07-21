@@ -250,10 +250,10 @@ mod no_args_composite_vec_return_full {
                 let ret_ptr = rid::RidVec::from(ret);
                 ret_ptr
             }
-            fn rid_free_vec_RawVec(arg: rid::RidVec<u8>) {
+            fn rid_free_vec_Vec(arg: rid::RidVec<u8>) {
                 arg.free();
             }
-            fn rid_get_item_RawVec(vec: rid::RidVec<u8>, idx: usize) -> u8 {
+            fn rid_get_item_Vec(vec: rid::RidVec<u8>, idx: usize) -> u8 {
                 vec[idx]
             }
         };
@@ -278,26 +278,26 @@ mod no_args_composite_vec_return_full {
         });
 
         let expected = quote! {
-            fn rid_export_filter_items() -> rid::RidVec<Pointer_RawMyStruct> {
+            fn rid_export_filter_items() -> rid::RidVec<Pointer_MyStruct> {
                 let ret = filter_items();
-                let vec_with_pointers: Vec<Pointer_RawMyStruct> =
-                    ret.into_iter().map(|x| &*x as Pointer_RawMyStruct).collect();
+                let vec_with_pointers: Vec<Pointer_MyStruct> =
+                    ret.into_iter().map(|x| &*x as Pointer_MyStruct).collect();
                 let ret_ptr = rid::RidVec::from(vec_with_pointers);
                 ret_ptr
             }
-            fn rid_free_vec_Pointer_RawMyStruct(arg: rid::RidVec<Pointer_RawMyStruct>) {
+            fn rid_free_vec_Pointer_MyStruct(arg: rid::RidVec<Pointer_MyStruct>) {
                 arg.free();
             }
-            fn rid_get_item_Pointer_RawMyStruct(
-                vec: rid::RidVec<Pointer_RawMyStruct>,
+            fn rid_get_item_Pointer_MyStruct(
+                vec: rid::RidVec<Pointer_MyStruct>,
                 idx: usize
-            ) -> Pointer_RawMyStruct {
+            ) -> Pointer_MyStruct {
                 vec[idx]
             }
         };
 
         assert_eq!(res.tokens.to_string(), expected.to_string());
-        assert_eq!(res.type_aliases, "Pointer_RawMyStruct");
+        assert_eq!(res.type_aliases, "Pointer_MyStruct");
 
         let expected_dart = include_str!(
             "./fixtures/function_export.return_vec_struct_ref.dart.snapshot"
@@ -348,7 +348,7 @@ mod impl_instance_methods {
             false,
         );
         let expected = quote! {
-            fn rid_export_Model_id(ptr: Pointer_RawModel) -> u32 {
+            fn rid_export_Model_id(ptr: Pointer_Model) -> u32 {
                 let receiver: &Model = unsafe {
                     assert!(!ptr.is_null());
                     ptr.as_ref().unwrap()
@@ -360,7 +360,7 @@ mod impl_instance_methods {
         };
 
         assert_eq!(res.tokens.to_string(), expected.to_string());
-        assert_eq!(res.type_aliases, "Pointer_RawModel");
+        assert_eq!(res.type_aliases, "Pointer_Model");
     }
 
     /* TODO: Should not export Rust method that returns nothing since that could only be for side
@@ -392,7 +392,7 @@ mod impl_instance_methods {
             false,
         );
         let expected = quote! {
-            fn rid_export_Model_first(ptr: Pointer_RawModel) -> Pointer_RawItem {
+            fn rid_export_Model_first(ptr: Pointer_Model) -> Pointer_Item {
                 let receiver: &Model = unsafe {
                     assert!(!ptr.is_null());
                     ptr.as_ref().unwrap()
@@ -403,7 +403,7 @@ mod impl_instance_methods {
             }
         };
         assert_eq!(res.tokens.to_string(), expected.to_string());
-        assert_eq!(res.type_aliases, "Pointer_RawItem, Pointer_RawModel");
+        assert_eq!(res.type_aliases, "Pointer_Item, Pointer_Model");
     }
 }
 
@@ -423,15 +423,15 @@ mod impl_static_methods_no_args {
             true,
         );
         let expected = quote! {
-            fn rid_export_Model_new() -> PointerMut_RawModel {
+            fn rid_export_Model_new() -> PointerMut_Model {
                 let ret = Model::new();
                 let ret_ptr = std::boxed::Box::into_raw(std::boxed::Box::new(ret));
                 ret_ptr
             }
-            fn rid_free_RawModel(ptr: PointerMut_RawModel) {
+            fn rid_free_Model(ptr: PointerMut_Model) {
                 let instance = unsafe {
                     assert!(!ptr.is_null());
-                    let ptr: PointerMut_RawModel = &mut *ptr;
+                    let ptr: PointerMut_Model = &mut *ptr;
                     let ptr = ptr.as_mut().unwrap();
                     Box::from_raw(ptr)
                 };
@@ -514,7 +514,7 @@ mod impl_instance_methods_with_args {
         };
 
         let expected = quote! {
-            fn rid_export_Model_add_one(ptr: Pointer_RawModel, arg0: u8) -> u8 {
+            fn rid_export_Model_add_one(ptr: Pointer_Model, arg0: u8) -> u8 {
                 let receiver: &Model = unsafe {
                     assert!(!ptr.is_null());
                     ptr.as_ref().unwrap()
@@ -539,7 +539,7 @@ mod impl_instance_methods_with_args {
 
         let expected = quote! {
             fn rid_export_Model_run(
-                ptr: PointerMut_RawModel,
+                ptr: PointerMut_Model,
                 arg0: u8,
                 arg1: u32,
                 arg2: *mut ::std::os::raw::c_char
@@ -580,7 +580,7 @@ mod standalone_special_returns {
         };
 
         let expected = quote! {
-            fn rid_export_todo_by_id(arg0: u32) -> Pointer_RawTodo {
+            fn rid_export_todo_by_id(arg0: u32) -> Pointer_Todo {
                 let ret = todo_by_id(arg0);
                 let ret_ptr = rid::_option_ref_to_pointer(ret);
                 ret_ptr
