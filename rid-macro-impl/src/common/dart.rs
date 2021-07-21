@@ -36,6 +36,11 @@ impl DartType {
                 RCustom(info, _) => {
                     let ty =
                         info.typedef.as_ref().unwrap_or(&info.key).to_string();
+                    let ty = if rust_ty.is_struct() {
+                        format!("Raw{}", ty)
+                    } else {
+                        ty
+                    };
                     Ok(DartType::Custom(info.clone(), ty))
                 }
             },

@@ -33,7 +33,11 @@ mod self_aliasing {
                 }
             }
         });
-        assert_eq!(ty.ident().to_string(), "RawMyStruct", "return ident");
+        assert_eq!(
+            ty.dart_wrapper_rust_ident().to_string(),
+            "RawMyStruct",
+            "return ident"
+        );
         assert_eq!(
             ty.rust_ident().to_string(),
             "MyStruct",
@@ -127,7 +131,11 @@ mod method_exports {
             }
         });
 
-        assert_eq!(owner_ty.ident().to_string(), "RawStore", "return ident");
+        assert_eq!(
+            owner_ty.dart_wrapper_rust_ident().to_string(),
+            "RawStore",
+            "return ident"
+        );
         assert_eq!(
             owner_ty.rust_ident().to_string(),
             "Store",

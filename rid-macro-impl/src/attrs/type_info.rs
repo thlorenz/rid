@@ -22,7 +22,7 @@ pub fn add_idents_to_type_map(
 ) {
     for ident in idents {
         let typedef = if cat == Category::Struct {
-            Some(raw_typedef_ident(&ident))
+            Some(ident.clone())
         } else {
             None
         };
@@ -72,7 +72,7 @@ impl From<(&str, Category)> for TypeInfo {
     fn from((name, cat): (&str, Category)) -> Self {
         let ident = Ident::new(name, proc_macro2::Span::mixed_site());
         let typedef = if cat == Category::Struct {
-            Some(raw_typedef_ident(&ident))
+            Some(ident.clone())
         } else {
             None
         };

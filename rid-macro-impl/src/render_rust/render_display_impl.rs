@@ -78,7 +78,7 @@ impl RustType {
     fn render_struct_display_impl(&self) -> RenderedDisplayImpl {
         let fn_display_method_ident = self.get_fn_display_ident();
 
-        let struct_ident = &self.ident();
+        let struct_ident = &self.rust_ident();
         // TODO: consider using type aliases over `*mut` types via `self.render_pointer_type()`
         let resolve_struct_ptr = resolve_ptr(struct_ident);
 
@@ -105,7 +105,7 @@ impl RustType {
         is_primitive: bool,
     ) -> RenderedDisplayImpl {
         let fn_display_method_ident = self.get_fn_display_ident();
-        let enum_ident = &self.ident();
+        let enum_ident = &self.rust_ident();
 
         let tokens = if is_primitive {
             // NOTE: assuming `repr(C)` for primitive enums
@@ -148,7 +148,7 @@ impl RustType {
 
     fn get_fn_display_ident(&self) -> Ident {
         let method_prefix =
-            format!("rid_{}", self.ident().to_string().to_lowercase())
+            format!("rid_{}", self.rust_ident().to_string().to_lowercase())
                 .to_string();
         format_ident!("{}_display", method_prefix)
     }

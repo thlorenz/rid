@@ -9,7 +9,7 @@ pub struct VecAccess {
     pub vec_type: RustType,
 
     /// Identifier used for the vector type, possibly using alias for inner type
-    /// Example: `RidVec_Pointer_RawItem`
+    /// Example: `RidVec_Pointer_Item`
     pub vec_type_dart: String,
 
     /// Type of the item enclosed by the vector

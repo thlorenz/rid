@@ -11,7 +11,6 @@ pub use render_reference::*;
 pub use render_return_type::*;
 pub use render_rust_arg::*;
 pub use render_rust_type::*;
-pub use render_rust_type_misc::*;
 pub use render_to_return_type::*;
 pub use type_alias::*;
 
@@ -27,7 +26,6 @@ mod render_reference;
 mod render_return_type;
 mod render_rust_arg;
 mod render_rust_type;
-mod render_rust_type_misc;
 mod render_to_return_type;
 mod type_alias;
 mod vec;

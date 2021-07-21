@@ -19,19 +19,15 @@ pub fn render_store_module(store_ident: &syn::Ident) -> TokenStream {
             "The #[rid::store] struct has to be named 'Store'."
         )
     }
-    let (store_ident, typedef) = {
-        let raw_store_ident = raw_typedef_ident(store_ident);
-        let typedef = quote_spanned! { store_ident.span() => type #raw_store_ident = #store_ident; };
-        (raw_store_ident, typedef)
-    };
+    let raw_store_ident = raw_typedef_ident(store_ident);
 
     let store_extension_dart: TokenStream = format!(
         r###"
 /// ```dart
-/// extension rid_store_specific_extension on {dart_ffi}.Pointer<{ffigen_bind}.{store}> {{
+/// extension rid_store_specific_extension on {dart_ffi}.Pointer<{ffigen_bind}.{RawStore}> {{
 ///   /// Executes the provided callback while locking the store to guarantee that the
 ///   /// store is not modified while that callback runs.
-///   T runLocked<T>(T Function({dart_ffi}.Pointer<{ffigen_bind}.{store}>) fn, {{String? request}}) {{
+///   T runLocked<T>(T Function({dart_ffi}.Pointer<{ffigen_bind}.{RawStore}>) fn, {{String? request}}) {{
 ///     try {{
 ///       ridStoreLock(request: request);
 ///       return fn(this);
@@ -49,7 +45,7 @@ pub fn render_store_module(store_ident: &syn::Ident) -> TokenStream {
     "###,
         dart_ffi = DART_FFI,
         ffigen_bind = FFI_GEN_BIND,
-        store = store_ident
+        RawStore = raw_store_ident
     )
     .parse()
     .unwrap();
@@ -95,13 +91,13 @@ pub fn render_store_module(store_ident: &syn::Ident) -> TokenStream {
 ///   print('Set {rid_msg_timeout} to change the default for if/when messages without reply time out');
 /// }}
 ///
-/// {dart_ffi}.Pointer<{ffigen_bind}.{store_struct}> {createStore}() {{
+/// {dart_ffi}.Pointer<{ffigen_bind}.{RawStore}> {createStore}() {{
 ///   _initRid();
 ///   return {rid_ffi}.create_store();
 /// }}
 /// ```
 "###, 
-    store_struct = store_ident,
+    RawStore = raw_store_ident,
     rid_debug_lock = RID_DEBUG_LOCK,
     rid_debug_reply = RID_DEBUG_REPLY,
     rid_msg_timeout = RID_MSG_TIMEOUT,
@@ -116,8 +112,6 @@ pub fn render_store_module(store_ident: &syn::Ident) -> TokenStream {
     quote_spanned! {store_ident.span() =>
         pub mod store {
             use super::*;
-            #typedef
-
             /// cbindgen:ignore
             static mut STORE_LOCK: Option<::std::sync::RwLock<#store_ident>> = None;
             /// cbindgen:ignore

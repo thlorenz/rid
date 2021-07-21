@@ -81,7 +81,7 @@ impl Value {
             Value::Custom(info, _) => {
                 let (alias, aliased_tok) = rust_type
                     .reference
-                    .render_pointer(&rust_type.ident().to_string(), false);
+                    .render_pointer(&rust_type.rust_ident().to_string(), false);
                 (alias, quote_spanned! { info.key.span() => #aliased_tok })
             }
         }

@@ -1,6 +1,5 @@
 use std::ops::Deref;
 
-use super::render_rust_type_misc;
 use crate::{
     common::{abort, missing_struct_enum_info},
     parse::{
@@ -18,8 +17,6 @@ pub struct RenderedReturnType {
     pub tokens: TokenStream,
     /// Pointer aliases, i.e. type Pointer_RawTodo = *const RawTodo;
     pub type_alias: Option<PointerTypeAlias>,
-    /// Named typedef needed for inner rust type if it was present, otherwise None
-    pub inner_typedef: Option<(String, TokenStream)>,
 }
 
 pub fn render_return_type(
@@ -29,7 +26,6 @@ pub fn render_return_type(
     use crate::parse::ParsedReference::*;
     use TypeKind as K;
     let mut type_alias: Option<PointerTypeAlias> = None;
-    let mut inner_typedef: Option<(String, TokenStream)> = None;
 
     let type_tok = match &rust_type.kind {
         K::Primitive(prim) => render_primitive_return(prim),
@@ -42,10 +38,6 @@ pub fn render_return_type(
             Some(ty) => {
                 let (alias, tokens) = render_vec_return_type(ty);
                 type_alias = alias;
-                inner_typedef = match inner_ty.as_ref() {
-                    Some(ty) if ty.needs_type_alias => Some((ty.rust_ident().to_string(), ty.typealias_tokens())),
-                    _ => None,
-                };
                 tokens
             }
             None => {
@@ -56,10 +48,6 @@ pub fn render_return_type(
             Some(ty) => {
                 let (alias, tokens) = render_option_return_type(ty);
                 type_alias = alias;
-                inner_typedef = match inner_ty.as_ref() {
-                    Some(ty) if ty.needs_type_alias => Some((ty.rust_ident().to_string(), ty.typealias_tokens())),
-                    _ => None,
-                };
                 tokens
             }
             None => {
@@ -72,14 +60,10 @@ pub fn render_return_type(
         K::Unit => quote! { () },
         K::Unknown => todo!("unknown .. need better error .. also gets triggered when exporting custom type without info "),
     };
-    let ident = rust_type.ident();
+    let ident = rust_type.rust_ident();
     let tokens = quote_spanned! { ident.span() => #type_tok };
 
-    RenderedReturnType {
-        tokens,
-        type_alias,
-        inner_typedef,
-    }
+    RenderedReturnType { tokens, type_alias }
 }
 
 fn render_primitive_return(prim: &Primitive) -> TokenStream {
@@ -177,8 +161,9 @@ fn render_value_return_type(
             (None, quote! { *const ::std::os::raw::c_char })
         }
         V::Custom(info, _) => {
-            let (alias, ref_tok) =
-                ty.reference.render_pointer(&ty.ident().to_string(), false);
+            let (alias, ref_tok) = ty
+                .reference
+                .render_pointer(&ty.rust_ident().to_string(), false);
             (alias, quote_spanned! { info.key.span() => #ref_tok })
         }
     }

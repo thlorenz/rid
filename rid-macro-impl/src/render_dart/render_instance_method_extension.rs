@@ -51,12 +51,12 @@ pub fn render_instance_method_extension(
                     );
                 }
                 acc.raw.push(x.render_function_export(
-                    Some(impl_block.ty.ident().clone()),
+                    Some(impl_block.ty.rust_ident().clone()),
                     INDENT,
                     None,
                 ));
                 acc.wrapper.push(x.render_function_reexport(
-                    Some(impl_block.ty.ident().clone()),
+                    Some(impl_block.ty.dart_wrapper_rust_ident().clone()),
                     INDENT,
                     None,
                 ));
@@ -86,7 +86,7 @@ pub fn render_instance_method_extension(
 {comment} ```
 "###,
         comment = comment,
-        RawStruct = impl_block.ty.ident(),
+        RawStruct = impl_block.ty.dart_wrapper_rust_ident(),
         Struct = impl_block.ty.rust_ident(),
         dart_ffi = DART_FFI,
         ffigen_bind = FFI_GEN_BIND,

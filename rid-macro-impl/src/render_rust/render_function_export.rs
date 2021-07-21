@@ -26,7 +26,6 @@ use syn::Ident;
 pub struct RenderedFunctionExport {
     pub tokens: TokenStream,
     pub ptr_type_aliases: Vec<PointerTypeAlias>,
-    pub raw_type_aliases: HashMap<String, TokenStream>,
     pub vec_access: Option<VecAccess>,
 }
 
@@ -37,7 +36,6 @@ pub fn render_function_export(
 ) -> RenderedFunctionExport {
     let config = config.unwrap_or(Default::default());
     let mut ptr_type_aliases = Vec::<PointerTypeAlias>::new();
-    let mut raw_type_aliases = HashMap::<String, TokenStream>::new();
 
     let ParsedFunction {
         fn_ident,
@@ -68,13 +66,7 @@ pub fn render_function_export(
     let RenderedReturnType {
         tokens: ret_type,
         type_alias: ret_alias,
-        inner_typedef: ret_inner_typedef,
     } = render_return_type(return_arg, true);
-    if let Some((key, tokens)) = ret_inner_typedef {
-        if !raw_type_aliases.contains_key(&key) {
-            raw_type_aliases.insert(key, tokens);
-        }
-    }
     ret_alias.clone().map(|x| ptr_type_aliases.push(x));
 
     let ret_to_pointer =
@@ -136,10 +128,9 @@ pub fn render_function_export(
     };
 
     let vec_access = if return_arg.is_vec() {
-        // TODO: does this work when type is not aliased?
         let ret_ident = match &ret_alias {
             Some(PointerTypeAlias { alias, .. }) => alias,
-            Option::None => &return_arg.ident(),
+            Option::None => &return_arg.rust_ident(),
         };
 
         let fn_len_ident = format_ident!("rid_len_{}", ret_ident);
@@ -166,7 +157,6 @@ pub fn render_function_export(
     RenderedFunctionExport {
         tokens: fn_export,
         ptr_type_aliases,
-        raw_type_aliases,
         vec_access,
     }
 }

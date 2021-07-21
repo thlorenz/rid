@@ -85,11 +85,11 @@ impl ParsedStruct {
         //
         // Rust
         //
-        let struct_ident = raw_typedef_ident(&self.ident);
+        let raw_ident = raw_typedef_ident(&self.ident);
+        let struct_ident = &self.ident;
         let ident = &self.ident;
-        let typedef = quote_spanned! { self.ident.span() => type #struct_ident = #ident; };
 
-        let (field_method_tokens, implemented_vecs, typedefs) =
+        let (field_method_tokens, implemented_vecs) =
             self.rust_field_methods(&struct_ident);
 
         //
@@ -116,11 +116,11 @@ impl ParsedStruct {
             Tokens::new()
         };
 
-        let dart_extension = self.dart_extension(&struct_ident);
+        let dart_extension = self.dart_extension(&raw_ident);
         // TODO: use single quote! here
         let intro = format!(
             "/// FFI access methods generated for Rust struct '{}' implemented on '{}'.\n///\n",
-            self.ident, struct_ident,
+            self.ident, raw_ident,
         );
         let dart_header = format!(
             "/// Below is the dart extension to call those methods.\n///"
@@ -135,8 +135,6 @@ impl ParsedStruct {
         let tokens = quote! {
             mod #mod_name {
                 use super::*;
-                #typedef
-                #(#typedefs)*
 
                 #comment_header
                 #dart_extension
@@ -152,28 +150,26 @@ impl ParsedStruct {
     fn rust_field_methods(
         &self,
         struct_ident: &Ident,
-    ) -> (Tokens, Vec<vec::ImplementVecOld>, Vec<TokenStream>) {
+    ) -> (Tokens, Vec<vec::ImplementVecOld>) {
         let mut implemented_vecs: Vec<vec::ImplementVecOld> = vec![];
-        let mut typedefs: Vec<TokenStream> = vec![];
         let field_method_tokens: Tokens = self
             .parsed_fields
             .iter()
             .map(|f| {
-                let (tokens, mut vecs, typedef) =
+                let (tokens, mut vecs) =
                     self.rust_field_method(f, struct_ident);
                 implemented_vecs.append(&mut vecs);
-                typedefs.push(typedef);
                 tokens
             })
             .collect();
-        (field_method_tokens, implemented_vecs, typedefs)
+        (field_method_tokens, implemented_vecs)
     }
 
     fn rust_field_method(
         &self,
         field: &ParsedField,
         struct_ident: &Ident,
-    ) -> (Tokens, Vec<vec::ImplementVecOld>, TokenStream) {
+    ) -> (Tokens, Vec<vec::ImplementVecOld>) {
         let field_ident = &field.ident;
         let fn_ident = &field.method_ident;
         let ty = &field.ty;
@@ -182,9 +178,6 @@ impl ParsedStruct {
         let mut implemented_vecs: Vec<vec::ImplementVecOld> = vec![];
 
         let resolve_struct_ptr = resolve_ptr(struct_ident);
-
-        // HACK: avoiding to rewrite too much code we'll replace anyways
-        let mut typedef = TokenStream::new();
 
         let method = match &field.rust_ty {
             Ok(RustType::Value(ValueType::CString)) => {
@@ -238,16 +231,12 @@ impl ParsedStruct {
                         }
                     },
                     Struct => {
-                        // TODO(thlorenz): quickly hacked in here before to make things work until
-                        // it is replaced
-                        let raw_ty = format_ident!("Raw{}", info.key);
                         quote_spanned! { fn_ident.span() =>
-                            type #raw_ty = #ty;
                             #[no_mangle]
                             #[allow(non_snake_case)]
-                            pub extern "C" fn #fn_ident(ptr: *mut #struct_ident) -> *const #raw_ty {
+                            pub extern "C" fn #fn_ident(ptr: *mut #struct_ident) -> *const #ty {
                                 let #struct_instance_ident = #resolve_struct_ptr;
-                                &#struct_instance_ident.#field_ident as *const _ as *const #raw_ty
+                                &#struct_instance_ident.#field_ident as *const _ as *const #ty
                             }
                         }
                     }
@@ -280,15 +269,6 @@ impl ParsedStruct {
             Ok(RustType::Value(ValueType::RVec((rust_type, item_ty)))) => {
                 let fn_len_ident = format_ident!("rid_vec_{}_len", item_ty);
                 let fn_get_ident = format_ident!("rid_vec_{}_get", item_ty);
-
-                let item_ty = match rust_type.deref() {
-                    RustType::Value(ty) if ty.is_struct() => {
-                        let raw_type = raw_typedef_ident(item_ty);
-                        typedef = quote_spanned! { item_ty.span() => type #raw_type = #item_ty; };
-                        raw_type
-                    }
-                    _ => item_ty.clone(),
-                };
 
                 let resolve_vec = resolve_vec_ptr(&item_ty);
                 let vec_type = format!("Vec_{}", item_ty);
@@ -369,7 +349,7 @@ impl ParsedStruct {
         };
 
         let tokens: Tokens = method.into();
-        (tokens, implemented_vecs, typedef)
+        (tokens, implemented_vecs)
     }
 
     //

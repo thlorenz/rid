@@ -26,10 +26,10 @@ impl ParsedStruct {
             self.ident.to_string()
         };
         let raw_class_name = format!(
-            "{dart_ffi}.Pointer<{ffigen_bind}.{ident}>",
+            "{dart_ffi}.Pointer<{ffigen_bind}.{RawIdent}>",
             dart_ffi = DART_FFI,
             ffigen_bind = FFI_GEN_BIND,
-            ident = self.raw_ident
+            RawIdent = self.raw_ident
         );
         let constructor_fields = self.render_constructor_fields(config);
         let constructor_args = self.render_constructor_args(config);
