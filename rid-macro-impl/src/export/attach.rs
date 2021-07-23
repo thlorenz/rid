@@ -74,8 +74,6 @@ pub fn rid_export_impl(
 
             let mut ptr_type_aliases_map =
                 HashMap::<String, TokenStream>::new();
-            let mut raw_type_aliases_map =
-                HashMap::<String, TokenStream>::new();
             let mut frees = HashMap::<String, PointerTypeAlias>::new();
             let mut vec_accesses = HashMap::<Ident, VecAccess>::new();
             let rust_fn_tokens = &parsed
@@ -85,11 +83,10 @@ pub fn rid_export_impl(
                     let render_rust::RenderedFunctionExport {
                         tokens,
                         ptr_type_aliases,
-                        raw_type_aliases,
                         vec_access,
                     } = render_rust::render_function_export(
                         x,
-                        Some(parsed.ty.ident().clone()),
+                        Some(parsed.ty.rust_ident().clone()),
                         Some(RenderFunctionExportConfig {
                             include_ffi: config.include_ffi,
                             ..Default::default()
@@ -116,11 +113,8 @@ pub fn rid_export_impl(
                             );
                         }
                     }
-                    for (key, tokens) in raw_type_aliases {
-                        raw_type_aliases_map.insert(key, tokens);
-                    }
                     vec_access.map(|x| {
-                        vec_accesses.insert(x.vec_type.ident().clone(), x)
+                        vec_accesses.insert(x.vec_type.rust_ident().clone(), x)
                     });
 
                     tokens
@@ -130,7 +124,7 @@ pub fn rid_export_impl(
             // Make sure we name the module differently for structs that have multiple impl blocks
             let module_ident = get_state().unique_ident(format_ident!(
                 "__rid_{}_impl",
-                parsed.ty.ident()
+                parsed.ty.rust_ident()
             ));
 
             let vec_access_tokens = if config.render_vec_access {
@@ -183,18 +177,13 @@ pub fn rid_export_impl(
                 TokenStream::new()
             };
 
-            let outer_typedef = parsed.ty.typealias_tokens();
             let ptr_typedef_tokens: Vec<&TokenStream> =
                 ptr_type_aliases_map.values().collect();
-            let raw_typedef_tokens: Vec<&TokenStream> =
-                raw_type_aliases_map.values().collect();
 
             quote! {
                 #[allow(non_snake_case)]
                 mod #module_ident {
                     use super::*;
-                    #outer_typedef
-                    #(#raw_typedef_tokens)*
                     #(#ptr_typedef_tokens)*
                     #dart_extension_tokens
                     #(#rust_fn_tokens)*

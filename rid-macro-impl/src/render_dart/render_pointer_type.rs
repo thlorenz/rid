@@ -27,10 +27,12 @@ impl RustType {
                 "Should not export rust method that returns nothing"
             ),
 
-            K::Value(val) => val.render_dart_pointer_type(self.ident()),
+            K::Value(val) => {
+                val.render_dart_pointer_type(self.dart_wrapper_rust_ident())
+            }
             K::Composite(Composite::Vec, inner_type) => match inner_type {
                 Some(ty) => {
-                    let item_type = ty.ident();
+                    let item_type = ty.rust_ident();
                     let pointer = format!(
                         "{ffigen_bind}.RidVec_{pointer_prefix}{ty}",
                         pointer_prefix = PointerTypeAlias::POINTER_ALIAS_PREFIX,
@@ -52,7 +54,10 @@ impl RustType {
                         "{dart_ffi}.Pointer<{ffigen_bind}.{ty}>?",
                         dart_ffi = DART_FFI,
                         ffigen_bind = FFI_GEN_BIND,
-                        ty = inner_type.as_ref().unwrap().ident(),
+                        ty = inner_type
+                            .as_ref()
+                            .unwrap()
+                            .dart_wrapper_rust_ident(),
                     );
                     pointer
                 }

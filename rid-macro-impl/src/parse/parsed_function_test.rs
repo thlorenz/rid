@@ -127,7 +127,11 @@ mod return_arg {
             fn filtered_todos() -> Vec<&Todo> {}
         });
 
-        assert_eq!(return_arg.ident().to_string(), "RawVec", "ident");
+        assert_eq!(
+            return_arg.dart_wrapper_rust_ident().to_string(),
+            "RawVec",
+            "ident"
+        );
         assert_eq!(return_arg.rust_ident().to_string(), "Vec", "rust ident");
         assert_matches!(return_arg.reference, ParsedReference::Owned);
 
@@ -136,7 +140,11 @@ mod return_arg {
             assert_matches!(composite, Composite::Vec);
             let inner = inner.expect("has inner rust type");
 
-            assert_eq!(inner.ident().to_string(), "RawTodo", "ident");
+            assert_eq!(
+                inner.dart_wrapper_rust_ident().to_string(),
+                "RawTodo",
+                "ident"
+            );
             assert_eq!(inner.rust_ident().to_string(), "Todo", "rust ident");
             assert_matches!(inner.reference, ParsedReference::Ref(None));
             assert_matches!(

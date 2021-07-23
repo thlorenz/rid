@@ -36,12 +36,11 @@ mod struct_impl_methods {
 
         let expected = quote! {
             #[allow(non_snake_case)]
-            mod __rid_RawMyStruct_impl_1 {
+            mod __rid_MyStruct_impl_1 {
                 use super::*;
-                type RawMyStruct = MyStruct;
-                type PointerMut_RawSelf = *mut RawSelf;
-                fn rid_export_RawMyStruct_new() -> PointerMut_RawSelf {
-                    let ret = RawMyStruct::new();
+                type PointerMut_Self = *mut Self;
+                fn rid_export_MyStruct_new() -> PointerMut_Self {
+                    let ret = MyStruct::new();
                     let ret_ptr = std::boxed::Box::into_raw(std::boxed::Box::new(ret));
                     ret_ptr
                 }

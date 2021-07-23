@@ -75,11 +75,9 @@ pub fn render_debug(
     };
 
     let mod_ident = format_ident!("__rid_mod_{}", fn_debug_method_ident);
-    let typealias = rust_type.typealias_tokens();
     quote! {
         mod #mod_ident {
             use super::*;
-            #typealias
             #dart_ext_tokens
             #rust_method_tokens
             #cstring_free_tokens

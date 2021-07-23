@@ -256,7 +256,23 @@ import '{reply_channel}';
         if types.len() == 0 {
             "".to_string()
         } else {
-            let types = types.join(", ");
+            // We rename all raw rust types to `Raw*` via an ffigen config
+            let types = types
+                .into_iter()
+                .map(|x| {
+                    // TODO(thlorenz): hacky way to avoid renaming rid types like Vec_Todo
+                    // since rust uses PascalCase for structs this won't cause problems in most
+                    // cases, but we should revisit and improve on this when we generate the
+                    // config.
+                    if x.contains('_') {
+                        x.to_string()
+                    } else {
+                        format!("Raw{}", x)
+                    }
+                })
+                .collect::<Vec<String>>()
+                .join(", ");
+
             format!(
                 "export '{ffigen_binding}' show {types};\n",
                 ffigen_binding = self.ffigen_binding,
