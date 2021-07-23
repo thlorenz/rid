@@ -1,6 +1,6 @@
 #![allow(stable_features)]
 #![feature(str_split_once)]
-use std::{fmt::Display, fs, path::Path};
+use std::{fmt::Display, fs, iter::FromIterator, path::Path};
 
 use anyhow::Result;
 
@@ -8,7 +8,9 @@ use bindings_generator::BindingsGenerator;
 use dart_generator::DartGenerator;
 
 mod bindings_generator;
+mod constants;
 mod dart_generator;
+mod ffigen;
 mod function_header;
 mod function_header_parser;
 mod log;
@@ -17,6 +19,7 @@ mod project;
 mod swift_injector;
 
 pub use dart_generator::BuildTarget;
+use ffigen::{run_ffigen, HostProps};
 pub use project::{FlutterConfig, FlutterPlatform, Project};
 
 use crate::{parsed_bindings::ParsedBindings, swift_injector::SwiftInjector};
@@ -60,6 +63,9 @@ pub struct BuildResult {
     /// Swift plugin files that were modified in ordert to prevent Rust functions from being
     /// removed via tree shaking.
     swift_plugin_files: Vec<String>,
+
+    /// Result of parsing `bindings.h` C-header file.
+    parsed_bindings: ParsedBindings,
 }
 
 impl Display for BuildResult {
@@ -182,6 +188,7 @@ fn generate(
         ),
         generated_bindings_h_path: format!("{}", bindings_h_path.display()),
         swift_plugin_files,
+        parsed_bindings,
     })
 }
 
@@ -194,6 +201,7 @@ pub fn build(build_config: &BuildConfig) -> Result<BuildResult> {
         generated_dart_path,
         isolate_binding_dart_path,
         reply_channel_dart_path,
+        parsed_bindings,
         ..
     } = &generate_result;
 
@@ -201,6 +209,18 @@ pub fn build(build_config: &BuildConfig) -> Result<BuildResult> {
     fs::write(generated_dart_path, generated_dart)?;
     fs::write(isolate_binding_dart_path, ISOLATE_BINDING)?;
     fs::write(reply_channel_dart_path, REPLY_CHANNEL)?;
+
+    let host_props = HostProps::new();
+    let project_root: &Path = Path::new(build_config.project_root);
+    let structs_to_prefix_raw: Vec<String> =
+        Vec::from_iter(parsed_bindings.raw_structs());
+
+    run_ffigen(
+        &build_config.project,
+        &host_props,
+        project_root,
+        &structs_to_prefix_raw,
+    )?;
 
     Ok(generate_result)
 }
