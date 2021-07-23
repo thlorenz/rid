@@ -427,6 +427,7 @@ dependencies = [
  "rid_common",
  "rid_ffi",
  "simple_logger",
+ "tempfile",
 ]
 
 [[package]]
