@@ -21,7 +21,7 @@ impl DartType {
     /// ### Raw Specifics
     ///
     /// Enum: is passed as 'int'
-    fn render_type(&self, raw: bool) -> String {
+    pub fn render_type(&self, raw: bool) -> String {
         use DartType::*;
         match self {
             Int32(nullable) | Int64(nullable) if *nullable => {
@@ -63,7 +63,7 @@ impl DartType {
         }
     }
 
-    fn render_type_attribute(&self) -> Option<String> {
+    pub fn render_type_attribute(&self) -> Option<String> {
         match self {
             DartType::Int32(_) => {
                 Some(format!("@{dart_ffi}.Int32()", dart_ffi = DART_FFI))

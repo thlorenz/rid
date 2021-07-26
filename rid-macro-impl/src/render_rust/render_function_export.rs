@@ -133,23 +133,7 @@ pub fn render_function_export(
             Option::None => &return_arg.rust_ident(),
         };
 
-        let fn_len_ident = format_ident!("rid_len_{}", ret_ident);
-        let fn_free_ident = format_ident!("rid_free_vec_{}", ret_ident);
-        let fn_get_ident = format_ident!("rid_get_item_{}", ret_ident);
-
-        let item_type = return_arg
-            .inner_composite_type()
-            .expect("Vec should have inner type");
-
-        Some(VecAccess {
-            vec_type: return_arg.clone(),
-            vec_type_dart: format!("RidVec_{}", ret_ident),
-            item_type,
-            rust_ffi_prelude: ffi_prelude,
-            fn_len_ident,
-            fn_free_ident,
-            fn_get_ident,
-        })
+        Some(VecAccess::new(&return_arg, ret_ident, &ffi_prelude))
     } else {
         None
     };

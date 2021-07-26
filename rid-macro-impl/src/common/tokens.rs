@@ -11,7 +11,7 @@ pub fn resolve_ptr(ty: &syn::Ident) -> TokenStream {
         unsafe {
             assert!(!ptr.is_null());
             let ptr: *mut #ty = &mut *ptr;
-            ptr.as_mut().unwrap()
+            ptr.as_mut().expect("resolve_ptr.as_mut failed")
         }
     }
 }
