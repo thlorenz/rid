@@ -1,106 +1,357 @@
-use std::collections::HashMap;
-
-use proc_macro2::TokenStream;
-use quote::{format_ident, quote, quote_spanned};
-
 use crate::{
-    attrs::TypeInfoMap, parse::ParsedStruct, render_common::VecAccess,
-    render_rust::vec::RenderedVecRust,
-};
-
-use super::{
-    render_dart_field_access::RenderDartFieldAccessConfig,
-    render_rust_field_access::{
-        RenderRustFieldAccessConfig, RenderRustFieldAccessResult,
+    attrs::StructConfig,
+    model::field_access::{
+        render_dart_field_access::RenderDartFieldAccessConfig,
+        render_rust_field_access::RenderRustFieldAccessConfig,
     },
+    parse::ParsedStruct,
+    rid_export_impl,
 };
+use proc_macro2::TokenStream;
+use quote::quote;
+use syn::ItemStruct;
 
-impl ParsedStruct {
-    pub fn render_field_access(
-        &self,
-        rust_config: RenderRustFieldAccessConfig,
-        dart_config: RenderDartFieldAccessConfig,
-    ) -> TokenStream {
-        let RenderRustFieldAccessResult {
-            tokens: rust_tokens,
-            vec_accesses,
-        } = self.render_rust_fields_access(&rust_config);
-
-        let type_infos = &self.type_infos();
-        let vec_access_tokens: TokenStream =
-            aggregate_vec_accesses(vec_accesses, type_infos, &dart_config);
-
-        let dart_tokens: TokenStream =
-            self.render_dart_fields_access_extension(dart_config);
-
-        let mod_name = format_ident!("__{}_ffi", self.ident);
-        quote_spanned! {self.ident.span() =>
-            mod #mod_name {
-                use super::*;
-                #vec_access_tokens
-
-                #dart_tokens
-                #rust_tokens
-            }
+fn render_rust_field_access(input: TokenStream) -> TokenStream {
+    let item = syn::parse2::<syn::Item>(input).unwrap();
+    let args = syn::AttributeArgs::new();
+    match item {
+        syn::Item::Struct(struct_item) => {
+            let struct_config = StructConfig::from(&struct_item);
+            let parsed_struct = ParsedStruct::new(
+                &struct_item,
+                &struct_item.ident,
+                struct_config.clone(),
+            );
+            parsed_struct
+                .render_field_access(
+                    &RenderRustFieldAccessConfig::for_rust_tests(),
+                    &RenderDartFieldAccessConfig::for_rust_tests(),
+                )
+                .0
         }
+        _ => panic!("Testing struct rendering only"),
     }
 }
 
-fn aggregate_vec_accesses(
-    vec_accesses: HashMap<String, VecAccess>,
-    type_infos: &TypeInfoMap,
-    dart_config: &RenderDartFieldAccessConfig,
-) -> TokenStream {
-    if vec_accesses.is_empty() {
-        TokenStream::new()
-    } else {
-        struct RenderedVecAccesses {
-            rust_tokens: Vec<TokenStream>,
-            darts: Vec<String>,
+fn render_dart_field_access(input: TokenStream) -> String {
+    let item = syn::parse2::<syn::Item>(input).unwrap();
+    let args = syn::AttributeArgs::new();
+    match item {
+        syn::Item::Struct(struct_item) => {
+            let struct_config = StructConfig::from(&struct_item);
+            let parsed_struct = ParsedStruct::new(
+                &struct_item,
+                &struct_item.ident,
+                struct_config.clone(),
+            );
+            parsed_struct
+                .render_field_access(
+                    &RenderRustFieldAccessConfig::for_dart_tests(),
+                    &RenderDartFieldAccessConfig::for_dart_tests(),
+                )
+                .1
         }
-        let rendered = vec_accesses.values().into_iter().fold(
-            RenderedVecAccesses {
-                rust_tokens: vec![],
-                darts: vec![],
-            },
-            |mut accesses, x| {
-                let dart: String =
-                    x.render_dart(type_infos, &dart_config.comment);
+        _ => panic!("Testing struct rendering only"),
+    }
+}
 
-                let RenderedVecRust {
-                    tokens: rust_tokens,
-                    type_aliases,
-                } = x.render_rust();
-                let typedef_tokens: Vec<TokenStream> =
-                    type_aliases.into_iter().map(|x| x.typedef).collect();
+// -----------------
+// Single Field Primitives
+// -----------------
+mod struct_field_access_single_primitives {
+    use crate::common::dump_tokens;
 
-                let rust = quote_spanned! { x.vec_type_ident.span() =>
-                    #(#typedef_tokens)*
-                    #rust_tokens
-                };
-                accesses.rust_tokens.push(rust);
-                accesses.darts.push(dart);
-                accesses
-            },
-        );
-        let dart_tokens: TokenStream = format!(
-            r###"
-{comment}
-{comment} Access methods for Rust Builtin Types required by the below methods.
-{comment}
-{comment} ```dart
-{rendered_darts}
-{comment} ```"###,
-            comment = dart_config.comment,
-            rendered_darts = rendered.darts.join("\n"),
-        )
-        .parse()
-        .unwrap();
+    use super::*;
 
-        let rust_tokens = rendered.rust_tokens;
-        quote! {
-            #dart_tokens
-            #(#rust_tokens)*
-        }
+    // -----------------
+    // u8
+    // -----------------
+    #[test]
+    fn primitive_u8_rust() {
+        let input: TokenStream = quote! {
+            struct MyStruct {
+               n: u8
+            }
+        };
+
+        let expected = quote! {
+            mod __MyStruct_field_access {
+                use super::*;
+                fn rid_mystruct_n(ptr: *mut MyStruct) -> u8 {
+                    let receiver = unsafe {
+                        assert!(!ptr.is_null());
+                        let ptr: *mut MyStruct = &mut *ptr;
+                        ptr.as_mut().expect("resolve_ptr.as_mut failed")
+                    };
+                    receiver.n
+                }
+            }
+        };
+
+        let tokens = render_rust_field_access(input);
+        assert_eq!(tokens.to_string().trim(), expected.to_string().trim());
+    }
+
+    #[test]
+    fn primitive_u8_dart() {
+        let input: TokenStream = quote! {
+            struct MyStruct {
+               n: u8
+            }
+        };
+
+        let expected = r#"
+```dart
+extension Rid_Model_ExtOnPointerRawMyStruct on dart_ffi.Pointer<ffigen_bind.RawMyStruct> {
+  @dart_ffi.Int32()
+  int get n { return rid_ffi.rid_mystruct_n(this); }
+}
+```
+ "#;
+
+        let tokens = render_dart_field_access(input);
+        assert_eq!(tokens.to_string().trim(), expected.trim());
+    }
+
+    // -----------------
+    // i64
+    // -----------------
+    #[test]
+    fn primitive_i64_rust() {
+        let input: TokenStream = quote! {
+            struct MyStruct {
+               n: i64
+            }
+        };
+
+        let expected = quote! {
+            mod __MyStruct_field_access {
+                use super::*;
+                fn rid_mystruct_n(ptr: *mut MyStruct) -> i64 {
+                    let receiver = unsafe {
+                        assert!(!ptr.is_null());
+                        let ptr: *mut MyStruct = &mut *ptr;
+                        ptr.as_mut().expect("resolve_ptr.as_mut failed")
+                    };
+                    receiver.n
+                }
+            }
+        };
+
+        let tokens = render_rust_field_access(input);
+        assert_eq!(tokens.to_string().trim(), expected.to_string().trim());
+    }
+
+    #[test]
+    fn primitive_i64_dart() {
+        let input: TokenStream = quote! {
+            struct MyStruct {
+               n: i64
+            }
+        };
+
+        let expected = r#"
+```dart
+extension Rid_Model_ExtOnPointerRawMyStruct on dart_ffi.Pointer<ffigen_bind.RawMyStruct> {
+  @dart_ffi.Int64()
+  int get n { return rid_ffi.rid_mystruct_n(this); }
+}
+```
+ "#;
+
+        let tokens = render_dart_field_access(input);
+        assert_eq!(tokens.to_string().trim(), expected.trim());
+    }
+
+    // -----------------
+    // bool
+    // -----------------
+    #[test]
+    fn primitive_bool_rust() {
+        let input: TokenStream = quote! {
+            struct MyStruct {
+               n: bool
+            }
+        };
+
+        let expected = quote! {
+            mod __MyStruct_field_access {
+                use super::*;
+                fn rid_mystruct_n(ptr: *mut MyStruct) -> u8 {
+                    let receiver = unsafe {
+                        assert!(!ptr.is_null());
+                        let ptr: *mut MyStruct = &mut *ptr;
+                        ptr.as_mut().expect("resolve_ptr.as_mut failed")
+                    };
+                    if receiver.n {
+                        1
+                    } else {
+                        0
+                    }
+                }
+            }
+        };
+
+        let tokens = render_rust_field_access(input);
+        assert_eq!(tokens.to_string().trim(), expected.to_string().trim());
+    }
+
+    #[test]
+    fn primitive_bool_dart() {
+        let input: TokenStream = quote! {
+            struct MyStruct {
+               n: bool
+            }
+        };
+
+        let expected = r#"
+```dart
+extension Rid_Model_ExtOnPointerRawMyStruct on dart_ffi.Pointer<ffigen_bind.RawMyStruct> {
+  bool get n { return rid_ffi.rid_mystruct_n(this) != 0; }
+}
+```
+ "#;
+
+        let tokens = render_dart_field_access(input);
+        eprintln!("{}", tokens);
+        assert_eq!(tokens.to_string().trim(), expected.trim());
+    }
+}
+
+// -----------------
+// Single Field Strings
+// -----------------
+mod struct_field_access_single_strings {
+    use crate::common::dump_tokens;
+
+    use super::*;
+
+    // -----------------
+    // String
+    // -----------------
+    #[test]
+    fn string_rust() {
+        let input: TokenStream = quote! {
+            struct MyStruct {
+               s: String
+            }
+        };
+
+        let expected = quote! {
+            mod __MyStruct_field_access {
+                use super::*;
+                fn rid_mystruct_s(ptr: *mut MyStruct) -> *const ::std::os::raw::c_char {
+                    let receiver = unsafe {
+                        assert!(!ptr.is_null());
+                        let ptr: *mut MyStruct = &mut *ptr;
+                        ptr.as_mut().expect("resolve_ptr.as_mut failed")
+                    };
+                    let cstring = ::std::ffi::CString::new(receiver.s.as_str())
+                        .expect(&format!("Invalid string encountered"));
+                    cstring.into_raw()
+                }
+                fn rid_mystruct_s_len(ptr: *mut MyStruct) -> usize {
+                    let receiver = unsafe {
+                        assert!(!ptr.is_null());
+                        let ptr: *mut MyStruct = &mut *ptr;
+                        ptr.as_mut().expect("resolve_ptr.as_mut failed")
+                    };
+                    receiver.s.len()
+                }
+            }
+        };
+
+        let tokens = render_rust_field_access(input);
+        assert_eq!(tokens.to_string().trim(), expected.to_string().trim());
+    }
+
+    #[test]
+    fn string_dart() {
+        let input: TokenStream = quote! {
+            struct MyStruct {
+               s: String
+            }
+        };
+
+        let expected = r#"
+ ```dart
+extension Rid_Model_ExtOnPointerRawMyStruct on dart_ffi.Pointer<ffigen_bind.RawMyStruct> {
+  String get s {
+    dart_ffi.Pointer<dart_ffi.Int8>? ptr = rid_ffi.rid_mystruct_s(this);
+    int len = rid_ffi.rid_mystruct_s_len(this);
+    String s = ptr.toDartString(len);
+    ptr.free();
+    return s;
+  }
+}
+```
+"#;
+
+        let tokens = render_dart_field_access(input);
+        assert_eq!(tokens.to_string().trim(), expected.trim());
+    }
+
+    // -----------------
+    // CString
+    // -----------------
+    #[test]
+    fn cstring_rust() {
+        let input: TokenStream = quote! {
+            struct MyStruct {
+               s: CString
+            }
+        };
+
+        let expected = quote! {
+            mod __MyStruct_field_access {
+                use super::*;
+
+                fn rid_mystruct_s(ptr: *mut MyStruct) -> *const ::std::os::raw::c_char {
+                    let receiver = unsafe {
+                        assert!(!ptr.is_null());
+                        let ptr: *mut MyStruct = &mut *ptr;
+                        ptr.as_mut().expect("resolve_ptr.as_mut failed")
+                    };
+                    unsafe { &*receiver.s.as_ptr() }
+                }
+                fn rid_mystruct_s_len(ptr: *mut MyStruct) -> usize {
+                    let receiver = unsafe {
+                        assert!(!ptr.is_null());
+                        let ptr: *mut MyStruct = &mut *ptr;
+                        ptr.as_mut().expect("resolve_ptr.as_mut failed")
+                    };
+                    receiver.s.as_bytes().len()
+                }
+            }
+        };
+
+        let tokens = render_rust_field_access(input);
+        assert_eq!(tokens.to_string().trim(), expected.to_string().trim());
+    }
+
+    #[test]
+    fn cstring_dart() {
+        let input: TokenStream = quote! {
+            struct MyStruct {
+               s: String
+            }
+        };
+
+        let expected = r#"
+ ```dart
+extension Rid_Model_ExtOnPointerRawMyStruct on dart_ffi.Pointer<ffigen_bind.RawMyStruct> {
+  String get s {
+    dart_ffi.Pointer<dart_ffi.Int8>? ptr = rid_ffi.rid_mystruct_s(this);
+    int len = rid_ffi.rid_mystruct_s_len(this);
+    String s = ptr.toDartString(len);
+    ptr.free();
+    return s;
+  }
+}
+```
+"#;
+
+        let tokens = render_dart_field_access(input);
+        assert_eq!(tokens.to_string().trim(), expected.trim());
     }
 }
