@@ -181,7 +181,7 @@ impl ParsedStruct {
                     Struct => quote_spanned! { fn_ident.span() =>
                         #ffi_prelude fn #fn_ident(ptr: *mut #struct_ident) -> *const #field_ty {
                             let receiver = #resolve_receiver;
-                            &receiver.#field_ident.clone() as *const _ as *const #field_ty
+                            &receiver.#field_ident as *const _ as *const #field_ty
                         }
                     },
                     Prim => {

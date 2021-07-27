@@ -92,7 +92,7 @@ impl ParsedStruct {
         render_config: &RenderDartFieldAccessConfig,
     ) -> String {
         let dart_ty = &field.dart_type;
-        let dart_ty_str = dart_ty.render_type(true);
+        let dart_ty_str = field.rust_type.render_dart_pointer_type();
         let dart_ty_attr_str = match dart_ty.render_type_attribute() {
             Some(attr) => {
                 format!(

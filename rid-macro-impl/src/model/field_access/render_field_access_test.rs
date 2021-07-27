@@ -274,7 +274,7 @@ mod struct_field_access_single_strings {
         };
 
         let expected = r#"
- ```dart
+```dart
 extension Rid_Model_ExtOnPointerRawMyStruct on dart_ffi.Pointer<ffigen_bind.RawMyStruct> {
   String get s {
     dart_ffi.Pointer<dart_ffi.Int8>? ptr = rid_ffi.rid_mystruct_s(this);
@@ -338,7 +338,7 @@ extension Rid_Model_ExtOnPointerRawMyStruct on dart_ffi.Pointer<ffigen_bind.RawM
         };
 
         let expected = r#"
- ```dart
+```dart
 extension Rid_Model_ExtOnPointerRawMyStruct on dart_ffi.Pointer<ffigen_bind.RawMyStruct> {
   String get s {
     dart_ffi.Pointer<dart_ffi.Int8>? ptr = rid_ffi.rid_mystruct_s(this);
@@ -351,6 +351,63 @@ extension Rid_Model_ExtOnPointerRawMyStruct on dart_ffi.Pointer<ffigen_bind.RawM
 ```
 "#;
 
+        let tokens = render_dart_field_access(input);
+        assert_eq!(tokens.to_string().trim(), expected.trim());
+    }
+}
+
+// -----------------
+// Single Field Custom Struct
+// -----------------
+mod struct_field_access_single_custom_struct {
+    use crate::common::dump_tokens;
+
+    use super::*;
+
+    #[test]
+    fn todo_struct_rust() {
+        let input: TokenStream = quote! {
+            #[rid::structs(Todo)]
+            struct MyStruct {
+               todo: Todo
+            }
+        };
+
+        let expected = quote! {
+            mod __MyStruct_field_access {
+                use super::*;
+
+                fn rid_mystruct_todo(ptr: *mut MyStruct) -> *const Todo {
+                    let receiver = unsafe {
+                        assert!(!ptr.is_null());
+                        let ptr: *mut MyStruct = &mut *ptr;
+                        ptr.as_mut().expect("resolve_ptr.as_mut failed")
+                    };
+                    &receiver.todo as *const _ as *const Todo
+                }
+            }
+        };
+
+        let tokens = render_rust_field_access(input);
+        assert_eq!(tokens.to_string().trim(), expected.to_string().trim());
+    }
+
+    #[test]
+    fn todo_struct_dart() {
+        let input: TokenStream = quote! {
+            #[rid::structs(Todo)]
+            struct MyStruct {
+               todo: Todo
+            }
+        };
+
+        let expected = r#"
+```dart
+extension Rid_Model_ExtOnPointerRawMyStruct on dart_ffi.Pointer<ffigen_bind.RawMyStruct> {
+  dart_ffi.Pointer<ffigen_bind.RawTodo> get todo { return rid_ffi.rid_mystruct_todo(this); }
+}
+```
+"#;
         let tokens = render_dart_field_access(input);
         assert_eq!(tokens.to_string().trim(), expected.trim());
     }
