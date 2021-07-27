@@ -94,7 +94,7 @@ mod structs_debug_impl {
                     let single = unsafe {
                         assert!(!ptr.is_null());
                         let ptr: *mut Single = &mut *ptr;
-                        ptr.as_mut().unwrap()
+                        ptr.as_mut().expect("resolve_ptr.as_mut failed")
                     };
                     let s = format!("{:?}", single);
                     let cstring = ::std::ffi::CString::new(s.as_str()).unwrap();
@@ -106,7 +106,7 @@ mod structs_debug_impl {
                     let single = unsafe {
                         assert!(!ptr.is_null());
                         let ptr: *mut Single = &mut *ptr;
-                        ptr.as_mut().unwrap()
+                        ptr.as_mut().expect("resolve_ptr.as_mut failed")
                     };
                     let s = format!("{:#?}", single);
                     let cstring = ::std::ffi::CString::new(s.as_str()).unwrap();

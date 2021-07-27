@@ -86,23 +86,22 @@ mod structs_display_impl {
         });
 
         let expected = quote! {
-        mod __rid_mod_rid_single_display {
-            use super::*;
-            #[no_mangle]
-            #[allow(non_snake_case)]
-            pub extern "C" fn rid_single_display(ptr: *mut Single) -> *const ::std::os::raw::c_char {
-                let instance = unsafe {
-                    assert!(!ptr.is_null());
-                    let ptr: *mut Single = &mut *ptr;
-                    ptr.as_mut().unwrap()
-                };
-                let s = instance.to_string();
-                let cstring = ::std::ffi::CString::new(s.as_str()).unwrap();
-                cstring.into_raw()
+            mod __rid_mod_rid_single_display {
+                use super::*;
+                #[no_mangle]
+                #[allow(non_snake_case)]
+                pub extern "C" fn rid_single_display(ptr: *mut Single) -> *const ::std::os::raw::c_char {
+                    let instance = unsafe {
+                        assert!(!ptr.is_null());
+                        let ptr: *mut Single = &mut *ptr;
+                        ptr.as_mut().expect("resolve_ptr.as_mut failed")
+                    };
+                    let s = instance.to_string();
+                    let cstring = ::std::ffi::CString::new(s.as_str()).unwrap();
+                    cstring.into_raw()
+                }
             }
-        }
         };
-
         assert_eq!(res.to_string().trim(), expected.to_string().trim())
     }
 }
