@@ -14,7 +14,7 @@ use crate::{
         rust_type::{self, TypeKind},
         ParsedStruct, ParsedStructField,
     },
-    render_common::VecAccess,
+    render_common::{VecAccess, VecKind},
     render_dart::vec,
     render_rust::ffi_prelude,
 };
@@ -200,6 +200,7 @@ impl ParsedStruct {
 
                     let vec_type_key = VecAccess::key_from_item_rust_ident(
                         item_ty.rust_ident(),
+                        &VecKind::FieldReference,
                     );
 
                     vec_access = if get_state().needs_implementation(
@@ -209,6 +210,7 @@ impl ParsedStruct {
                         Some(VecAccess::new(
                             &vec_ty,
                             &vec_ty.rust_ident(),
+                            VecKind::FieldReference,
                             &config.ffi_prelude_tokens,
                         ))
                     } else {
@@ -218,7 +220,7 @@ impl ParsedStruct {
                     quote_spanned! { fn_ident.span() =>
                         #ffi_prelude fn #fn_ident(ptr: *mut #struct_ident) -> *const Vec<#item_ty_ident> {
                             let receiver = #resolve_receiver;
-                            &receiver.#field_ident.clone() as *const _ as *const Vec<#item_ty_ident>
+                            &receiver.#field_ident as *const _ as *const Vec<#item_ty_ident>
                         }
                     }
                 }

@@ -12,7 +12,7 @@ use crate::{
     },
     render_common::{
         fn_ident_and_impl_ident_string, PointerTypeAlias,
-        RenderFunctionExportConfig, VecAccess,
+        RenderFunctionExportConfig, VecAccess, VecKind,
     },
     render_rust::{ffi_prelude, render_rust_arg, RenderedReceiverArgPass},
 };
@@ -133,7 +133,12 @@ pub fn render_function_export(
             Option::None => &return_arg.rust_ident(),
         };
 
-        Some(VecAccess::new(&return_arg, ret_ident, &ffi_prelude))
+        Some(VecAccess::new(
+            &return_arg,
+            ret_ident,
+            VecKind::MethodReturn,
+            &ffi_prelude,
+        ))
     } else {
         None
     };

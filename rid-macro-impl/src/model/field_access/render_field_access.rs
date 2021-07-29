@@ -4,8 +4,10 @@ use proc_macro2::TokenStream;
 use quote::{format_ident, quote, quote_spanned};
 
 use crate::{
-    attrs::TypeInfoMap, parse::ParsedStruct, render_common::VecAccess,
-    render_rust::vec::RenderedVecRust,
+    attrs::TypeInfoMap,
+    parse::ParsedStruct,
+    render_common::VecAccess,
+    render_rust::{ffi_prelude, vec::RenderedVecRust},
 };
 
 use super::{
