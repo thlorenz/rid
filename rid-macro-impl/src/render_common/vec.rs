@@ -4,6 +4,12 @@ use syn::Ident;
 use crate::{attrs::TypeInfoMap, parse::rust_type::RustType};
 use quote::{format_ident, quote};
 
+pub enum VecAccessRender {
+    Force,
+    Omit,
+    Default,
+}
+
 /// Distinguishes between vectors that are references to fields on structs or enums vs.
 /// vectors created during a method call and returned to Dart without keeping a reference
 /// on the Rust side.

@@ -5,6 +5,7 @@ use crate::{
         render_rust_field_access::RenderRustFieldAccessConfig,
     },
     parse::ParsedStruct,
+    render_common::VecAccessRender,
     rid_export_impl,
 };
 use proc_macro2::TokenStream;
@@ -24,7 +25,9 @@ fn render_rust_field_access(input: TokenStream) -> TokenStream {
             );
             parsed_struct
                 .render_field_access(
-                    &RenderRustFieldAccessConfig::for_rust_tests(),
+                    &RenderRustFieldAccessConfig::for_rust_tests(
+                        VecAccessRender::Force,
+                    ),
                     &RenderDartFieldAccessConfig::for_rust_tests(),
                 )
                 .0
@@ -46,8 +49,12 @@ fn render_dart_field_access(input: TokenStream) -> String {
             );
             parsed_struct
                 .render_field_access(
-                    &RenderRustFieldAccessConfig::for_dart_tests(),
-                    &RenderDartFieldAccessConfig::for_dart_tests(),
+                    &RenderRustFieldAccessConfig::for_dart_tests(
+                        VecAccessRender::Omit,
+                    ),
+                    &RenderDartFieldAccessConfig::for_dart_tests(
+                        VecAccessRender::Force,
+                    ),
                 )
                 .1
         }
@@ -213,7 +220,6 @@ extension Rid_Model_ExtOnPointerRawMyStruct on dart_ffi.Pointer<ffigen_bind.RawM
  "#;
 
         let tokens = render_dart_field_access(input);
-        eprintln!("{}", tokens);
         assert_eq!(tokens.to_string().trim(), expected.trim());
     }
 }
@@ -468,6 +474,27 @@ mod struct_field_access_single_vec_custom_struct {
 
         let tokens = render_rust_field_access(input);
         assert_eq!(tokens.to_string().trim(), expected.to_string().trim());
+    }
+
+    #[test]
+    fn vec_todo_struct_dart() {
+        let input: TokenStream = quote! {
+            #[rid::structs(Todo)]
+            struct MyStruct {
+               todos: Vec<Todo>
+            }
+        };
+
+        let expected = r#"
+```dart
+extension Rid_Model_ExtOnPointerRawMyStruct on dart_ffi.Pointer<ffigen_bind.RawMyStruct> {
+  dart_ffi.Pointer<ffigen_bind.Vec_Todo> get todos { return rid_ffi.rid_mystruct_todos(this); }
+}
+```
+"#;
+        let tokens = render_dart_field_access(input);
+        eprintln!("{}", tokens);
+        // assert_eq!(tokens.to_string().trim(), expected.trim());
     }
 }
 

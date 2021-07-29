@@ -5,8 +5,9 @@ use quote::{format_ident, quote, quote_spanned};
 
 use crate::{
     attrs::TypeInfoMap,
+    common::state::{get_state, ImplementationType},
     parse::ParsedStruct,
-    render_common::VecAccess,
+    render_common::{VecAccess, VecAccessRender},
     render_rust::{ffi_prelude, vec::RenderedVecRust},
 };
 
@@ -83,25 +84,53 @@ fn aggregate_vec_accesses(
                 darts: vec![],
             },
             |mut accesses, x| {
-                let dart: String =
-                    x.render_dart(type_infos, &dart_config.comment);
+                let should_render_rust_vec_access =
+                    match rust_config.vec_accesses {
+                        VecAccessRender::Force => true,
+                        VecAccessRender::Omit => false,
+                        VecAccessRender::Default => get_state()
+                            .needs_implementation(
+                                &ImplementationType::VecAccess,
+                                &x.key(),
+                            ),
+                    };
 
-                let RenderedVecRust {
-                    tokens: rust_tokens,
-                    type_aliases,
-                } = x.render_rust();
-                let typedef_tokens: Vec<TokenStream> =
-                    type_aliases.into_iter().map(|x| x.typedef).collect();
+                let should_render_dart_vec_access =
+                    match rust_config.vec_accesses {
+                        VecAccessRender::Force => true,
+                        VecAccessRender::Omit => false,
+                        VecAccessRender::Default => get_state()
+                            .needs_implementation(
+                                &ImplementationType::VecAccess,
+                                &x.key(),
+                            ),
+                    };
 
-                let rust = quote_spanned! { x.vec_type_ident.span() =>
-                    #(#typedef_tokens)*
-                    #rust_tokens
-                };
-                accesses.rust_tokens.push(rust);
-                accesses.darts.push(dart);
+                if should_render_rust_vec_access {
+                    let RenderedVecRust {
+                        tokens: rust_tokens,
+                        type_aliases,
+                    } = x.render_rust();
+                    let typedef_tokens: Vec<TokenStream> =
+                        type_aliases.into_iter().map(|x| x.typedef).collect();
+
+                    let rust = quote_spanned! { x.vec_type_ident.span() =>
+                        #(#typedef_tokens)*
+                        #rust_tokens
+                    };
+                    accesses.rust_tokens.push(rust);
+                }
+
+                if should_render_dart_vec_access {
+                    let dart: String =
+                        x.render_dart(type_infos, &dart_config.comment);
+                    accesses.darts.push(dart);
+                }
                 accesses
             },
         );
+        // TODO(thlorenz): decide here which vec_accesses to render instead of where we're doing
+        // this right now
         // TODO(thlorenz): return the rendered access string for tests
         let dart_tokens: TokenStream =
             if dart_config.render && dart_config.tokens {

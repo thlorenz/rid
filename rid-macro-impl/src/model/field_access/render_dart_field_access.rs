@@ -5,6 +5,7 @@ use crate::{
     attrs::TypeInfoMap,
     common::abort,
     parse::{dart_type::DartType, ParsedStruct, ParsedStructField},
+    render_common::VecAccessRender,
     render_dart::RenderDartTypeOpts,
 };
 use rid_common::{DART_FFI, FFI_GEN_BIND, RID_FFI};
@@ -13,6 +14,7 @@ pub struct RenderDartFieldAccessConfig {
     pub comment: String,
     pub render: bool,
     pub tokens: bool,
+    pub vec_accesses: VecAccessRender,
 }
 
 impl Default for RenderDartFieldAccessConfig {
@@ -21,6 +23,7 @@ impl Default for RenderDartFieldAccessConfig {
             comment: "/// ".to_string(),
             render: true,
             tokens: true,
+            vec_accesses: VecAccessRender::Default,
         }
     }
 }
@@ -31,16 +34,18 @@ impl RenderDartFieldAccessConfig {
             comment: "".to_string(),
             render: false,
             tokens: false,
+            vec_accesses: VecAccessRender::Omit,
         }
     }
 }
 
 impl RenderDartFieldAccessConfig {
-    pub fn for_dart_tests() -> Self {
+    pub fn for_dart_tests(vec_accesses: VecAccessRender) -> Self {
         Self {
             comment: "".to_string(),
             render: true,
             tokens: false,
+            vec_accesses,
         }
     }
 }
@@ -92,7 +97,7 @@ impl ParsedStruct {
         render_config: &RenderDartFieldAccessConfig,
     ) -> String {
         let dart_ty = &field.dart_type;
-        let dart_ty_str = field.rust_type.render_dart_pointer_type();
+        let dart_return_ty = field.rust_type.render_dart_field_return_type();
         let dart_ty_attr_str = match dart_ty.render_type_attribute() {
             Some(attr) => {
                 format!(
@@ -111,7 +116,7 @@ impl ParsedStruct {
         format!(
             "{dart_ty_attr}{comment}  {dart_return_ty} get {field_ident} {body}",
             dart_ty_attr = dart_ty_attr_str,
-            dart_return_ty = dart_ty_str,
+            dart_return_ty = dart_return_ty,
             field_ident = &field.ident,
             body = getter_body,
             comment = &render_config.comment

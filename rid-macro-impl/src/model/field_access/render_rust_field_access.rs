@@ -14,7 +14,7 @@ use crate::{
         rust_type::{self, TypeKind},
         ParsedStruct, ParsedStructField,
     },
-    render_common::{VecAccess, VecKind},
+    render_common::{VecAccess, VecAccessRender, VecKind},
     render_dart::vec,
     render_rust::ffi_prelude,
 };
@@ -22,6 +22,7 @@ use crate::{
 pub struct RenderRustFieldAccessConfig {
     pub ffi_prelude_tokens: TokenStream,
     pub render: bool,
+    pub vec_accesses: VecAccessRender,
 }
 
 impl Default for RenderRustFieldAccessConfig {
@@ -29,23 +30,26 @@ impl Default for RenderRustFieldAccessConfig {
         Self {
             ffi_prelude_tokens: ffi_prelude(),
             render: true,
+            vec_accesses: VecAccessRender::Default,
         }
     }
 }
 impl RenderRustFieldAccessConfig {
-    pub fn for_rust_tests() -> Self {
+    pub fn for_rust_tests(vec_accesses: VecAccessRender) -> Self {
         Self {
             ffi_prelude_tokens: TokenStream::new(),
             render: true,
+            vec_accesses,
         }
     }
 }
 
 impl RenderRustFieldAccessConfig {
-    pub fn for_dart_tests() -> Self {
+    pub fn for_dart_tests(vec_accesses: VecAccessRender) -> Self {
         Self {
             ffi_prelude_tokens: TokenStream::new(),
             render: false,
+            vec_accesses,
         }
     }
 }
@@ -203,19 +207,14 @@ impl ParsedStruct {
                         &VecKind::FieldReference,
                     );
 
-                    vec_access = if get_state().needs_implementation(
-                        &ImplementationType::VecAccess,
-                        &vec_type_key,
-                    ) {
-                        Some(VecAccess::new(
-                            &vec_ty,
-                            &vec_ty.rust_ident(),
-                            VecKind::FieldReference,
-                            &config.ffi_prelude_tokens,
-                        ))
-                    } else {
-                        None
-                    };
+                    // NOTE: that we decide if to actually render the vec inside
+                    // ./render_field_access.rs  aggregate_vec_accesses
+                    vec_access = Some(VecAccess::new(
+                        &vec_ty,
+                        &vec_ty.rust_ident(),
+                        VecKind::FieldReference,
+                        &config.ffi_prelude_tokens,
+                    ));
 
                     quote_spanned! { fn_ident.span() =>
                         #ffi_prelude fn #fn_ident(ptr: *mut #struct_ident) -> *const Vec<#item_ty_ident> {
