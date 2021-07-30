@@ -52,8 +52,11 @@ fn render_dart_field_access(input: TokenStream) -> String {
                     &RenderRustFieldAccessConfig::for_dart_tests(
                         VecAccessRender::Omit,
                     ),
+                    // NOTE: we test the validity of generated dart code via integration tests
+                    // instead of snapshots or similar which are prone to break all the time for
+                    // the wrong reasons.
                     &RenderDartFieldAccessConfig::for_dart_tests(
-                        VecAccessRender::Force,
+                        VecAccessRender::Omit,
                     ),
                 )
                 .1
@@ -415,7 +418,7 @@ extension Rid_Model_ExtOnPointerRawMyStruct on dart_ffi.Pointer<ffigen_bind.RawM
 ```
 "#;
         let tokens = render_dart_field_access(input);
-        assert_eq!(tokens.to_string().trim(), expected.trim());
+        assert_eq!(tokens.trim(), expected.trim());
     }
 }
 
@@ -493,8 +496,7 @@ extension Rid_Model_ExtOnPointerRawMyStruct on dart_ffi.Pointer<ffigen_bind.RawM
 ```
 "#;
         let tokens = render_dart_field_access(input);
-        eprintln!("{}", tokens);
-        // assert_eq!(tokens.to_string().trim(), expected.trim());
+        assert_eq!(tokens.trim(), expected.trim());
     }
 }
 

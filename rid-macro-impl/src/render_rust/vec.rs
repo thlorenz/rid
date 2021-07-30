@@ -81,6 +81,7 @@ impl VecAccess {
             format!("\"{}\"", fn_get_ident).parse().unwrap();
         let get_impl = if self.item_type.is_struct() {
             quote_spanned! { fn_get_ident.span() =>
+                #ffi_prelude
                 fn #fn_get_ident(ptr: *mut Vec<#item_ty>, idx: usize) -> *const #item_ty  {
                     let item = #resolve_vec
                         .get(idx)
@@ -93,6 +94,7 @@ impl VecAccess {
             }
         } else if self.item_type.is_primitive() {
             quote_spanned! { fn_get_ident.span() =>
+                #ffi_prelude
                 fn #fn_get_ident(ptr: *mut Vec<#item_ty>, idx: usize) -> #item_ty  {
                     let item = #resolve_vec
                         .get(idx)

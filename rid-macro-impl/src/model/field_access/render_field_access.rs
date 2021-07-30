@@ -36,12 +36,13 @@ impl ParsedStruct {
         };
 
         let type_infos = &self.type_infos();
-        let vec_access_tokens: TokenStream = aggregate_vec_accesses(
-            vec_accesses,
-            type_infos,
-            &rust_config,
-            &dart_config,
-        );
+        let (vec_access_tokens, dart_vec_accesses_string) =
+            aggregate_vec_accesses(
+                vec_accesses,
+                type_infos,
+                &rust_config,
+                &dart_config,
+            );
 
         let (dart_tokens, dart_string) = if dart_config.render {
             self.render_dart_fields_access_extension(dart_config)
@@ -60,7 +61,7 @@ impl ParsedStruct {
                     #rust_tokens
                 }
             },
-            dart_string,
+            format!("{}\n{}", dart_string, dart_vec_accesses_string),
         )
     }
 }
@@ -70,9 +71,9 @@ fn aggregate_vec_accesses(
     type_infos: &TypeInfoMap,
     rust_config: &RenderRustFieldAccessConfig,
     dart_config: &RenderDartFieldAccessConfig,
-) -> TokenStream {
+) -> (TokenStream, String) {
     if vec_accesses.is_empty() {
-        TokenStream::new()
+        (TokenStream::new(), "".to_string())
     } else {
         struct RenderedVecAccesses {
             rust_tokens: Vec<TokenStream>,
@@ -84,26 +85,23 @@ fn aggregate_vec_accesses(
                 darts: vec![],
             },
             |mut accesses, x| {
+                let vec_needs_implementation = get_state()
+                    .needs_implementation(
+                        &ImplementationType::VecAccess,
+                        &x.key(),
+                    );
                 let should_render_rust_vec_access =
                     match rust_config.vec_accesses {
                         VecAccessRender::Force => true,
                         VecAccessRender::Omit => false,
-                        VecAccessRender::Default => get_state()
-                            .needs_implementation(
-                                &ImplementationType::VecAccess,
-                                &x.key(),
-                            ),
+                        VecAccessRender::Default => vec_needs_implementation,
                     };
 
                 let should_render_dart_vec_access =
-                    match rust_config.vec_accesses {
+                    match dart_config.vec_accesses {
                         VecAccessRender::Force => true,
                         VecAccessRender::Omit => false,
-                        VecAccessRender::Default => get_state()
-                            .needs_implementation(
-                                &ImplementationType::VecAccess,
-                                &x.key(),
-                            ),
+                        VecAccessRender::Default => vec_needs_implementation,
                     };
 
                 if should_render_rust_vec_access {
@@ -129,24 +127,25 @@ fn aggregate_vec_accesses(
                 accesses
             },
         );
-        // TODO(thlorenz): decide here which vec_accesses to render instead of where we're doing
-        // this right now
-        // TODO(thlorenz): return the rendered access string for tests
-        let dart_tokens: TokenStream =
-            if dart_config.render && dart_config.tokens {
-                format!(
-                    r###"
+        let rendered_dart = if dart_config.render && !rendered.darts.is_empty()
+        {
+            format!(
+                r###"
+{comment}```dart
 {comment}
 {comment} Access methods for Rust Builtin Types required by the below methods.
 {comment}
-{comment} ```dart
-{rendered_darts}
-{comment} ```"###,
-                    comment = dart_config.comment,
-                    rendered_darts = rendered.darts.join("\n"),
-                )
-                .parse()
-                .unwrap()
+{rendered_dart}
+{comment}```"###,
+                comment = dart_config.comment,
+                rendered_dart = rendered.darts.join("\n"),
+            )
+        } else {
+            "".to_string()
+        };
+        let dart_tokens: TokenStream =
+            if dart_config.render && dart_config.tokens {
+                rendered_dart.parse().unwrap()
             } else {
                 TokenStream::new()
             };
@@ -157,9 +156,12 @@ fn aggregate_vec_accesses(
             vec![]
         };
 
-        quote! {
-            #dart_tokens
-            #(#rust_tokens)*
-        }
+        (
+            quote! {
+                #dart_tokens
+                #(#rust_tokens)*
+            },
+            rendered_dart,
+        )
     }
 }
