@@ -1,4 +1,4 @@
-use syn::Field;
+use syn::{Field, Ident};
 
 use crate::{attrs::TypeInfoMap, common::abort};
 
@@ -29,5 +29,12 @@ impl ParsedStructField {
             rust_type,
             dart_type,
         }
+    }
+
+    pub fn method_ident(&self, owner_ident: &Ident) -> Ident {
+        let method_prefix =
+            format!("rid_{}", owner_ident.to_string().to_lowercase());
+        let fn_name = format!("{}_{}", method_prefix, self.ident);
+        Ident::new(&fn_name, self.ident.span())
     }
 }

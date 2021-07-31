@@ -250,10 +250,10 @@ mod no_args_composite_vec_return_full {
                 let ret_ptr = rid::RidVec::from(ret);
                 ret_ptr
             }
-            fn rid_free_vec_Vec(arg: rid::RidVec<u8>) {
+            fn rid_free_ridvec_u8(arg: rid::RidVec<u8>) {
                 arg.free();
             }
-            fn rid_get_item_Vec(vec: rid::RidVec<u8>, idx: usize) -> u8 {
+            fn rid_get_item_ridvec_u8(vec: rid::RidVec<u8>, idx: usize) -> u8 {
                 vec[idx]
             }
         };
@@ -285,10 +285,10 @@ mod no_args_composite_vec_return_full {
                 let ret_ptr = rid::RidVec::from(vec_with_pointers);
                 ret_ptr
             }
-            fn rid_free_vec_Pointer_MyStruct(arg: rid::RidVec<Pointer_MyStruct>) {
+            fn rid_free_ridvec_mystruct(arg: rid::RidVec<Pointer_MyStruct>) {
                 arg.free();
             }
-            fn rid_get_item_Pointer_MyStruct(
+            fn rid_get_item_ridvec_mystruct(
                 vec: rid::RidVec<Pointer_MyStruct>,
                 idx: usize
             ) -> Pointer_MyStruct {

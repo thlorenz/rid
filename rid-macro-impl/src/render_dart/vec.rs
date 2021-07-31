@@ -1,57 +1,63 @@
+use heck::{CamelCase, SnakeCase};
 use rid_common::{DART_COLLECTION, DART_FFI, FFI_GEN_BIND, RID_FFI};
 
 use crate::{
-    attrs::TypeInfoMap, common::DartType, parse::rust_type::RustType,
-    render_common::VecAccess,
+    attrs::TypeInfoMap,
+    parse::rust_type::RustType,
+    render_common::{VecAccess, VecKind},
 };
 
 use super::RenderDartTypeOpts;
 
-const TEMPLATE_OLD: &str = std::include_str!("./vec_old.dart");
+const TEMPLATE_FIELD_ACCESS: &str =
+    std::include_str!("./vec_field_access.dart");
 const TEMPLATE: &str = std::include_str!("./vec.dart");
-
-pub(crate) struct ImplementVecOld {
-    pub(crate) vec_type: String,
-    pub(crate) dart_item_type: DartType,
-    pub(crate) fn_len_ident: String,
-    pub(crate) fn_get_ident: String,
-}
-
-pub(crate) fn render(vec: &ImplementVecOld) -> String {
-    let iterated_item_type = if vec.dart_item_type.is_primitive() {
-        vec.dart_item_type.to_string()
-    } else {
-        format!(
-            "{dart_ffi}.Pointer<{ffigen_bind}.{dart_item_type}>",
-            dart_ffi = DART_FFI,
-            ffigen_bind = FFI_GEN_BIND,
-            dart_item_type = &vec.dart_item_type
-        )
-    };
-    let map_to_dart = if vec.dart_item_type.is_struct() {
-        format!(".map((raw) => raw.toDart())")
-    } else {
-        "".to_string()
-    };
-    TEMPLATE_OLD
-        .replace("{vec_type}", &vec.vec_type)
-        .replace("{dart_item_type}", &vec.dart_item_type.to_string())
-        .replace(
-            "{resolved_dart_item_type}",
-            &vec.dart_item_type.to_string().replace("Raw", ""),
-        )
-        .replace("{iterated_item_type}", &iterated_item_type)
-        .replace("{map_to_dart}", &map_to_dart)
-        .replace("{fn_len_ident}", &vec.fn_len_ident)
-        .replace("{fn_get_ident}", &vec.fn_get_ident)
-        .replace("{ffigen_bind}", FFI_GEN_BIND)
-        .replace("{dart_ffi}", DART_FFI)
-        .replace("{rid_ffi}", RID_FFI)
-        .replace("{dart_collection}", DART_COLLECTION)
-}
 
 impl VecAccess {
     pub fn render_dart(
+        &self,
+        type_infos: &TypeInfoMap,
+        comment: &str,
+    ) -> String {
+        match self.kind {
+            VecKind::FieldReference => {
+                self.render_dart_for_field_reference(comment)
+            }
+            VecKind::MethodReturn => {
+                self.render_dart_return_from_method(type_infos, comment)
+            }
+        }
+    }
+
+    fn render_dart_for_field_reference(&self, comment: &str) -> String {
+        let pointer_vec_type = self.vec_type.render_dart_field_return_type();
+        let vec_type = self.key().to_camel_case();
+        let iterated_item_type = self.item_type.render_dart_field_return_type();
+        let resolved_dart_item_type = self.item_type.rust_ident();
+        let map_to_dart = if self.item_type.is_struct() {
+            format!(".map((raw) => raw.toDart())")
+        } else {
+            "".to_string()
+        };
+        TEMPLATE_FIELD_ACCESS
+            .replace("/// ", comment)
+            .replace("{vec_type}", &vec_type.to_string())
+            .replace("{pointer_vec_type}", &pointer_vec_type)
+            .replace(
+                "{resolved_dart_item_type}",
+                &resolved_dart_item_type.to_string(),
+            )
+            .replace("{iterated_item_type}", &iterated_item_type)
+            .replace("{map_to_dart}", &map_to_dart)
+            .replace("{fn_len_ident}", &self.fn_len_ident.to_string())
+            .replace("{fn_get_ident}", &self.fn_get_ident.to_string())
+            .replace("{ffigen_bind}", FFI_GEN_BIND)
+            .replace("{dart_ffi}", DART_FFI)
+            .replace("{rid_ffi}", RID_FFI)
+            .replace("{dart_collection}", DART_COLLECTION)
+    }
+
+    fn render_dart_return_from_method(
         &self,
         type_infos: &TypeInfoMap,
         comment: &str,

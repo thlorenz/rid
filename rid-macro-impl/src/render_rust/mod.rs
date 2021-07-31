@@ -28,7 +28,7 @@ mod render_rust_arg;
 mod render_rust_type;
 mod render_to_return_type;
 mod type_alias;
-mod vec;
+pub(crate) mod vec;
 
 mod render_enum_resolution_impl;
 
