@@ -85,7 +85,7 @@ mod struct_field_access_single_primitives {
         };
 
         let expected = quote! {
-            mod __MyStruct_field_access {
+            mod __my_struct_field_access {
                 use super::*;
                 fn rid_mystruct_n(ptr: *mut MyStruct) -> u8 {
                     let receiver = unsafe {
@@ -135,7 +135,7 @@ extension Rid_Model_ExtOnPointerRawMyStruct on dart_ffi.Pointer<ffigen_bind.RawM
         };
 
         let expected = quote! {
-            mod __MyStruct_field_access {
+            mod __my_struct_field_access {
                 use super::*;
                 fn rid_mystruct_n(ptr: *mut MyStruct) -> i64 {
                     let receiver = unsafe {
@@ -185,7 +185,7 @@ extension Rid_Model_ExtOnPointerRawMyStruct on dart_ffi.Pointer<ffigen_bind.RawM
         };
 
         let expected = quote! {
-            mod __MyStruct_field_access {
+            mod __my_struct_field_access {
                 use super::*;
                 fn rid_mystruct_n(ptr: *mut MyStruct) -> u8 {
                     let receiver = unsafe {
@@ -247,7 +247,7 @@ mod struct_field_access_single_strings {
         };
 
         let expected = quote! {
-            mod __MyStruct_field_access {
+            mod __my_struct_field_access {
                 use super::*;
                 fn rid_mystruct_s(ptr: *mut MyStruct) -> *const ::std::os::raw::c_char {
                     let receiver = unsafe {
@@ -312,7 +312,7 @@ extension Rid_Model_ExtOnPointerRawMyStruct on dart_ffi.Pointer<ffigen_bind.RawM
         };
 
         let expected = quote! {
-            mod __MyStruct_field_access {
+            mod __my_struct_field_access {
                 use super::*;
 
                 fn rid_mystruct_s(ptr: *mut MyStruct) -> *const ::std::os::raw::c_char {
@@ -383,7 +383,7 @@ mod struct_field_access_single_custom_struct {
         };
 
         let expected = quote! {
-            mod __MyStruct_field_access {
+            mod __my_struct_field_access {
                 use super::*;
 
                 fn rid_mystruct_todo(ptr: *mut MyStruct) -> *const Todo {
@@ -440,7 +440,7 @@ mod struct_field_access_single_vec_custom_struct {
         };
 
         let expected = quote! {
-            mod __MyStruct_field_access {
+            mod __my_struct_field_access {
                 use super::*;
                 fn rid_len_vec_todo(ptr: *mut Vec<Todo>) -> usize {
                     unsafe {
@@ -517,7 +517,7 @@ mod struct_field_access_single_vec_u8 {
         };
 
         let expected = quote! {
-            mod __MyStruct_field_access {
+            mod __my_struct_field_access {
                 use super::*;
                 fn rid_len_vec_u8(ptr: *mut Vec<u8>) -> usize {
                     unsafe {

@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use heck::SnakeCase;
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote, quote_spanned};
 
@@ -50,7 +51,10 @@ impl ParsedStruct {
             (TokenStream::new(), "".to_string())
         };
 
-        let mod_name = format_ident!("__{}_field_access", self.ident);
+        let mod_name = format_ident!(
+            "__{}_field_access",
+            self.ident.to_string().to_snake_case()
+        );
         (
             quote_spanned! {self.ident.span() =>
                 mod #mod_name {
