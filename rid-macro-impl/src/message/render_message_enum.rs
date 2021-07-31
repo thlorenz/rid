@@ -102,8 +102,6 @@ impl ParsedMessageEnum {
         variant: &ParsedMessageVariant,
         config: &MessageRenderConfig,
     ) -> TokenStream {
-        use crate::common::rust::ValueType::*;
-
         let variant_ident = &variant.ident;
 
         let fn_ident = &variant.method_ident;
@@ -297,7 +295,6 @@ impl ParsedMessageEnum {
         class_name: &str,
         comment: &str,
     ) -> String {
-        use crate::common::rust::ValueType::*;
         let fn_ident = &variant.method_ident;
         struct DartArg {
             arg: String,
