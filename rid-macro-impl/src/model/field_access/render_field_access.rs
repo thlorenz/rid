@@ -133,7 +133,7 @@ fn aggregate_vec_accesses(
                 r###"
 {comment}```dart
 {comment}
-{comment} Access methods for Rust Builtin Types required by the below methods.
+{comment} // Access methods for Rust Builtin Types required by the below methods.
 {comment}
 {rendered_dart}
 {comment}```"###,

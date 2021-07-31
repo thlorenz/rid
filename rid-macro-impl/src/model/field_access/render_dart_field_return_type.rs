@@ -1,7 +1,7 @@
 use rid_common::{DART_FFI, FFI_GEN_BIND};
 
 use crate::{
-    attrs::TypeInfoMap,
+    attrs::{Category, TypeInfoMap},
     common::abort,
     parse::{
         rust_type::{Composite, RustType, TypeKind, Value},
@@ -18,7 +18,19 @@ impl RustType {
         use TypeKind as K;
         match &self.kind {
             K::Primitive(_) => self.render_dart_pointer_type(),
-            K::Value(val) => self.render_dart_pointer_type(),
+            K::Value(val) => match val {
+                Value::CString | Value::String | Value::Str => {
+                    "String".to_string()
+                }
+                Value::Custom(type_info, _) => match &type_info.cat {
+                    Category::Enum => "int".to_string(),
+                    Category::Struct => self.render_dart_pointer_type(),
+                    Category::Prim => abort!(
+                        self.rust_ident(),
+                        "RustType::render_dart_field_return_type:K::Value:Custom:Prim"
+                    ),
+                },
+            },
             K::Composite(Composite::Vec, inner_type) => match inner_type {
                 Some(ty) => {
                     let item_type = ty.rust_ident();
