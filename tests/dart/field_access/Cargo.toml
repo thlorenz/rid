@@ -1,0 +1,41 @@
+[package]
+name = "field_access"
+version = "0.1.0"
+authors = ["Thorsten Lorenz <thlorenz@gmx.de>"]
+edition = "2018"
+
+[[example]]
+name = "primitives"
+crate-type = ["cdylib"]
+path = "src/primitives.rs"
+
+[[example]]
+name = "strings"
+crate-type = ["cdylib"]
+path = "src/strings.rs"
+
+[[example]]
+name = "structs"
+crate-type = ["cdylib"]
+path = "src/structs.rs"
+
+[[example]]
+name = "enums"
+crate-type = ["cdylib"]
+path = "src/enums.rs"
+
+[[example]]
+name = "vecs"
+crate-type = ["cdylib"]
+path = "src/vecs.rs"
+
+[dependencies]
+rid = { path = "../../../" }
+rid_build = { path = "../../../rid-build" }
+
+[build-dependencies]
+rid_build = { path = "../../../rid-build" }
+
+[[bin]]
+name = "rid_build"
+path = "rid_build.rs"
