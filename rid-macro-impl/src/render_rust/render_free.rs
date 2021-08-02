@@ -28,7 +28,7 @@ pub fn render_free(
         tokens: return_type,
         type_alias,
         ..
-    } = render_return_type(rust_type, false);
+    } = render_return_type(rust_type);
 
     let free: Option<TokenStream> = match &rust_type.kind {
         K::Primitive(_) | K::Unit => None,

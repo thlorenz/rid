@@ -19,10 +19,7 @@ pub struct RenderedReturnType {
     pub type_alias: Option<PointerTypeAlias>,
 }
 
-pub fn render_return_type(
-    rust_type: &RustType,
-    is_in_return_type_position: bool,
-) -> RenderedReturnType {
+pub fn render_return_type(rust_type: &RustType) -> RenderedReturnType {
     use crate::parse::ParsedReference::*;
     use TypeKind as K;
     let mut type_alias: Option<PointerTypeAlias> = None;

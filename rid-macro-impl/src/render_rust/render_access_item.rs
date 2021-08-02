@@ -69,13 +69,13 @@ fn render_vec_access_item(
     let RenderedReturnType {
         tokens: vec_arg_type,
         ..
-    } = render_return_type(outer_type, false);
+    } = render_return_type(outer_type);
 
     let RenderedReturnType {
         tokens: item_return_type,
         type_alias,
         ..
-    } = render_return_type(&item_type, false);
+    } = render_return_type(&item_type);
 
     let tokens = quote_spanned! { fn_access_ident.span() =>
         fn #fn_access_ident(vec: #vec_arg_type, idx: usize) -> #item_return_type {

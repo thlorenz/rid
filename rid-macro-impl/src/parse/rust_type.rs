@@ -115,6 +115,14 @@ impl RustType {
         self.kind.is_primitive()
     }
 
+    pub fn is_string(&self) -> bool {
+        self.kind.is_string()
+    }
+
+    pub fn is_string_like(&self) -> bool {
+        self.kind.is_string_like()
+    }
+
     pub fn is_composite(&self) -> bool {
         self.kind.is_composite()
     }
@@ -192,6 +200,22 @@ impl TypeKind {
     pub fn is_primitive(&self) -> bool {
         if let TypeKind::Primitive(_) = self {
             true
+        } else {
+            false
+        }
+    }
+
+    pub fn is_string(&self) -> bool {
+        if let TypeKind::Value(val) = self {
+            val.is_string()
+        } else {
+            false
+        }
+    }
+
+    pub fn is_string_like(&self) -> bool {
+        if let TypeKind::Value(val) = self {
+            val.is_string_like()
         } else {
             false
         }
@@ -333,6 +357,38 @@ impl Value {
         match self {
             CString | String | Str => false,
             Custom(type_info, _) => type_info.cat == Category::Struct,
+        }
+    }
+
+    fn is_string_like(&self) -> bool {
+        use Value::*;
+        match self {
+            CString | String | Str => true,
+            _ => false,
+        }
+    }
+
+    fn is_string(&self) -> bool {
+        use Value::*;
+        match self {
+            String => true,
+            _ => false,
+        }
+    }
+
+    fn is_cstring(&self) -> bool {
+        use Value::*;
+        match self {
+            CString => true,
+            _ => false,
+        }
+    }
+
+    fn is_str(&self) -> bool {
+        use Value::*;
+        match self {
+            Str => true,
+            _ => false,
         }
     }
 }
