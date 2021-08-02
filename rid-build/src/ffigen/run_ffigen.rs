@@ -52,6 +52,14 @@ pub fn run_ffigen(
         cmd.output()?
     };
 
+    if !output.status.success() {
+        bail!(
+            "\n'dart run ffigen' failed to run successfully\nstderr: {stderr}\nstdout: {stdout}",
+            stderr = std::str::from_utf8(&output.stderr).unwrap(),
+            stdout = std::str::from_utf8(&output.stdout).unwrap()
+        );
+    }
+
     // ffigen logs to stdout
     let stdout = std::str::from_utf8(&output.stdout).unwrap();
     trace!("{}", &stdout);

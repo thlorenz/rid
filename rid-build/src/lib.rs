@@ -8,6 +8,7 @@ use bindings_generator::BindingsGenerator;
 use dart_generator::DartGenerator;
 
 mod bindings_generator;
+mod build_target;
 mod constants;
 mod dart_generator;
 mod ffigen;
@@ -18,7 +19,7 @@ mod parsed_bindings;
 mod project;
 mod swift_injector;
 
-pub use dart_generator::BuildTarget;
+pub use build_target::BuildTarget;
 use ffigen::{run_ffigen, HostProps};
 pub use project::{FlutterConfig, FlutterPlatform, Project};
 
@@ -100,10 +101,12 @@ fn generate(
         target,
     }: &BuildConfig,
 ) -> Result<BuildResult> {
+    let expand_args = target.cargo_expand_args();
     let bindings_generator = BindingsGenerator {
         crate_name,
         crate_dir: project_root,
         cargo: "cargo",
+        expand_args,
     };
     let target_crate_root = Path::new(workspace_root.unwrap_or(project_root));
     let project_root = Path::new(project_root);
