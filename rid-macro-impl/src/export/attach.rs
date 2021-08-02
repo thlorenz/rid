@@ -2,7 +2,10 @@ use std::collections::HashMap;
 
 use crate::{
     attrs::ImplBlockConfig,
-    common::state::{get_state, ImplementationType},
+    common::{
+        state::{get_state, ImplementationType},
+        utils_module_tokens,
+    },
     parse::{ParsedFunction, ParsedImplBlock},
     render_common::{
         render_vec_accesses, PointerTypeAlias, RenderFunctionExportConfig,
@@ -180,6 +183,8 @@ pub fn rid_export_impl(
             let ptr_typedef_tokens: Vec<&TokenStream> =
                 ptr_type_aliases_map.values().collect();
 
+            let utils_module = utils_module_tokens();
+
             quote! {
                 #[allow(non_snake_case)]
                 mod #module_ident {
@@ -190,6 +195,7 @@ pub fn rid_export_impl(
                     #(#vec_access_tokens)*
                     #(#dart_free_extensions_tokens)*
                     #(#free_tokens)*
+                    #utils_module
                 }
             }
         }

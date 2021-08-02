@@ -1,5 +1,5 @@
 use proc_macro2::TokenStream;
-use quote::format_ident;
+use quote::{format_ident, quote};
 use syn::{Item, NestedMeta};
 
 use super::{
@@ -8,7 +8,7 @@ use super::{
 };
 use crate::{
     attrs::{self, parse_rid_args},
-    common::{abort, callsite_error},
+    common::{abort, callsite_error, utils_module_tokens},
 };
 use rid_common::STORE;
 
@@ -35,7 +35,12 @@ pub fn rid_message_impl(
                     item.variants.clone(),
                     enum_config,
                 );
-                parsed_message_enum.render(&render_config).0
+                let tokens = parsed_message_enum.render(&render_config).0;
+                let utils_module = utils_module_tokens();
+                quote! {
+                    #tokens
+                    #utils_module
+                }
             } else {
                 abort!(
                     item,
