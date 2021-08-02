@@ -179,7 +179,7 @@ impl ParsedStruct {
                     Enum => quote_spanned! { fn_ident.span() =>
                         #ffi_prelude fn #fn_ident(ptr: *mut #struct_ident) -> i32 {
                             let receiver = #resolve_receiver;
-                            receiver.#field_ident.clone() as i32
+                            receiver.#field_ident._rid_into_discriminant()
                         }
                     },
                     Struct => quote_spanned! { fn_ident.span() =>
