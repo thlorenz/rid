@@ -8,7 +8,6 @@ use crate::{
     common::{
         abort, extract_variant_names,
         state::{get_state, ImplementationType},
-        tokens::cstring_free,
     },
     parse::rust_type::RustType,
     render_rust::{RenderedDebugImpl, RenderedDisplayImpl},
@@ -16,7 +15,6 @@ use crate::{
 
 #[derive(Clone)]
 pub struct RenderDebugConfig {
-    render_cstring_free: bool,
     render_dart_extension: bool,
     render_dart_enum: bool,
     render_swift_calls: bool,
@@ -25,7 +23,6 @@ pub struct RenderDebugConfig {
 impl Default for RenderDebugConfig {
     fn default() -> Self {
         Self {
-            render_cstring_free: true,
             render_dart_extension: true,
             render_dart_enum: true,
             render_swift_calls: true,
@@ -36,7 +33,6 @@ impl Default for RenderDebugConfig {
 impl RenderDebugConfig {
     pub fn for_tests() -> Self {
         Self {
-            render_cstring_free: false,
             render_dart_extension: false,
             render_dart_enum: false,
             render_swift_calls: false,
@@ -49,12 +45,6 @@ pub fn render_debug(
     enum_variants: &Option<Vec<String>>,
     config: RenderDebugConfig,
 ) -> TokenStream {
-    let cstring_free_tokens = if config.render_cstring_free {
-        cstring_free()
-    } else {
-        TokenStream::new()
-    };
-
     let RenderedDebugImpl {
         tokens: rust_method_tokens,
         fn_debug_method_ident,
@@ -80,7 +70,6 @@ pub fn render_debug(
             use super::*;
             #dart_ext_tokens
             #rust_method_tokens
-            #cstring_free_tokens
         }
     }
 }

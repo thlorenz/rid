@@ -8,26 +8,26 @@ use crate::{
     common::{
         abort, extract_variant_names,
         state::{get_state, ImplementationType},
-        tokens::cstring_free,
+        utils_module_tokens_if,
     },
     parse::rust_type::RustType,
     render_rust::RenderedDisplayImpl,
 };
 
 pub struct DisplayImplConfig {
-    render_cstring_free: bool,
     render_dart_extension: bool,
     render_dart_enum: bool,
     render_swift_methods: bool,
+    render_utils_module: bool,
 }
 
 impl Default for DisplayImplConfig {
     fn default() -> Self {
         Self {
-            render_cstring_free: true,
             render_dart_extension: true,
             render_dart_enum: true,
             render_swift_methods: true,
+            render_utils_module: true,
         }
     }
 }
@@ -35,10 +35,10 @@ impl Default for DisplayImplConfig {
 impl DisplayImplConfig {
     pub fn for_tests() -> Self {
         Self {
-            render_cstring_free: false,
             render_dart_extension: false,
             render_dart_enum: false,
             render_swift_methods: false,
+            render_utils_module: false,
         }
     }
 }
@@ -50,12 +50,24 @@ pub fn rid_display_impl(
     match &input.data {
         Data::Struct(data) => {
             let rust_type = RustType::from_owned_struct(&input.ident);
-            render_display(rust_type, &config, &None)
+            let tokens = render_display(rust_type, &config, &None);
+            let utils_module =
+                utils_module_tokens_if(config.render_utils_module);
+            quote! {
+                #tokens
+                #utils_module
+            }
         }
         Data::Enum(DataEnum { variants, .. }) => {
             let rust_type = RustType::from_owned_enum(&input.ident);
             let variants = Some(extract_variant_names(variants));
-            render_display(rust_type, &config, &variants)
+            let tokens = render_display(rust_type, &config, &variants);
+            let utils_module =
+                utils_module_tokens_if(config.render_utils_module);
+            quote! {
+                #tokens
+                #utils_module
+            }
         }
         Data::Union(data) => abort!(
             input.ident,
@@ -69,12 +81,6 @@ fn render_display(
     config: &DisplayImplConfig,
     enum_variants: &Option<Vec<String>>,
 ) -> TokenStream {
-    let cstring_free_tokens = if config.render_cstring_free {
-        cstring_free()
-    } else {
-        TokenStream::new()
-    };
-
     let RenderedDisplayImpl {
         tokens: rust_method_tokens,
         fn_display_method_ident,
@@ -98,7 +104,6 @@ fn render_display(
             use super::*;
             #dart_ext_tokens
             #rust_method_tokens
-            #cstring_free_tokens
         }
     }
 }

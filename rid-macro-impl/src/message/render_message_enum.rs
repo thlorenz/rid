@@ -23,6 +23,7 @@ pub struct MessageRenderConfig {
     pub render_reply_check: bool,
     pub dart_code_only: bool,
     pub rust_only: bool,
+    pub render_utils_module: bool,
 }
 
 impl Default for MessageRenderConfig {
@@ -32,6 +33,7 @@ impl Default for MessageRenderConfig {
             render_reply_check: true,
             dart_code_only: false,
             rust_only: false,
+            render_utils_module: true,
         }
     }
 }
@@ -43,6 +45,7 @@ impl MessageRenderConfig {
             render_reply_check: false,
             dart_code_only: false,
             rust_only: false,
+            render_utils_module: false,
         }
     }
 }

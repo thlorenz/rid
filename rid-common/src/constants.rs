@@ -23,6 +23,9 @@ pub const STRING_TO_NATIVE_INT8: &str = "toNativeInt8";
 /// Method invoked to free a CString by resolving and dropping it.
 pub const CSTRING_FREE: &str = "rid_cstring_free";
 
+/// Name of the module containing all of global rid util methods like string free.
+pub const UTILS_MODULE: &str = "__rid_utils_module";
+
 /// Function set to debug rid store locking
 pub const RID_DEBUG_LOCK: &str = "RID_DEBUG_LOCK";
 
