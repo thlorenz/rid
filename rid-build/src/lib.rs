@@ -1,5 +1,3 @@
-#![allow(stable_features)]
-#![feature(str_split_once)]
 use std::{fmt::Display, fs, iter::FromIterator, path::Path};
 
 use anyhow::Result;

@@ -23,12 +23,10 @@ impl<'a> BindingsGenerator<'a> {
         Ok(bindings)
     }
 
-    // Option that doesn't depend on cargo-expand to be installed
-    // cargo rustc --lib -- -Zunstable-options --pretty=expanded
+    // cargo rustc --lib -- -Zunpretty=expanded
     fn expand_crate(&self) -> Result<String> {
         let output = Command::new(&self.cargo)
             .args(&self.expand_args)
-            .args(&["--color", "never"])
             .current_dir(&self.crate_dir)
             .output()?;
 
