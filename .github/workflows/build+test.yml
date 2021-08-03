@@ -2,7 +2,7 @@ name: Build+Test
 
 on:
   push:
-    branches: [ master, chore/gh-ci ]
+    branches: [ master ]
   pull_request:
     branches: [ master ]
 
@@ -16,20 +16,20 @@ jobs:
       fail-fast: false
       matrix:
         rust: [nightly]
-        sdk: [2.14.0-115.0.dev] # ffigen depends on Dart v2.14+  
+        dart_sdk: [2.14.0-115.0.dev] # ffigen depends on Dart v2.14+  
 
     steps:
     - uses: hecrj/setup-rust-action@v1
       with:
         rust-version: ${{ matrix.rust }}
 
-    # ffigen depends on an llvm installation
+    # ffigen depends on an llvm
     - name: Install libclang-10-dev
       run: sudo apt-get install libclang-10-dev
 
     - uses: dart-lang/setup-dart@v1.2
       with:
-          sdk: ${{ matrix.sdk }} 
+          sdk: ${{ matrix.dart_sdk }} 
 
     - uses: actions/checkout@master
 
