@@ -15,7 +15,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        rust: [stable]
+        rust: [nightly]
         sdk: [2.14.0-115.0.dev] # ffigen depends on Dart v2.14+  
 
     steps:
