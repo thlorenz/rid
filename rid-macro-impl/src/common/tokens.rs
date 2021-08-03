@@ -2,7 +2,6 @@ use crate::common::state::ImplementationType;
 
 use super::state::get_state;
 use quote::{format_ident, quote_spanned};
-use rid_common::CSTRING_FREE;
 
 use proc_macro2::TokenStream;
 
@@ -49,25 +48,6 @@ pub fn resolve_bool_from_u8(arg: &syn::Ident, reassign: bool) -> TokenStream {
         quote_spanned! { arg.span() => let #arg = if #arg == 0 {  false } else { true }; }
     } else {
         quote_spanned! { arg.span() => if #arg == 0 {  false } else { true } }
-    }
-}
-
-pub fn cstring_free() -> TokenStream {
-    let cstring_free_ident = format_ident!("{}", CSTRING_FREE);
-    if get_state().needs_implementation(&ImplementationType::Free, CSTRING_FREE)
-    {
-        quote_spanned! {
-            proc_macro2::Span::call_site() =>
-            #[no_mangle]
-            #[allow(non_snake_case)]
-            pub extern "C" fn #cstring_free_ident(ptr: *mut ::std::os::raw::c_char) {
-                if !ptr.is_null() {
-                    ::core::mem::drop(unsafe { ::std::ffi::CString::from_raw(ptr) });
-                }
-            }
-        }
-    } else {
-        TokenStream::new()
     }
 }
 

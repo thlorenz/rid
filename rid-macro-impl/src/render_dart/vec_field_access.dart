@@ -5,7 +5,7 @@
 ///     if (!(0 <= idx && idx < len)) {
 ///       throw AssertionError("Out of range access on List<{resolved_dart_item_type}>[$idx] of length $len");
 ///     }
-///     return {rid_ffi}.{fn_get_ident}(this, idx);
+///     return {rid_ffi}.{fn_get_ident}(this, idx){item_to_dart};
 ///   }
 ///   Rid_{vec_type}_Iterable iter() => Rid_{vec_type}_Iterable(this);
 ///

@@ -16,6 +16,7 @@ exclude = [
   "examples/dart/clock",
   "examples/dart/todo",
   "examples/dart/wip",
+  "tests/dart/field_access"
 ]
 
 [dependencies]

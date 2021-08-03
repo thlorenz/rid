@@ -15,6 +15,7 @@ pub struct ExpandState {
 pub enum ImplementationType {
     VecAccess,
     DartEnum,
+    UtilsModule,
     Free,
 }
 
@@ -29,6 +30,9 @@ impl fmt::Display for ImplementationType {
             }
             ImplementationType::Free => {
                 write!(f, "Free")
+            }
+            ImplementationType::UtilsModule => {
+                write!(f, "UtilsModle")
             }
         }
     }

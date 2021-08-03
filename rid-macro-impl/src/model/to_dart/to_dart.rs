@@ -12,7 +12,6 @@ use crate::{
     common::{
         abort,
         state::{get_state, ImplementationType},
-        tokens::cstring_free,
     },
     parse::{rust_type::RustType, ParsedStruct},
     render_dart::ParsedStructRenderConfig,
@@ -20,14 +19,12 @@ use crate::{
 };
 
 pub struct DartRenderImplConfig {
-    render_cstring_free: bool,
     render_dart_only: bool,
 }
 
 impl Default for DartRenderImplConfig {
     fn default() -> Self {
         Self {
-            render_cstring_free: true,
             render_dart_only: false,
         }
     }
@@ -36,7 +33,6 @@ impl Default for DartRenderImplConfig {
 impl DartRenderImplConfig {
     pub fn for_tests() -> Self {
         Self {
-            render_cstring_free: false,
             render_dart_only: false,
         }
     }

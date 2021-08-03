@@ -4,8 +4,8 @@ use rid_common::{
 };
 
 use crate::{
-    constants::FFI_NATIVE_LIBRARY_NAME, parsed_bindings::ParsedBindings,
-    Project,
+    build_target::BuildTarget, constants::FFI_NATIVE_LIBRARY_NAME,
+    parsed_bindings::ParsedBindings, Project,
 };
 const PACKAGE_FFI: &str = "package_ffi";
 static RID_WIDGETS: &str = include_str!("../dart/_rid_widgets.dart");
@@ -15,12 +15,6 @@ static RID_UTILS_DART: &str = include_str!("../dart/_rid_utils_dart.dart");
 static STORE_STUB_DART: &str = include_str!("../dart/_store_stub.dart");
 static REPLY_CHANNEL_STUB_DART: &str =
     include_str!("../dart/_reply_channel_stub.dart");
-
-#[derive(Clone, Copy)]
-pub enum BuildTarget {
-    Release,
-    Debug,
-}
 
 fn dart_string_from_pointer() -> String {
     format!(
@@ -131,7 +125,8 @@ impl<'a> DartGenerator<'a> {
         };
 
         format!(
-            r###"{imports}
+            r###"// ignore_for_file:unused_import, unused_element
+{imports}
 // Forwarding dart_ffi types essential to access raw Rust structs
 {dart_ffi_exports}
 // Forwarding Dart Types for raw Rust structs
@@ -213,6 +208,7 @@ import '{reply_channel}';
                 let sub_target_folder = match self.target {
                     BuildTarget::Release => "release",
                     BuildTarget::Debug => "debug",
+                    BuildTarget::DebugExample(_) => "debug/examples",
                 };
                 format!(
                     r###"{dart_ffi}.DynamicLibrary _open() {{

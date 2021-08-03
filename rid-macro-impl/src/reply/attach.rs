@@ -4,7 +4,7 @@ use syn::{Item, NestedMeta};
 
 use crate::{
     attrs::{self, parse_rid_args, EnumConfig},
-    common::{abort, callsite_error},
+    common::{abort, callsite_error, utils_module_tokens},
     parse::ParsedEnum,
 };
 
@@ -30,6 +30,7 @@ pub fn rid_ffi_reply_impl(item: &Item, _: &[NestedMeta]) -> TokenStream {
             let parsed_enum = ParsedEnum::from(&enum_item, enum_config);
             let reply_dart = render_reply_dart(&parsed_enum, "///");
 
+            let utils_module = utils_module_tokens();
             quote_spanned! { enum_item.ident.span() =>
                 mod __rid_reply_mod {
                     #reply_dart
@@ -37,6 +38,7 @@ pub fn rid_ffi_reply_impl(item: &Item, _: &[NestedMeta]) -> TokenStream {
                     pub extern "C" fn include_reply() {}
                 }
                 #into_dart
+                #utils_module
             }
         }
         _ => {

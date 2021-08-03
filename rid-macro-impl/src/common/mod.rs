@@ -3,9 +3,11 @@ pub mod prefixes;
 pub mod state;
 mod syn_helpers;
 pub mod tokens;
+pub mod utils_module_tokens;
 
 pub use errors::*;
 pub use syn_helpers::*;
+pub use utils_module_tokens::{utils_module_tokens, utils_module_tokens_if};
 
 // Test replacements
 #[cfg(not(test))]

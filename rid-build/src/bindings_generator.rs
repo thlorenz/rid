@@ -5,6 +5,7 @@ pub(crate) struct BindingsGenerator<'a> {
     pub(crate) cargo: &'a str,
     pub(crate) crate_dir: &'a str,
     pub(crate) crate_name: &'a str,
+    pub(crate) expand_args: Vec<String>,
 }
 
 pub fn inject_rid_ffi_types(stdout: &[u8]) -> String {
@@ -26,7 +27,7 @@ impl<'a> BindingsGenerator<'a> {
     // cargo rustc --lib -- -Zunstable-options --pretty=expanded
     fn expand_crate(&self) -> Result<String> {
         let output = Command::new(&self.cargo)
-            .args(&["expand", "--lib"])
+            .args(&self.expand_args)
             .args(&["--color", "never"])
             .current_dir(&self.crate_dir)
             .output()?;

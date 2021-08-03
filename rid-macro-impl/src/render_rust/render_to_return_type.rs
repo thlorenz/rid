@@ -20,15 +20,17 @@ impl RustType {
     /// # Arguments
     /// * `res_ident` the result identifier to possibly convert
     /// * `res_pointer` the result that will be returned from the function
+    /// * `is_field_access` if true this returns a pointer to a field on a struct or enum
     pub fn render_to_return(
         &self,
         res_ident: &Ident,
         res_pointer: &Ident,
+        is_field_access: bool,
     ) -> TokenStream {
         use TypeKind as K;
         match &self.kind {
         K::Primitive(_) | K::Unit => quote_spanned! { res_ident.span() => let #res_pointer = #res_ident; } ,
-        K::Value(val) => val.render_to_return_type(res_ident, res_pointer, &self.reference),
+        K::Value(val) => val.render_to_return_type(res_ident, res_pointer, &self.reference, is_field_access),
         K::Composite(Composite::Vec, rust_type) => render_vec_to_return_type(res_ident, res_pointer, rust_type),
         K::Composite(Composite::Option, rust_type) => render_option_to_return_type(res_ident, res_pointer, rust_type),
         K::Composite(_, _) =>  todo!("render_pointer::Composite"),
@@ -43,10 +45,14 @@ impl Value {
         res_ident: &Ident,
         res_pointer: &Ident,
         reference: &ParsedReference,
+        is_field_access: bool,
     ) -> TokenStream {
         use Category as C;
         use Value::*;
         match self {
+            CString if is_field_access => {
+                quote_spanned! { res_ident.span() => let #res_pointer = #res_ident.clone().into_raw(); }
+            }
             CString => {
                 quote_spanned! { res_ident.span() => let #res_pointer = #res_ident.into_raw(); }
             }

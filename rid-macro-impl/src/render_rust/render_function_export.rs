@@ -66,11 +66,14 @@ pub fn render_function_export(
     let RenderedReturnType {
         tokens: ret_type,
         type_alias: ret_alias,
-    } = render_return_type(return_arg, true);
+    } = render_return_type(return_arg);
     ret_alias.clone().map(|x| ptr_type_aliases.push(x));
 
-    let ret_to_pointer =
-        return_arg.render_to_return(&return_ident, &return_pointer_ident);
+    let ret_to_pointer = return_arg.render_to_return(
+        &return_ident,
+        &return_pointer_ident,
+        false,
+    );
 
     let receiver_arg =
         receiver.as_ref().map(ParsedReceiver::render_receiver_arg);

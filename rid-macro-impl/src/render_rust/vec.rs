@@ -1,9 +1,11 @@
 use proc_macro2::TokenStream;
-use quote::{quote, quote_spanned};
+use quote::{format_ident, quote, quote_spanned};
+use render_return_type::RenderedReturnType;
 
 use crate::{
     common::{abort, tokens::resolve_vec_ptr},
     render_common::{PointerTypeAlias, VecAccess, VecKind},
+    render_rust::{render_return_type, render_to_return_type},
 };
 
 use super::{
@@ -90,6 +92,45 @@ impl VecAccess {
                             idx = idx
                         ));
                     item as *const #item_ty
+                }
+            }
+        } else if self.item_type.is_enum() {
+            quote_spanned! { fn_get_ident.span() =>
+                #ffi_prelude
+                fn #fn_get_ident(ptr: *mut Vec<#item_ty>, idx: usize) -> i32  {
+                    let item = #resolve_vec
+                        .get(idx)
+                        .expect(&format!("Failed to access {fn_get_ident}({idx})",
+                            fn_get_ident = #fn_get_ident_str_tokens,
+                            idx = idx
+                        ));
+                    item._rid_into_discriminant()
+                }
+            }
+        } else if self.item_type.is_string_like() {
+            let RenderedReturnType {
+                tokens: return_ty, ..
+            } = render_return_type(&self.item_type);
+
+            let res_ident = format_ident!("item");
+            let res_pointer = format_ident!("item_ptr");
+            let to_return = &self.item_type.render_to_return(
+                &res_ident,
+                &res_pointer,
+                true,
+            );
+
+            quote_spanned! { fn_get_ident.span() =>
+                #ffi_prelude
+                fn #fn_get_ident(ptr: *mut Vec<#item_ty>, idx: usize) -> #return_ty  {
+                    let #res_ident = #resolve_vec
+                        .get(idx)
+                        .expect(&format!("Failed to access {fn_get_ident}({idx})",
+                            fn_get_ident = #fn_get_ident_str_tokens,
+                            idx = idx
+                        ));
+                    #to_return
+                    #res_pointer
                 }
             }
         } else if self.item_type.is_primitive() {
