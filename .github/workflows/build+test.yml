@@ -11,22 +11,25 @@ env:
 
 jobs:
   build_and_test:
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest]
         rust: [stable]
+        sdk: [2.14.0-115.0.dev] # ffigen depends on Dart v2.14+  
 
     steps:
     - uses: hecrj/setup-rust-action@v1
       with:
         rust-version: ${{ matrix.rust }}
 
-    # ffigen depends on Dart v2.14+  
+    # ffigen depends on an llvm installation
+    - name: Install libclang-10-dev
+      run: sudo apt-get install libclang-10-dev
+
     - uses: dart-lang/setup-dart@v1.2
       with:
-          sdk: 2.14.0-115.0.dev
+          sdk: ${{ matrix.sdk }} 
 
     - uses: actions/checkout@master
 
