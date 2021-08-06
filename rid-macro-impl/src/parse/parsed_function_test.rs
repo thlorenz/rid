@@ -135,7 +135,7 @@ mod return_arg {
         assert_eq!(return_arg.rust_ident().to_string(), "Vec", "rust ident");
         assert_matches!(return_arg.reference, ParsedReference::Owned);
 
-        if let TypeKind::Composite(composite, inner) = return_arg.kind {
+        if let TypeKind::Composite(composite, inner, _) = return_arg.kind {
             let todo_str = "Todo".to_string();
             assert_matches!(composite, Composite::Vec);
             let inner = inner.expect("has inner rust type");

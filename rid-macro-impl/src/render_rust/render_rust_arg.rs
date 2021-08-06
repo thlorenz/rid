@@ -64,7 +64,9 @@ impl RustArg {
                     Str => todo!("RustArg::from::Value(Str)"),
                 }
             }
-            Composite(_, _) => todo!("RustArg::from::Composite"),
+            Composite(composite, _, _) => {
+                todo!("RustArg::from::Composite::{:?}", composite)
+            }
             Unit => todo!("RustArg::from::Unit"),
             Unknown => unimplemented!("RustArg::from::Unknown"),
         }

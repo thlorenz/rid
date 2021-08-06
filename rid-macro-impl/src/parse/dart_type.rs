@@ -54,10 +54,11 @@ impl DartType {
                 }
             }
             Unit => DartType::Unit,
-            Composite(composite, ty) => match composite {
+            Composite(composite, fst_ty, snd_ty) => match composite {
                 C::Vec => {
                     let inner = DartType::from_with_nullable(
-                        ty.as_ref()
+                        fst_ty
+                            .as_ref()
                             .expect("Vec Composite should have inner type")
                             .as_ref(),
                         type_infos,
@@ -66,9 +67,13 @@ impl DartType {
                     DartType::Vec(nullable, Box::new(inner))
                 }
                 C::Option => DartType::from_with_nullable(
-                    ty.as_ref().unwrap(),
+                    fst_ty.as_ref().unwrap(),
                     type_infos,
                     true,
+                ),
+                C::HashMap => abort!(
+                    rust_type.rust_ident(),
+                    "TODO: convert HashMap composite rust type to dart type"
                 ),
                 C::Custom(_, _) => abort!(
                     rust_type.rust_ident(),

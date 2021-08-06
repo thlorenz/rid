@@ -151,7 +151,7 @@ impl RustType {
 pub enum TypeKind {
     Primitive(Primitive),
     Value(Value),
-    Composite(Composite, Option<Box<RustType>>),
+    Composite(Composite, Option<Box<RustType>>, Option<Box<RustType>>),
     Unit,
     Unknown,
 }
@@ -164,9 +164,13 @@ impl PartialEq for TypeKind {
             }
             (TypeKind::Value(val1), TypeKind::Value(val2)) => val1 == val2,
             (
-                TypeKind::Composite(com1, ty1),
-                TypeKind::Composite(com2, ty2),
-            ) => com1 == com2 && ty1 == ty2,
+                TypeKind::Composite(com1, first_ty1, second_ty1),
+                TypeKind::Composite(com2, first_ty2, second_ty2),
+            ) => {
+                com1 == com2
+                    && first_ty1 == first_ty2
+                    && second_ty1 == second_ty2
+            }
             (TypeKind::Unit, TypeKind::Unit) => true,
             (TypeKind::Unknown, TypeKind::Unknown) => true,
             _ => false,
@@ -179,8 +183,11 @@ impl Debug for TypeKind {
         let kind = match self {
             TypeKind::Primitive(p) => format!("TypeKind::Primitive({:?})", p),
             TypeKind::Value(val) => format!("TypeKind::Value({:?})", val),
-            TypeKind::Composite(com, inner) => {
-                format!("TypeKind::Composite({:?}, {:?})", com, inner)
+            TypeKind::Composite(com, fst_inner, snd_inner) => {
+                format!(
+                    "TypeKind::Composite({:?}, {:?}, {:?})",
+                    com, fst_inner, snd_inner
+                )
             }
             TypeKind::Unit => "TypeKind::Unit".to_string(),
             TypeKind::Unknown => "TypeKind::Unknown".to_string(),
@@ -222,7 +229,7 @@ impl TypeKind {
     }
 
     pub fn is_composite(&self) -> bool {
-        if let TypeKind::Composite(_, _) = self {
+        if let TypeKind::Composite(_, _, _) = self {
             true
         } else {
             false
@@ -230,7 +237,7 @@ impl TypeKind {
     }
 
     pub fn is_vec(&self) -> bool {
-        if let TypeKind::Composite(Composite::Vec, _) = self {
+        if let TypeKind::Composite(Composite::Vec, _, _) = self {
             true
         } else {
             false
@@ -238,7 +245,7 @@ impl TypeKind {
     }
 
     pub fn is_option(&self) -> bool {
-        if let TypeKind::Composite(Composite::Option, _) = self {
+        if let TypeKind::Composite(Composite::Option, _, _) = self {
             true
         } else {
             false
@@ -265,10 +272,10 @@ impl TypeKind {
         match self {
             TypeKind::Primitive(_) => None,
             TypeKind::Value(_) => None,
-            TypeKind::Composite(Composite::Vec, inner) => {
+            TypeKind::Composite(Composite::Vec, inner, _) => {
                 inner.as_ref().map(|x| (*x.clone()))
             }
-            TypeKind::Composite(_, _) => None,
+            TypeKind::Composite(_, _, _) => None,
             TypeKind::Unit => None,
             TypeKind::Unknown => None,
         }
@@ -400,6 +407,7 @@ impl Value {
 pub enum Composite {
     Vec,
     Option,
+    HashMap,
     Custom(TypeInfo, String),
 }
 
@@ -408,6 +416,7 @@ impl Debug for Composite {
         match self {
             Composite::Vec => write!(f, "Composite::Vec"),
             Composite::Option => write!(f, "Composite::Option"),
+            Composite::HashMap => write!(f, "Composite::HashMap"),
             Composite::Custom(type_info, name) => {
                 write!(f, "Composite::Custom({:?}, \"{}\")", type_info, name)
             }
@@ -513,9 +522,19 @@ fn ident_to_kind(
                     let inner =
                         resolve_rust_ty(ty, type_infos).map(|x| Box::new(x));
                     match ident_str.as_str() {
-                        "Vec" => TypeKind::Composite(Composite::Vec, inner),
+                        "Vec" => {
+                            TypeKind::Composite(Composite::Vec, inner, None)
+                        }
                         "Option" => {
-                            TypeKind::Composite(Composite::Option, inner)
+                            TypeKind::Composite(Composite::Option, inner, None)
+                        }
+                        "HashMap" => {
+                            // TODO(thlorenz): HashMap needs two inner types
+                            TypeKind::Composite(
+                                Composite::HashMap,
+                                inner.clone(),
+                                inner,
+                            )
                         }
                         _ => {
                             if let Some(type_info) = type_infos.get(&ident_str)
@@ -526,6 +545,7 @@ fn ident_to_kind(
                                         ident_str.clone(),
                                     ),
                                     inner,
+                                    None,
                                 )
                             } else {
                                 TypeKind::Unknown

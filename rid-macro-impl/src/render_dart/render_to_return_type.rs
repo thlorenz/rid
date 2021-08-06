@@ -22,30 +22,40 @@ impl RustType {
                 ret_ident = ret_ident,
                 res_ident = res_ident
             ),
-            K::Composite(Composite::Vec, inner_type) => format!(
+            K::Composite(Composite::Vec, inner_type, _) => format!(
                 "final {ret_ident} = {res_ident};",
                 ret_ident = ret_ident,
                 res_ident = res_ident
             ),
-            K::Composite(Composite::Option, inner_type) => match inner_type {
-                Some(ty) => {
-                    format!(
+            K::Composite(Composite::Option, inner_type, _) => {
+                match inner_type {
+                    Some(ty) => {
+                        format!(
                         "final {ret_ident} = {res_ident}.address == 0x0 ? null : {res_ident};",
                         ret_ident = ret_ident,
                         res_ident = res_ident
                     )
+                    }
+                    None => {
+                        abort!(
+                            self.rust_ident(),
+                            "Rust Option composite should include inner type"
+                        )
+                    }
                 }
-                None => {
-                    abort!(
-                        self.rust_ident(),
-                        "Rust Option composite should include inner type"
-                    )
-                }
-            },
-            K::Composite(kind, _) => {
+            }
+            K::Composite(Composite::HashMap, key_type, val_type) => {
+                // TODO(thlorenz): HashMap
                 abort!(
                     self.rust_ident(),
-                    "TODO: RustType::render_dart_pointer_type K::Composite({:?})",
+                    "TODO: RustType::render_dart_to_return_type K::Composite::HashMap<{:?}, {:?}>",
+                    key_type, val_type
+                )
+            }
+            K::Composite(kind, _, _) => {
+                abort!(
+                    self.rust_ident(),
+                    "TODO: RustType::render_dart_to_return_type K::Composite({:?})",
                     kind
                 )
             }

@@ -8,13 +8,15 @@ use crate::{
     common::{
         abort,
         state::{get_state, ImplementationType},
-        tokens::{resolve_ptr, resolve_vec_ptr},
+        tokens::{resolve_hash_map_ptr, resolve_ptr, resolve_vec_ptr},
     },
     parse::{
         rust_type::{self, TypeKind},
         ParsedStruct, ParsedStructField,
     },
-    render_common::{VecAccess, VecAccessRender, VecKind},
+    render_common::{
+        HashMapAccess, HashMapKind, VecAccess, VecAccessRender, VecKind,
+    },
     render_dart::vec,
     render_rust::ffi_prelude,
 };
@@ -65,14 +67,20 @@ impl ParsedStruct {
         config: &RenderRustFieldAccessConfig,
     ) -> RenderRustFieldAccessResult {
         let mut vec_accesses: HashMap<String, VecAccess> = HashMap::new();
+        let mut hash_map_accesses: HashMap<String, HashMapAccess> =
+            HashMap::new();
         let tokens: TokenStream = self
             .fields
             .iter()
             .map(|field| {
-                let (tokens, vec_access) =
+                let (tokens, vec_access, hash_map_access) =
                     self.render_rust_field_access(config, &field);
                 if let Some(vec_access) = vec_access {
                     vec_accesses.insert(vec_access.key(), vec_access);
+                }
+                if let Some(hash_map_access) = hash_map_access {
+                    hash_map_accesses
+                        .insert(hash_map_access.key(), hash_map_access);
                 }
                 tokens
             })
@@ -87,7 +95,7 @@ impl ParsedStruct {
         &self,
         config: &RenderRustFieldAccessConfig,
         field: &ParsedStructField,
-    ) -> (TokenStream, Option<VecAccess>) {
+    ) -> (TokenStream, Option<VecAccess>, Option<HashMapAccess>) {
         use TypeKind::*;
 
         let field_ident = &field.ident;
@@ -100,6 +108,7 @@ impl ParsedStruct {
         let ffi_prelude = &config.ffi_prelude_tokens;
 
         let mut vec_access = None;
+        let mut hash_map_access = None;
 
         let method = match &field.rust_type.kind {
             // -----------------
@@ -196,7 +205,8 @@ impl ParsedStruct {
             // -----------------
             // Vec<T>
             // -----------------
-            Composite(rust_type::Composite::Vec, inner_ty) => match inner_ty {
+            Composite(rust_type::Composite::Vec, inner_ty, _) => match inner_ty
+            {
                 Some(item_ty) => {
                     let item_ty_ident = item_ty.rust_ident();
                     let resolve_vec = resolve_vec_ptr(item_ty_ident);
@@ -228,15 +238,49 @@ impl ParsedStruct {
                 }
             },
             // -----------------
+            // HashMap<K, V>
+            // -----------------
+            Composite(rust_type::Composite::HashMap, key_ty, val_ty) => {
+                match (key_ty, val_ty) {
+                    (Some(key_ty), Some(val_ty)) => {
+                        let key_ty_ident = key_ty.rust_ident();
+                        let val_ty_ident = val_ty.rust_ident();
+                        let resolve_hash_map =
+                            resolve_hash_map_ptr(key_ty_ident, val_ty_ident);
+                        let hash_map_ty = &field.rust_type;
+
+                        hash_map_access = Some(HashMapAccess::new(
+                            &hash_map_ty,
+                            &hash_map_ty.rust_ident(),
+                            HashMapKind::FieldReference,
+                            &config.ffi_prelude_tokens,
+                        ));
+
+                        quote_spanned! { fn_ident.span() =>
+                            #ffi_prelude fn #fn_ident(ptr: *mut #struct_ident) -> *const HashMap<#key_ty_ident, #val_ty_ident> {
+                                let receiver = #resolve_receiver;
+                                &receiver.#field_ident as *const _ as *const HashMap<#key_ty_ident, #val_ty_ident>
+                            }
+                        }
+                    }
+                    (_, _) => {
+                        abort!(
+                            &fn_ident,
+                            "HashMap field access should have key and val type"
+                        )
+                    }
+                }
+            }
+            // -----------------
             // Option<T>
             // -----------------
-            Composite(rust_type::Composite::Option, inner) => {
+            Composite(rust_type::Composite::Option, inner, _) => {
                 todo!("model::field_access:Composite:Option");
             }
             // -----------------
             // Custom<T>
             // -----------------
-            Composite(rust_type::Composite::Custom(_, _), inner) => {
+            Composite(rust_type::Composite::Custom(_, _), inner, _) => {
                 todo!("model::field_access:Composite:Custom");
             }
             Unit => abort!(
@@ -248,6 +292,6 @@ impl ParsedStruct {
             }
         };
 
-        (method, vec_access)
+        (method, vec_access, hash_map_access)
     }
 }

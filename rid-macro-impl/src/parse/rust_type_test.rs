@@ -223,7 +223,7 @@ mod vec {
         assert_eq!(ty.rust_ident().to_string(), "Vec", "rust ident");
         assert_matches!(ty.reference, ParsedReference::Owned);
 
-        if let TypeKind::Composite(composite, inner) = ty.kind {
+        if let TypeKind::Composite(composite, inner, _) = ty.kind {
             assert_matches!(composite, Composite::Vec);
             let inner_ty = inner.expect("has inner rust type");
 
@@ -255,7 +255,7 @@ mod vec {
         assert_eq!(ty.rust_ident().to_string(), "Vec", "rust ident");
         assert_matches!(ty.reference, ParsedReference::Owned);
 
-        if let TypeKind::Composite(composite, inner) = ty.kind {
+        if let TypeKind::Composite(composite, inner, _) = ty.kind {
             assert_matches!(composite, Composite::Vec);
             let inner_ty = inner.expect("has inner rust type");
 
@@ -288,7 +288,7 @@ mod vec {
         assert_eq!(ty.rust_ident().to_string(), "Vec", "rust ident");
         assert_matches!(ty.reference, ParsedReference::RefMut(None));
 
-        if let TypeKind::Composite(composite, inner) = ty.kind {
+        if let TypeKind::Composite(composite, inner, _) = ty.kind {
             let todo_str = "Todo".to_string();
             assert_matches!(composite, Composite::Vec);
             let inner_ty = inner.expect("has inner rust type");
@@ -331,7 +331,7 @@ mod vec {
         assert_eq!(ty.rust_ident().to_string(), "Vec", "rust ident");
         assert_matches!(ty.reference, ParsedReference::Ref(None));
 
-        if let TypeKind::Composite(composite, inner) = ty.kind {
+        if let TypeKind::Composite(composite, inner, _) = ty.kind {
             let todo_str = "Todo".to_string();
             assert_matches!(composite, Composite::Vec);
             let inner_ty = inner.expect("has inner rust type");
@@ -374,7 +374,7 @@ mod custom_composites {
         assert_eq!(ty.rust_ident().to_string(), "Cont", "rust ident");
         assert_matches!(ty.reference, ParsedReference::Ref(None));
 
-        if let TypeKind::Composite(composite, inner) = ty.kind {
+        if let TypeKind::Composite(composite, inner, _) = ty.kind {
             assert_matches!(
                 composite,
                 Composite::Custom(
@@ -425,7 +425,7 @@ mod composite_option {
         assert_eq!(ty.rust_ident().to_string(), "Option", "rust ident");
         assert_matches!(ty.reference, ParsedReference::Owned);
 
-        if let TypeKind::Composite(composite, inner) = ty.kind {
+        if let TypeKind::Composite(composite, inner, _) = ty.kind {
             assert_matches!(composite, Composite::Option);
             let inner_ty = inner.expect("has inner rust type");
 
@@ -473,7 +473,7 @@ mod composite_option {
         assert_eq!(ty.rust_ident().to_string(), "Option", "rust ident");
         assert_matches!(ty.reference, ParsedReference::Owned);
 
-        if let TypeKind::Composite(composite, inner) = ty.kind {
+        if let TypeKind::Composite(composite, inner, _) = ty.kind {
             assert_matches!(composite, Composite::Option);
             let inner_ty = inner.expect("has inner rust type");
 

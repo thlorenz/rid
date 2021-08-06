@@ -11,7 +11,7 @@ use crate::{
             ResolvedEnumFromInt,
         },
     },
-    parse::rust_type::{RustType, TypeKind, Value},
+    parse::rust_type::{Composite, RustType, TypeKind, Value},
 };
 
 pub struct RenderedDebugImpl {
@@ -57,10 +57,18 @@ impl RustType {
                     },
                 }
             }
-            TypeKind::Composite(_, _) => {
+            // TODO(thlorenz): HashMap
+            TypeKind::Composite(Composite::HashMap, key_type, val_type) => {
+                todo!(
+                    "render_debug_impl::Composite::HashMap<{:?}, {:?}>",
+                    key_type,
+                    val_type
+                )
+            }
+            TypeKind::Composite(composite, _, _) => {
                 abort!(
                     self.rust_ident(),
-                    "TODO: Cannot yet render display impl for Composite type"
+                    "TODO: Cannot yet render_debug_impl for Composite type {:?}", composite
                 )
             }
             TypeKind::Unit => {

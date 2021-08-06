@@ -31,9 +31,11 @@ impl RustType {
         match &self.kind {
         K::Primitive(_) | K::Unit => quote_spanned! { res_ident.span() => let #res_pointer = #res_ident; } ,
         K::Value(val) => val.render_to_return_type(res_ident, res_pointer, &self.reference, is_field_access),
-        K::Composite(Composite::Vec, rust_type) => render_vec_to_return_type(res_ident, res_pointer, rust_type),
-        K::Composite(Composite::Option, rust_type) => render_option_to_return_type(res_ident, res_pointer, rust_type),
-        K::Composite(_, _) =>  todo!("render_pointer::Composite"),
+        K::Composite(Composite::Vec, rust_type, _) => render_vec_to_return_type(res_ident, res_pointer, rust_type),
+        K::Composite(Composite::Option, rust_type, _) => render_option_to_return_type(res_ident, res_pointer, rust_type),
+        // TODO(thlorenz): HashMap
+        K::Composite(Composite::HashMap, key_type, val_type) =>  todo!("render_pointer::Composite::HashMap<{:?}, {:?}>", key_type, val_type),
+        K::Composite(composite, _, _) =>  todo!("render_pointer::Composite::{:?}", composite),
         K::Unknown => todo!("render_pointer::Unknown - should error here or possibly that validation should happen before hand"),
     }
     }

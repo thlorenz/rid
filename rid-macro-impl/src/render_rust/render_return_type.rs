@@ -31,7 +31,7 @@ pub fn render_return_type(rust_type: &RustType) -> RenderedReturnType {
             type_alias = alias;
             tokens
         }
-        K::Composite(Composite::Vec, inner_ty) => match inner_ty {
+        K::Composite(Composite::Vec, inner_ty, _) => match inner_ty {
             Some(ty) => {
                 let (alias, tokens) = render_vec_return_type(ty);
                 type_alias = alias;
@@ -41,7 +41,7 @@ pub fn render_return_type(rust_type: &RustType) -> RenderedReturnType {
                 todo!("blow up since a composite should include inner type")
             }
         },
-        K::Composite(Composite::Option, inner_ty) => match inner_ty {
+        K::Composite(Composite::Option, inner_ty, _) => match inner_ty {
             Some(ty) => {
                 let (alias, tokens) = render_option_return_type(ty);
                 type_alias = alias;
@@ -51,8 +51,11 @@ pub fn render_return_type(rust_type: &RustType) -> RenderedReturnType {
                 todo!("blow up since a composite should include inner type")
             }
         },
-        K::Composite(composite, rust_type) => {
-            todo!("render_return_type::custom_composite")
+        K::Composite(Composite::HashMap, key_ty, val_ty) => {
+            todo!("render_return_type::custom_composite HashMap<{:?}, {:?}>", key_ty, val_ty)
+        }
+        K::Composite(composite, rust_type, _) => {
+            todo!("render_return_type::custom_composite {:?}", composite)
         },
         K::Unit => quote! { () },
         K::Unknown => todo!("unknown .. need better error .. also gets triggered when exporting custom type without info "),
@@ -96,7 +99,7 @@ fn render_vec_return_type(
             let tokens = quote! { rid::RidVec<#val_tokens> };
             (alias, tokens)
         }
-        K::Composite(_, _) => {
+        K::Composite(_, _, _) => {
             abort!(
                 inner_type.rust_ident(),
                 "todo!(render_vec_return_type::composite)"
@@ -129,7 +132,7 @@ fn render_option_return_type(
             (None, tokens)
         }
         K::Value(val) => render_value_return_type(val, &inner_type),
-        K::Composite(_, _) => {
+        K::Composite(_, _, _) => {
             abort!(
                 inner_type.rust_ident(),
                 "todo!(render_option_return_type::composite)"

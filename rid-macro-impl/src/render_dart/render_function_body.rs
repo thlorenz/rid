@@ -68,7 +68,7 @@ impl RustType {
                 this_arg = this_arg,
                 params = params
             ),
-           K::Composite(Composite::Vec, rust_type) => format!(
+           K::Composite(Composite::Vec, rust_type, _) => format!(
                 "{comment}{indent}  final {res_ident} = {rid_ffi}.{rid_fn_ident}({this_arg}{params});",
                 comment = comment,
                 indent = indent,
@@ -78,7 +78,7 @@ impl RustType {
                 this_arg = this_arg,
                 params = params
             ),
-            K::Composite(Composite::Option, rust_type) => format!(
+            K::Composite(Composite::Option, rust_type, _) => format!(
                 "{comment}{indent}  final {res_ident} = {rid_ffi}.{rid_fn_ident}({this_arg}{params});",
                 comment = comment,
                 indent = indent,
@@ -88,7 +88,11 @@ impl RustType {
                 this_arg = this_arg,
                 params = params
             ),
-            K::Composite(kind, _) => {
+            K::Composite(Composite::HashMap, key_type, val_type) => {
+                // TODO(thlorenz): HashMap 
+                abort!(self.rust_ident(), "TODO: RustType::render_fn_body K::Composite::HashMap<{:?}, {:?}>", key_type, val_type)
+            },
+            K::Composite(kind, _, _) => {
                 abort!(self.rust_ident(), "TODO: RustType::render_fn_body K::Composite({:?})", kind)
             }
             K::Unknown => abort!(self.rust_ident(), "TODO: RustType::render_fn_body K::Unknown"),

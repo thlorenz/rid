@@ -31,7 +31,7 @@ impl RustType {
                     ),
                 },
             },
-            K::Composite(Composite::Vec, inner_type) => match inner_type {
+            K::Composite(Composite::Vec, inner_type, _) => match inner_type {
                 Some(ty) => {
                     let item_type = ty.rust_ident();
                     format!(
@@ -48,10 +48,10 @@ impl RustType {
                     )
                 }
             },
-            K::Composite(Composite::Option, inner_type) => {
+            K::Composite(Composite::Option, inner_type, _) => {
                 self.render_dart_pointer_type()
             }
-            K::Composite(kind, _) => {
+            K::Composite(kind, _, _) => {
                 abort!(
                     self.rust_ident(),
                     "TODO: RustType::render_dart_field_return_type K::Composite({:?})",

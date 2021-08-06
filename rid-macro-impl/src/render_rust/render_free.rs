@@ -35,10 +35,15 @@ pub fn render_free(
         // TODO: in general we shouldn't free refs, but only owned values since the refs
         // are most likely to a model property which is still alive
         K::Value(val) => None,
-        K::Composite(Composite::Vec, rust_type) => {
+        K::Composite(Composite::Vec, _, _) => {
             Some(quote_spanned! { arg_ident.span() =>  #arg_ident.free(); })
         }
-        K::Composite(_, _) => todo!("render_free::Composite"),
+        K::Composite(Composite::HashMap, _, _) => {
+            Some(quote_spanned! { arg_ident.span() =>  #arg_ident.free(); })
+        }
+        K::Composite(composite, _, _) => {
+            todo!("render_free::Composite::{:?}", composite)
+        }
         K::Unknown => None,
     };
 

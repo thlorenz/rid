@@ -28,15 +28,19 @@ impl RustType {
                 alias = al;
                 tokens
             }
-            K::Composite(Composite::Vec, rust_type) => {
+            K::Composite(Composite::Vec, rust_type, _) => {
                 // similar to same case in ./render_return_type.rs
                 todo!("render_pointer_type::custom_composite::vec")
             }
-            K::Composite(Composite::Option, rust_type) => {
+            K::Composite(Composite::Option, rust_type, _) => {
                 // similar to same case in ./render_return_type.rs
                 todo!("render_pointer_type::custom_composite::option")
             }
-            K::Composite(composite, rust_type) => {
+            K::Composite(Composite::HashMap, key_type, val_type) => {
+                // similar to same case in ./render_return_type.rs
+                todo!("render_pointer_type::custom_composite::hash_map")
+            }
+            K::Composite(composite, rust_type, _) => {
                 todo!("render_pointer_type::custom_composite")
             }
             K::Unit => {

@@ -30,7 +30,7 @@ impl RustType {
             K::Value(val) => {
                 val.render_dart_pointer_type(self.dart_wrapper_rust_ident())
             }
-            K::Composite(Composite::Vec, inner_type) => match inner_type {
+            K::Composite(Composite::Vec, inner_type, _) => match inner_type {
                 Some(ty) => {
                     let item_type = ty.rust_ident();
                     let pointer = format!(
@@ -48,27 +48,37 @@ impl RustType {
                     )
                 }
             },
-            K::Composite(Composite::Option, inner_type) => match inner_type {
-                Some(ty) => {
-                    let pointer = format!(
-                        "{dart_ffi}.Pointer<{ffigen_bind}.{ty}>?",
-                        dart_ffi = DART_FFI,
-                        ffigen_bind = FFI_GEN_BIND,
-                        ty = inner_type
-                            .as_ref()
-                            .unwrap()
-                            .dart_wrapper_rust_ident(),
-                    );
-                    pointer
+            K::Composite(Composite::Option, inner_type, _) => {
+                match inner_type {
+                    Some(ty) => {
+                        let pointer = format!(
+                            "{dart_ffi}.Pointer<{ffigen_bind}.{ty}>?",
+                            dart_ffi = DART_FFI,
+                            ffigen_bind = FFI_GEN_BIND,
+                            ty = inner_type
+                                .as_ref()
+                                .unwrap()
+                                .dart_wrapper_rust_ident(),
+                        );
+                        pointer
+                    }
+                    None => {
+                        abort!(
+                            self.rust_ident(),
+                            "Rust Option composite should include inner type"
+                        )
+                    }
                 }
-                None => {
-                    abort!(
-                        self.rust_ident(),
-                        "Rust Option composite should include inner type"
-                    )
-                }
-            },
-            K::Composite(kind, _) => {
+            }
+            K::Composite(Composite::HashMap, key_type, val_type) => {
+                // TODO(thlorenz): HashMap
+                abort!(
+                    self.rust_ident(),
+                    "TODO: RustType::render_dart_pointer_type K::Composite::HashMap<{:?}, {:?}>",
+                    key_type, val_type
+                )
+            }
+            K::Composite(kind, _, _) => {
                 abort!(
                     self.rust_ident(),
                     "TODO: RustType::render_dart_pointer_type K::Composite({:?})",

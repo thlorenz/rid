@@ -15,6 +15,7 @@ pub use render_to_return_type::*;
 pub use type_alias::*;
 
 mod ffi_prelude;
+pub(crate) mod hash_map;
 mod render_access_item;
 mod render_debug_impl;
 mod render_display_impl;

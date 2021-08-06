@@ -30,7 +30,7 @@ pub fn render_access_item(
         K::Primitive(_) | K::Unit => None,
         // TODO: do we need special access code here?
         K::Value(val) => None,
-        K::Composite(Composite::Vec, inner_type) => match inner_type {
+        K::Composite(Composite::Vec, inner_type, _) => match inner_type {
             Some(ty) => {
                 let (alias, tokens) = render_vec_access_item(
                     &rust_type,
@@ -44,7 +44,13 @@ pub fn render_access_item(
                 todo!("render_access_item: blow up since a composite should include inner type")
             }
         },
-        K::Composite(_, _) => todo!("render_free::Composite"),
+        // TODO(thlorenz): HashMap
+        K::Composite(Composite::HashMap, key_type, val_type) => todo!(
+            "render_access_item::Composite::HashMap<{:?}, {:?}>",
+            key_type,
+            val_type
+        ),
+        K::Composite(_, _, _) => todo!("render_access_item::Composite"),
         K::Unknown => None,
     };
 
