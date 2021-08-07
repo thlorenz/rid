@@ -13,7 +13,7 @@ pub struct ExpandState {
 }
 
 pub enum ImplementationType {
-    VecAccess,
+    CollectionAccess,
     DartEnum,
     UtilsModule,
     Free,
@@ -22,8 +22,8 @@ pub enum ImplementationType {
 impl fmt::Display for ImplementationType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            ImplementationType::VecAccess => {
-                write!(f, "VecAccess")
+            ImplementationType::CollectionAccess => {
+                write!(f, "CollectionAccess")
             }
             ImplementationType::DartEnum => {
                 write!(f, "DartEnum")

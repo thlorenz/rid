@@ -135,7 +135,7 @@ pub fn rid_export_impl(
 
             let vec_access_tokens = if config.render_vec_access {
                 let needed_vec_accesses = get_state().need_implemtation(
-                    &ImplementationType::VecAccess,
+                    &ImplementationType::CollectionAccess,
                     vec_accesses,
                 );
                 render_vec_accesses(

@@ -15,7 +15,7 @@ use crate::{
         ParsedStruct, ParsedStructField,
     },
     render_common::{
-        HashMapAccess, HashMapKind, VecAccess, VecAccessRender, VecKind,
+        AccessKind, AccessRender, HashMapAccess, RenderableAccess, VecAccess,
     },
     render_dart::vec,
     render_rust::ffi_prelude,
@@ -24,7 +24,7 @@ use crate::{
 pub struct RenderRustFieldAccessConfig {
     pub ffi_prelude_tokens: TokenStream,
     pub render: bool,
-    pub vec_accesses: VecAccessRender,
+    pub accesses: AccessRender,
 }
 
 impl Default for RenderRustFieldAccessConfig {
@@ -32,33 +32,33 @@ impl Default for RenderRustFieldAccessConfig {
         Self {
             ffi_prelude_tokens: ffi_prelude(),
             render: true,
-            vec_accesses: VecAccessRender::Default,
+            accesses: AccessRender::Default,
         }
     }
 }
 impl RenderRustFieldAccessConfig {
-    pub fn for_rust_tests(vec_accesses: VecAccessRender) -> Self {
+    pub fn for_rust_tests(accesses: AccessRender) -> Self {
         Self {
             ffi_prelude_tokens: TokenStream::new(),
             render: true,
-            vec_accesses,
+            accesses,
         }
     }
 }
 
 impl RenderRustFieldAccessConfig {
-    pub fn for_dart_tests(vec_accesses: VecAccessRender) -> Self {
+    pub fn for_dart_tests(accesses: AccessRender) -> Self {
         Self {
             ffi_prelude_tokens: TokenStream::new(),
             render: false,
-            vec_accesses,
+            accesses,
         }
     }
 }
 
 pub struct RenderRustFieldAccessResult {
     pub tokens: TokenStream,
-    pub vec_accesses: HashMap<String, VecAccess>,
+    pub collection_accesses: HashMap<String, Box<dyn RenderableAccess>>,
 }
 
 impl ParsedStruct {
@@ -66,28 +66,26 @@ impl ParsedStruct {
         &self,
         config: &RenderRustFieldAccessConfig,
     ) -> RenderRustFieldAccessResult {
-        let mut vec_accesses: HashMap<String, VecAccess> = HashMap::new();
-        let mut hash_map_accesses: HashMap<String, HashMapAccess> =
-            HashMap::new();
+        let mut collection_accesses: HashMap<
+            String,
+            Box<dyn RenderableAccess>,
+        > = HashMap::new();
+
         let tokens: TokenStream = self
             .fields
             .iter()
             .map(|field| {
-                let (tokens, vec_access, hash_map_access) =
+                let (tokens, access) =
                     self.render_rust_field_access(config, &field);
-                if let Some(vec_access) = vec_access {
-                    vec_accesses.insert(vec_access.key(), vec_access);
-                }
-                if let Some(hash_map_access) = hash_map_access {
-                    hash_map_accesses
-                        .insert(hash_map_access.key(), hash_map_access);
+                if let Some(access) = access {
+                    collection_accesses.insert(access.key(), access);
                 }
                 tokens
             })
             .collect();
         RenderRustFieldAccessResult {
             tokens,
-            vec_accesses,
+            collection_accesses,
         }
     }
 
@@ -95,7 +93,7 @@ impl ParsedStruct {
         &self,
         config: &RenderRustFieldAccessConfig,
         field: &ParsedStructField,
-    ) -> (TokenStream, Option<VecAccess>, Option<HashMapAccess>) {
+    ) -> (TokenStream, Option<Box<dyn RenderableAccess>>) {
         use TypeKind::*;
 
         let field_ident = &field.ident;
@@ -107,8 +105,7 @@ impl ParsedStruct {
         let fn_ident = &field.method_ident(struct_ident);
         let ffi_prelude = &config.ffi_prelude_tokens;
 
-        let mut vec_access = None;
-        let mut hash_map_access = None;
+        let mut collection_access: Option<Box<dyn RenderableAccess>> = None;
 
         let method = match &field.rust_type.kind {
             // -----------------
@@ -214,17 +211,17 @@ impl ParsedStruct {
 
                     let vec_type_key = VecAccess::key_from_item_rust_ident(
                         item_ty.rust_ident(),
-                        &VecKind::FieldReference,
+                        &AccessKind::FieldReference,
                     );
 
                     // NOTE: that we decide if to actually render the vec inside
                     // ./render_field_access.rs  aggregate_vec_accesses
-                    vec_access = Some(VecAccess::new(
+                    collection_access = Some(Box::new(VecAccess::new(
                         &vec_ty,
                         &vec_ty.rust_ident(),
-                        VecKind::FieldReference,
+                        AccessKind::FieldReference,
                         &config.ffi_prelude_tokens,
-                    ));
+                    )));
 
                     quote_spanned! { fn_ident.span() =>
                         #ffi_prelude fn #fn_ident(ptr: *mut #struct_ident) -> *const Vec<#item_ty_ident> {
@@ -249,12 +246,12 @@ impl ParsedStruct {
                             resolve_hash_map_ptr(key_ty_ident, val_ty_ident);
                         let hash_map_ty = &field.rust_type;
 
-                        hash_map_access = Some(HashMapAccess::new(
+                        collection_access = Some(Box::new(HashMapAccess::new(
                             &hash_map_ty,
                             &hash_map_ty.rust_ident(),
-                            HashMapKind::FieldReference,
+                            AccessKind::FieldReference,
                             &config.ffi_prelude_tokens,
-                        ));
+                        )));
 
                         quote_spanned! { fn_ident.span() =>
                             #ffi_prelude fn #fn_ident(ptr: *mut #struct_ident) -> *const HashMap<#key_ty_ident, #val_ty_ident> {
@@ -292,6 +289,6 @@ impl ParsedStruct {
             }
         };
 
-        (method, vec_access, hash_map_access)
+        (method, collection_access)
     }
 }

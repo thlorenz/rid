@@ -9,7 +9,7 @@ use crate::{
     parse::ParsedFunction,
     render_common::{
         render_vec_accesses, PointerTypeAlias, RenderFunctionExportConfig,
-        VecAccess,
+        RenderableAccess, VecAccess,
     },
 };
 

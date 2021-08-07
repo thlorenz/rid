@@ -4,15 +4,7 @@ use syn::Ident;
 use crate::{attrs::TypeInfoMap, parse::rust_type::RustType};
 use quote::{format_ident, quote};
 
-/// Distinguishes between hash maps that are references to fields on structs or enums vs.
-/// hash maps created during a method call and returned to Dart without keeping a reference
-/// on the Rust side.
-pub enum HashMapKind {
-    /// HashMap is a reference to a field held onto by Rust
-    FieldReference,
-    /// HashMap is instantiated inside a method and returned as RidHashMap, not held onto by Rust
-    MethodReturn,
-}
+use super::AccessKind;
 
 pub struct HashMapAccess {
     /// Type of the HashMap
@@ -32,8 +24,8 @@ pub struct HashMapAccess {
     /// FFI prelude applied to generated rust functions
     pub rust_ffi_prelude: TokenStream,
 
-    /// The kind of the vector
-    pub kind: HashMapKind,
+    /// The kind of the hash map, i.e. returned from a method or a field
+    pub kind: AccessKind,
 
     /// Name of function to get hash map length
     pub fn_len_ident: Ident,
@@ -42,7 +34,7 @@ pub struct HashMapAccess {
     pub fn_get_ident: Ident,
 
     /// Name of function to query if hash map contains a key
-    pub fn_contains_ident: Ident,
+    pub fn_contains_key_ident: Ident,
 
     /// Name of function to free hash map (not used for field access)
     pub fn_free_ident: Ident,
@@ -52,7 +44,7 @@ impl HashMapAccess {
     pub fn new(
         hash_map_ty: &RustType,
         hash_map_ty_ident: &Ident,
-        kind: HashMapKind,
+        kind: AccessKind,
         ffi_prelude: &TokenStream,
     ) -> Self {
         let (key_type, val_type) = hash_map_ty
@@ -68,7 +60,7 @@ impl HashMapAccess {
         let fn_len_ident = format_ident!("rid_len_{}", key);
         let fn_free_ident = format_ident!("rid_free_{}", key);
         let fn_get_ident = format_ident!("rid_get_{}", key);
-        let fn_contains_ident = format_ident!("rid_contains_{}", key);
+        let fn_contains_key_ident = format_ident!("rid_contains_key_{}", key);
 
         Self {
             hash_map_type: hash_map_ty.clone(),
@@ -79,7 +71,7 @@ impl HashMapAccess {
             fn_len_ident,
             fn_free_ident,
             fn_get_ident,
-            fn_contains_ident,
+            fn_contains_key_ident,
             kind,
         }
     }
@@ -87,24 +79,50 @@ impl HashMapAccess {
     pub fn key_from_item_rust_ident(
         key_ident: &Ident,
         val_ident: &Ident,
-        kind: &HashMapKind,
+        kind: &AccessKind,
     ) -> String {
         match kind {
-            HashMapKind::FieldReference => {
-                format!("hash_map{}_{}", key_ident, val_ident)
+            AccessKind::FieldReference => {
+                format!("hash_map_{}_{}", key_ident, val_ident)
             }
-            HashMapKind::MethodReturn => {
-                format!("ridhash_map{}_{}", key_ident, val_ident)
+            AccessKind::MethodReturn => {
+                format!("ridhash_map_{}_{}", key_ident, val_ident)
             }
         }
         .to_lowercase()
     }
+}
 
-    pub fn key(&self) -> String {
-        Self::key_from_item_rust_ident(
-            self.key_type.rust_ident(),
-            self.val_type.rust_ident(),
-            &self.kind,
-        )
-    }
+pub fn render_hash_map_accesses(
+    hash_map_accesses: &[HashMapAccess],
+    type_infos: &TypeInfoMap,
+    comment: &str,
+) -> Vec<TokenStream> {
+    todo!("render_hash_map_accesses")
+    /*
+    hash_map_accesses
+        .iter()
+        .map(|x| {
+            let rust_tokens = x.render_rust().tokens;
+
+            let implement_vecs = x.render_dart(type_infos, comment);
+            let dart_string: String = format!(
+                r###"
+            {comment} Vector access methods matching the below Rust methods.
+            {comment}
+            {comment} ```dart
+            {implement_vecs}
+            {comment} ```"###,
+                comment = comment,
+                implement_vecs = implement_vecs
+            );
+            let dart_tokens: TokenStream = dart_string.parse().unwrap();
+
+            quote! {
+                #dart_tokens
+                #rust_tokens
+            }
+        })
+        .collect()
+        */
 }

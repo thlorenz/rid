@@ -11,8 +11,8 @@ use crate::{
         ParsedFunction, ParsedReceiver, ParsedReference,
     },
     render_common::{
-        fn_ident_and_impl_ident_string, PointerTypeAlias,
-        RenderFunctionExportConfig, VecAccess, VecKind,
+        fn_ident_and_impl_ident_string, AccessKind, PointerTypeAlias,
+        RenderFunctionExportConfig, VecAccess,
     },
     render_rust::{ffi_prelude, render_rust_arg, RenderedReceiverArgPass},
 };
@@ -139,7 +139,7 @@ pub fn render_function_export(
         Some(VecAccess::new(
             &return_arg,
             ret_ident,
-            VecKind::MethodReturn,
+            AccessKind::MethodReturn,
             &ffi_prelude,
         ))
     } else {

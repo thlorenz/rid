@@ -4,7 +4,7 @@ use rid_common::{DART_COLLECTION, DART_FFI, FFI_GEN_BIND, RID_FFI};
 use crate::{
     attrs::TypeInfoMap,
     parse::{dart_type::DartType, rust_type::RustType},
-    render_common::{VecAccess, VecKind},
+    render_common::{AccessKind, RenderableAccess, VecAccess},
 };
 
 use super::RenderDartTypeOpts;
@@ -14,22 +14,7 @@ const TEMPLATE_FIELD_ACCESS: &str =
 const TEMPLATE: &str = std::include_str!("./rid_vec.dart");
 
 impl VecAccess {
-    pub fn render_dart(
-        &self,
-        type_infos: &TypeInfoMap,
-        comment: &str,
-    ) -> String {
-        match self.kind {
-            VecKind::FieldReference => {
-                self.render_dart_for_field_reference(type_infos, comment)
-            }
-            VecKind::MethodReturn => {
-                self.render_dart_return_from_method(type_infos, comment)
-            }
-        }
-    }
-
-    fn render_dart_for_field_reference(
+    pub fn render_dart_for_field_reference(
         &self,
         type_infos: &TypeInfoMap,
         comment: &str,
@@ -80,7 +65,7 @@ impl VecAccess {
             .replace("{dart_collection}", DART_COLLECTION)
     }
 
-    fn render_dart_return_from_method(
+    pub fn render_dart_return_from_method(
         &self,
         type_infos: &TypeInfoMap,
         comment: &str,

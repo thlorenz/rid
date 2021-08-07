@@ -1,3 +1,4 @@
+pub mod hash_map;
 mod render_dart_arg;
 mod render_dart_type;
 mod render_debug_extension;

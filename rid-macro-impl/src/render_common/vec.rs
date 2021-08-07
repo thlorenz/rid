@@ -1,24 +1,13 @@
 use proc_macro2::TokenStream;
 use syn::Ident;
 
-use crate::{attrs::TypeInfoMap, parse::rust_type::RustType};
+use crate::{
+    attrs::TypeInfoMap, parse::rust_type::RustType,
+    render_common::RenderableAccess,
+};
 use quote::{format_ident, quote};
 
-pub enum VecAccessRender {
-    Force,
-    Omit,
-    Default,
-}
-
-/// Distinguishes between vectors that are references to fields on structs or enums vs.
-/// vectors created during a method call and returned to Dart without keeping a reference
-/// on the Rust side.
-pub enum VecKind {
-    /// Vec is a reference to a field held onto by Rust
-    FieldReference,
-    /// Vec is instantiated inside a method and returned as RidVec, not held onto by Rust
-    MethodReturn,
-}
+use super::AccessKind;
 
 pub struct VecAccess {
     /// Type of the vector
@@ -48,14 +37,14 @@ pub struct VecAccess {
     pub fn_free_ident: Ident,
 
     /// The kind of the vector
-    pub kind: VecKind,
+    pub kind: AccessKind,
 }
 
 impl VecAccess {
     pub fn new(
         vec_ty: &RustType,
         vec_ty_ident: &Ident,
-        kind: VecKind,
+        kind: AccessKind,
         ffi_prelude: &TokenStream,
     ) -> Self {
         let item_type = vec_ty
@@ -81,17 +70,13 @@ impl VecAccess {
         }
     }
 
-    pub fn key(&self) -> String {
-        VecAccess::key_from_item_rust_ident(
-            self.item_type.rust_ident(),
-            &self.kind,
-        )
-    }
-
-    pub fn key_from_item_rust_ident(ident: &Ident, kind: &VecKind) -> String {
+    pub fn key_from_item_rust_ident(
+        ident: &Ident,
+        kind: &AccessKind,
+    ) -> String {
         match kind {
-            VecKind::FieldReference => format!("vec_{}", ident),
-            VecKind::MethodReturn => format!("ridvec_{}", ident),
+            AccessKind::FieldReference => format!("vec_{}", ident),
+            AccessKind::MethodReturn => format!("ridvec_{}", ident),
         }
         .to_lowercase()
     }
