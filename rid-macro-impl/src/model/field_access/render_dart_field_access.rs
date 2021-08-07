@@ -198,11 +198,22 @@ impl DartType {
                 rid_ffi = RID_FFI,
                 ffi_method = ffi_method_ident
             ),
+            // -----------------
+            // Collection Types
+            // -----------------
             DartType::Vec(_, _) => format!(
                 "{{ return {rid_ffi}.{ffi_method}(this); }}",
                 rid_ffi = RID_FFI,
                 ffi_method = ffi_method_ident
             ),
+            DartType::HashMap(_, _, _) => format!(
+                "{{ return {rid_ffi}.{ffi_method}(this); }}",
+                rid_ffi = RID_FFI,
+                ffi_method = ffi_method_ident
+            ),
+            // -----------------
+            // Invalid
+            // -----------------
             DartType::Unit => {
                 abort!(ffi_method_ident, "Dart get to void field not supported")
             }

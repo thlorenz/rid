@@ -21,9 +21,13 @@ pub struct HashMapAccess {
     /// Identifier of type of the hash map, i.e. `HashMap`
     pub hash_map_type_ident: Ident,
 
-    /// Type of the item enclosed by the hashSet
+    /// Type of the key item enclosed by the HashMap
     /// Example: `String`
-    pub item_type: RustType,
+    pub key_type: RustType,
+    ///
+    /// Type of the val item enclosed by the HashMap
+    /// Example: `String`
+    pub val_type: RustType,
 
     /// FFI prelude applied to generated rust functions
     pub rust_ffi_prelude: TokenStream,
@@ -51,11 +55,15 @@ impl HashMapAccess {
         kind: HashMapKind,
         ffi_prelude: &TokenStream,
     ) -> Self {
-        let item_type = hash_map_ty
-            .inner_composite_type()
-            .expect("HashMap should have inner type");
+        let (key_type, val_type) = hash_map_ty
+            .key_val_composite_types()
+            .expect("HashMap should have key/val types");
 
-        let key = Self::key_from_item_rust_ident(item_type.rust_ident(), &kind);
+        let key = Self::key_from_item_rust_ident(
+            key_type.rust_ident(),
+            val_type.rust_ident(),
+            &kind,
+        );
 
         let fn_len_ident = format_ident!("rid_len_{}", key);
         let fn_free_ident = format_ident!("rid_free_{}", key);
@@ -65,7 +73,8 @@ impl HashMapAccess {
         Self {
             hash_map_type: hash_map_ty.clone(),
             hash_map_type_ident: hash_map_ty_ident.clone(),
-            item_type,
+            key_type,
+            val_type,
             rust_ffi_prelude: ffi_prelude.clone(),
             fn_len_ident,
             fn_free_ident,
@@ -76,17 +85,26 @@ impl HashMapAccess {
     }
 
     pub fn key_from_item_rust_ident(
-        ident: &Ident,
+        key_ident: &Ident,
+        val_ident: &Ident,
         kind: &HashMapKind,
     ) -> String {
         match kind {
-            HashMapKind::FieldReference => format!("hash_map{}", ident),
-            HashMapKind::MethodReturn => format!("ridhash_map{}", ident),
+            HashMapKind::FieldReference => {
+                format!("hash_map{}_{}", key_ident, val_ident)
+            }
+            HashMapKind::MethodReturn => {
+                format!("ridhash_map{}_{}", key_ident, val_ident)
+            }
         }
         .to_lowercase()
     }
 
     pub fn key(&self) -> String {
-        Self::key_from_item_rust_ident(self.item_type.rust_ident(), &self.kind)
+        Self::key_from_item_rust_ident(
+            self.key_type.rust_ident(),
+            self.val_type.rust_ident(),
+            &self.kind,
+        )
     }
 }

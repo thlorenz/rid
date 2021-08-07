@@ -15,6 +15,7 @@ pub enum DartType {
     String(bool),
     Custom(bool, TypeInfo, String),
     Vec(bool, Box<DartType>),
+    HashMap(bool, Box<DartType>, Box<DartType>),
     Unit,
 }
 
@@ -71,10 +72,29 @@ impl DartType {
                     type_infos,
                     true,
                 ),
-                C::HashMap => abort!(
-                    rust_type.rust_ident(),
-                    "TODO: convert HashMap composite rust type to dart type"
-                ),
+                C::HashMap => {
+                    let fst_inner = DartType::from_with_nullable(
+                        fst_ty
+                            .as_ref()
+                            .expect("HahsMap Composite should have key type")
+                            .as_ref(),
+                        type_infos,
+                        false,
+                    );
+                    let snd_inner = DartType::from_with_nullable(
+                        snd_ty
+                            .as_ref()
+                            .expect("HahsMap Composite should have value type")
+                            .as_ref(),
+                        type_infos,
+                        false,
+                    );
+                    DartType::HashMap(
+                        nullable,
+                        Box::new(fst_inner),
+                        Box::new(snd_inner),
+                    )
+                }
                 C::Custom(_, _) => abort!(
                     rust_type.rust_ident(),
                     "TODO: convert custom composite rust type to dart type"

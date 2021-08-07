@@ -139,6 +139,10 @@ impl RustType {
         self.kind.inner_composite_rust_type()
     }
 
+    pub fn key_val_composite_types(&self) -> Option<(RustType, RustType)> {
+        self.kind.key_val_composite_rust_types()
+    }
+
     pub fn is_enum(&self) -> bool {
         self.kind.is_enum()
     }
@@ -274,6 +278,28 @@ impl TypeKind {
             TypeKind::Value(_) => None,
             TypeKind::Composite(Composite::Vec, inner, _) => {
                 inner.as_ref().map(|x| (*x.clone()))
+            }
+            TypeKind::Composite(_, _, _) => None,
+            TypeKind::Unit => None,
+            TypeKind::Unknown => None,
+        }
+    }
+
+    pub fn key_val_composite_rust_types(&self) -> Option<(RustType, RustType)> {
+        match self {
+            TypeKind::Primitive(_) => None,
+            TypeKind::Value(_) => None,
+            TypeKind::Composite(Composite::HashMap, key_ty, val_ty) => {
+                let key = key_ty
+                    .as_ref()
+                    .map(|x| *x.clone())
+                    .expect("hashmap should have key type");
+                let val = val_ty
+                    .as_ref()
+                    .map(|x| *x.clone())
+                    .expect("hashmap should have val type");
+
+                Some((key, val))
             }
             TypeKind::Composite(_, _, _) => None,
             TypeKind::Unit => None,
