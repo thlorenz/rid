@@ -11,7 +11,7 @@ use super::RenderDartTypeOpts;
 
 const TEMPLATE_FIELD_ACCESS: &str =
     std::include_str!("./vec_field_access.dart");
-const TEMPLATE: &str = std::include_str!("./vec.dart");
+const TEMPLATE: &str = std::include_str!("./rid_vec.dart");
 
 impl VecAccess {
     pub fn render_dart(
