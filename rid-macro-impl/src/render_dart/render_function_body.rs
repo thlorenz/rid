@@ -26,7 +26,7 @@ impl RustType {
         comment: &str,
     ) -> String {
         let to_return_type =
-            self.render_dart_to_return_type(RES_IDENT, RET_IDENT);
+            self.render_dart_to_return_type(RES_IDENT, RET_IDENT, comment);
 
         let this_arg = match receiver {
             Some(_) if args.is_empty() => "this",

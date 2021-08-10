@@ -9,6 +9,7 @@ impl RustType {
         &self,
         res_ident: &str,
         ret_ident: &str,
+        comment: &str,
     ) -> String {
         use TypeKind as K;
         match &self.kind {
@@ -21,6 +22,14 @@ impl RustType {
                 "final {ret_ident} = {res_ident};",
                 ret_ident = ret_ident,
                 res_ident = res_ident
+            ),
+            K::Value(val) if self.kind.is_string_like() => format!(
+                r###"
+{comment}     final {ret_ident} = {res_ident}.toDartString();
+{comment}     {res_ident}.free();"###,
+                ret_ident = ret_ident,
+                res_ident = res_ident,
+                comment = comment
             ),
             K::Value(val) => format!(
                 "final {ret_ident} = {res_ident};",
