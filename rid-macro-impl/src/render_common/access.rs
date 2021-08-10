@@ -7,10 +7,12 @@ use super::{HashMapAccess, PointerTypeAlias, VecAccess};
 /// Distinguishes between accesses that are references to fields on structs or enums vs.
 /// instances created during a method call and returned to Dart without keeping a reference
 /// on the Rust side.
+#[derive(PartialEq)]
 pub enum AccessKind {
-    /// Vec is a reference to a field held onto by Rust
+    /// Type is a reference to a field held onto by Rust
     FieldReference,
-    /// Vec is instantiated inside a method and returned as RidVec, not held onto by Rust
+    /// Type is instantiated inside a method and returned i.e. as RidVec for Vecs, not held onto by
+    /// Rust. This is the case for [rid::export]
     MethodReturn,
 }
 

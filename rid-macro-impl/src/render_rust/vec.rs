@@ -30,6 +30,7 @@ impl VecAccess {
             &self.vec_type,
             &self.fn_free_ident,
             &self.rust_ffi_prelude,
+            &AccessKind::MethodReturn,
         );
         type_alias.map(|x| type_aliases.push(x));
 
@@ -40,6 +41,7 @@ impl VecAccess {
             &self.vec_type,
             &self.fn_get_ident,
             &self.rust_ffi_prelude,
+            &AccessKind::MethodReturn,
         );
         type_alias.map(|x| type_aliases.push(x));
 
@@ -101,7 +103,10 @@ impl VecAccess {
         } else if self.item_type.is_string_like() {
             let RenderedReturnType {
                 tokens: return_ty, ..
-            } = render_return_type(&self.item_type);
+            } = render_return_type(
+                &self.item_type,
+                &AccessKind::FieldReference,
+            );
 
             let res_ident = format_ident!("item");
             let res_pointer = format_ident!("item_ptr");

@@ -8,7 +8,7 @@ use crate::{
         rust_type::{Composite, Primitive, RustType, TypeKind, Value},
         ParsedFunction, ParsedReference,
     },
-    render_common::PointerTypeAlias,
+    render_common::{AccessKind, PointerTypeAlias},
 };
 
 pub struct RenderedAccessItem {
@@ -20,6 +20,7 @@ pub fn render_access_item(
     rust_type: &RustType,
     fn_access_ident: &Ident,
     ffi_prelude: &TokenStream,
+    access_kind: &AccessKind,
 ) -> RenderedAccessItem {
     use TypeKind as K;
 
@@ -36,6 +37,7 @@ pub fn render_access_item(
                     &rust_type,
                     ty.as_ref(),
                     fn_access_ident,
+                    access_kind,
                 );
                 type_alias = alias;
                 Some(tokens)
@@ -71,17 +73,18 @@ fn render_vec_access_item(
     outer_type: &RustType,
     item_type: &RustType,
     fn_access_ident: &Ident,
+    access_kind: &AccessKind,
 ) -> (Option<PointerTypeAlias>, TokenStream) {
     let RenderedReturnType {
         tokens: vec_arg_type,
         ..
-    } = render_return_type(outer_type);
+    } = render_return_type(outer_type, &AccessKind::FieldReference);
 
     let RenderedReturnType {
         tokens: item_return_type,
         type_alias,
         ..
-    } = render_return_type(&item_type);
+    } = render_return_type(&item_type, access_kind);
 
     let tokens = quote_spanned! { fn_access_ident.span() =>
         fn #fn_access_ident(vec: #vec_arg_type, idx: usize) -> #item_return_type {

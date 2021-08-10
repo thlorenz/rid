@@ -1,12 +1,13 @@
 use std::ops::Deref;
 
 use crate::{
+    attrs::Category,
     common::{abort, missing_struct_enum_info},
     parse::{
         rust_type::{Composite, Primitive, RustType, TypeKind, Value},
         ParsedReference,
     },
-    render_common::PointerTypeAlias,
+    render_common::{AccessKind, PointerTypeAlias},
 };
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote, quote_spanned};
@@ -19,7 +20,10 @@ pub struct RenderedReturnType {
     pub type_alias: Option<PointerTypeAlias>,
 }
 
-pub fn render_return_type(rust_type: &RustType) -> RenderedReturnType {
+pub fn render_return_type(
+    rust_type: &RustType,
+    access_kind: &AccessKind,
+) -> RenderedReturnType {
     use crate::parse::ParsedReference::*;
     use TypeKind as K;
     let mut type_alias: Option<PointerTypeAlias> = None;
@@ -27,13 +31,13 @@ pub fn render_return_type(rust_type: &RustType) -> RenderedReturnType {
     let type_tok = match &rust_type.kind {
         K::Primitive(prim) => render_primitive_return(prim, &rust_type),
         K::Value(val) => {
-            let (alias, tokens ) = render_value_return_type(val, &rust_type);
+            let (alias, tokens ) = render_value_return_type(val, &rust_type, access_kind);
             type_alias = alias;
             tokens
         }
         K::Composite(Composite::Vec, inner_ty, _) => match inner_ty {
             Some(ty) => {
-                let (alias, tokens) = render_vec_return_type(ty);
+                let (alias, tokens) = render_vec_return_type(ty, access_kind);
                 type_alias = alias;
                 tokens
             }
@@ -43,7 +47,7 @@ pub fn render_return_type(rust_type: &RustType) -> RenderedReturnType {
         },
         K::Composite(Composite::Option, inner_ty, _) => match inner_ty {
             Some(ty) => {
-                let (alias, tokens) = render_option_return_type(ty);
+                let (alias, tokens) = render_option_return_type(ty, access_kind);
                 type_alias = alias;
                 tokens
             }
@@ -91,6 +95,7 @@ fn render_primitive_return(prim: &Primitive, ty: &RustType) -> TokenStream {
 
 fn render_vec_return_type(
     inner_type: &RustType,
+    access_kind: &AccessKind,
 ) -> (Option<PointerTypeAlias>, TokenStream) {
     use TypeKind as K;
     match &inner_type.kind {
@@ -102,7 +107,8 @@ fn render_vec_return_type(
             (None, tokens)
         }
         K::Value(val) => {
-            let (alias, val_tokens) = render_value_return_type(val, inner_type);
+            let (alias, val_tokens) =
+                render_value_return_type(val, inner_type, access_kind);
             let tokens = quote! { rid::RidVec<#val_tokens> };
             (alias, tokens)
         }
@@ -128,6 +134,7 @@ fn render_vec_return_type(
 }
 fn render_option_return_type(
     inner_type: &RustType,
+    access_kind: &AccessKind,
 ) -> (Option<PointerTypeAlias>, TokenStream) {
     use TypeKind as K;
     match &inner_type.kind {
@@ -138,7 +145,9 @@ fn render_option_return_type(
             };
             (None, tokens)
         }
-        K::Value(val) => render_value_return_type(val, &inner_type),
+        K::Value(val) => {
+            render_value_return_type(val, &inner_type, access_kind)
+        }
         K::Composite(_, _, _) => {
             abort!(
                 inner_type.rust_ident(),
@@ -160,18 +169,25 @@ fn render_option_return_type(
 fn render_value_return_type(
     value: &Value,
     ty: &RustType,
+    access_kind: &AccessKind,
 ) -> (Option<PointerTypeAlias>, TokenStream) {
+    use Category as C;
     use Value as V;
 
     match value {
         V::CString | V::String | V::Str => {
             (None, quote! { *const ::std::os::raw::c_char })
         }
-        V::Custom(info, _) => {
-            let (alias, ref_tok) = ty
-                .reference
-                .render_pointer(&ty.rust_ident().to_string(), false);
-            (alias, quote_spanned! { info.key.span() => #ref_tok })
-        }
+        V::Custom(type_info, type_name) => match type_info.cat {
+            C::Enum if access_kind == &AccessKind::MethodReturn => {
+                (None, quote_spanned! { type_info.key.span() => i32 })
+            }
+            _ => {
+                let (alias, ref_tok) = ty
+                    .reference
+                    .render_pointer(&ty.rust_ident().to_string(), false);
+                (alias, quote_spanned! { type_info.key.span() => #ref_tok })
+            }
+        },
     }
 }

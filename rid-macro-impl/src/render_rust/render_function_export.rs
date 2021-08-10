@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 
 use super::{
-    render_access_item, render_free, render_lifetime, render_lifetime_def,
-    render_return_type, ReceiverArg, RenderedReturnType,
+    render_free, render_lifetime, render_lifetime_def, render_return_type,
+    ReceiverArg, RenderedReturnType,
 };
 use crate::{
     attrs::Category,
@@ -18,7 +18,6 @@ use crate::{
 };
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote, quote_spanned};
-use render_access_item::RenderedAccessItem;
 use render_free::RenderedFree;
 use render_rust_arg::RustArg;
 use syn::Ident;
@@ -66,7 +65,7 @@ pub fn render_function_export(
     let RenderedReturnType {
         tokens: ret_type,
         type_alias: ret_alias,
-    } = render_return_type(return_arg);
+    } = render_return_type(return_arg, &AccessKind::MethodReturn);
     ret_alias.clone().map(|x| ptr_type_aliases.push(x));
 
     let ret_to_pointer = return_arg.render_to_return(

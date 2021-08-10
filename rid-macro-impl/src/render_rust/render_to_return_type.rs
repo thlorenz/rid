@@ -32,7 +32,7 @@ impl RustType {
         K::Primitive(rust_type::Primitive::Bool) => quote_spanned! { res_ident.span() =>
             let #res_pointer = if #res_ident { 1 } else { 0 };
         },
-        K::Primitive(_) => quote_spanned! { res_ident.span() => let #res_pointer = #res_ident; } ,
+        K::Primitive(_) => quote_spanned! { res_ident.span() => let #res_pointer = #res_ident; },
             K::Unit => quote_spanned! { res_ident.span() => let #res_pointer = #res_ident; },
         K::Value(val) => val.render_to_return_type(res_ident, res_pointer, &self.reference, is_field_access),
         K::Composite(Composite::Vec, rust_type, _) => render_vec_to_return_type(res_ident, res_pointer, rust_type),
@@ -71,7 +71,7 @@ impl Value {
             Custom(type_info, type_name) => match type_info.cat {
                 C::Enum => {
                     quote_spanned! { res_ident.span() =>
-                        let #res_pointer = #res_ident.clone() as i32;
+                        let #res_pointer = #res_ident._rid_into_discriminant();
                     }
                 }
                 C::Struct => match reference {
