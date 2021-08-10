@@ -1,6 +1,6 @@
 use crate::{
     common::abort,
-    parse::rust_type::{Composite, RustType, TypeKind, Value},
+    parse::rust_type::{self, Composite, RustType, TypeKind, Value},
 };
 use rid_common::{DART_FFI, FFI_GEN_BIND, RID_FFI};
 
@@ -12,6 +12,11 @@ impl RustType {
     ) -> String {
         use TypeKind as K;
         match &self.kind {
+            K::Primitive(rust_type::Primitive::Bool) => format!(
+                "final {ret_ident} = {res_ident} == 1;",
+                ret_ident = ret_ident,
+                res_ident = res_ident
+            ),
             K::Primitive(_) => format!(
                 "final {ret_ident} = {res_ident};",
                 ret_ident = ret_ident,

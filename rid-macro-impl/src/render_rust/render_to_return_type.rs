@@ -2,7 +2,7 @@ use crate::{
     attrs::Category,
     common::abort,
     parse::{
-        rust_type::{Composite, RustType, TypeKind, Value},
+        rust_type::{self, Composite, RustType, TypeKind, Value},
         ParsedReference,
     },
 };
@@ -29,7 +29,11 @@ impl RustType {
     ) -> TokenStream {
         use TypeKind as K;
         match &self.kind {
-        K::Primitive(_) | K::Unit => quote_spanned! { res_ident.span() => let #res_pointer = #res_ident; } ,
+        K::Primitive(rust_type::Primitive::Bool) => quote_spanned! { res_ident.span() =>
+            let #res_pointer = if #res_ident { 1 } else { 0 };
+        },
+        K::Primitive(_) => quote_spanned! { res_ident.span() => let #res_pointer = #res_ident; } ,
+            K::Unit => quote_spanned! { res_ident.span() => let #res_pointer = #res_ident; },
         K::Value(val) => val.render_to_return_type(res_ident, res_pointer, &self.reference, is_field_access),
         K::Composite(Composite::Vec, rust_type, _) => render_vec_to_return_type(res_ident, res_pointer, rust_type),
         K::Composite(Composite::Option, rust_type, _) => render_option_to_return_type(res_ident, res_pointer, rust_type),
