@@ -25,7 +25,7 @@ pub fn render_return_type(rust_type: &RustType) -> RenderedReturnType {
     let mut type_alias: Option<PointerTypeAlias> = None;
 
     let type_tok = match &rust_type.kind {
-        K::Primitive(prim) => render_primitive_return(prim),
+        K::Primitive(prim) => render_primitive_return(prim, &rust_type),
         K::Value(val) => {
             let (alias, tokens ) = render_value_return_type(val, &rust_type);
             type_alias = alias;
@@ -66,19 +66,26 @@ pub fn render_return_type(rust_type: &RustType) -> RenderedReturnType {
     RenderedReturnType { tokens, type_alias }
 }
 
-fn render_primitive_return(prim: &Primitive) -> TokenStream {
+fn render_primitive_return(prim: &Primitive, ty: &RustType) -> TokenStream {
     use Primitive::*;
+    let ref_token = match ty.reference {
+        ParsedReference::Owned => TokenStream::new(),
+        ParsedReference::Ref(_) => quote! { &'static },
+        ParsedReference::RefMut(_) => {
+            abort!(ty.rust_ident(), "Cannot return RefMut types")
+        }
+    };
     match prim {
-        U8 => quote! { u8 },
-        I8 => quote! { i8 },
-        U16 => quote! { u16 },
-        I16 => quote! { i16 },
-        U32 => quote! { u32 },
-        I32 => quote! { i32 },
-        U64 => quote! { u64 },
-        I64 => quote! { i64 },
-        USize => quote! { usize },
-        Bool => quote! { bool },
+        U8 => quote! {  #ref_token u8 },
+        I8 => quote! {  #ref_token i8 },
+        U16 => quote! { #ref_token u16 },
+        I16 => quote! { #ref_token i16 },
+        U32 => quote! { #ref_token u32 },
+        I32 => quote! { #ref_token i32 },
+        U64 => quote! { #ref_token u64 },
+        I64 => quote! { #ref_token i64 },
+        USize => quote! { #ref_token usize },
+        Bool => quote! { #ref_token bool },
     }
 }
 
@@ -88,7 +95,7 @@ fn render_vec_return_type(
     use TypeKind as K;
     match &inner_type.kind {
         K::Primitive(prim) => {
-            let inner_return_type = render_primitive_return(prim);
+            let inner_return_type = render_primitive_return(prim, inner_type);
             let tokens = quote_spanned! { inner_type.rust_ident().span() =>
                 rid::RidVec<#inner_return_type>
             };
@@ -125,7 +132,7 @@ fn render_option_return_type(
     use TypeKind as K;
     match &inner_type.kind {
         K::Primitive(prim) => {
-            let inner_return_type = render_primitive_return(prim);
+            let inner_return_type = render_primitive_return(prim, inner_type);
             let tokens = quote_spanned! { inner_type.rust_ident().span() =>
                 *const #inner_return_type
             };
