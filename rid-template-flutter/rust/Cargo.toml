@@ -12,6 +12,6 @@ name = "rid_build"
 path = "rid_build.rs"
 
 [dependencies]
-cbindgen = "0.18.0"
+cbindgen = "0.20.0"
 rid_build = { path = "../../../rid/rid-build" }
 rid = { path = "../../../rid" }
