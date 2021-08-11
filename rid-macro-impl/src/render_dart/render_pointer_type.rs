@@ -18,19 +18,25 @@ impl RustType {
     pub fn render_dart_pointer_type(&self) -> String {
         use TypeKind as K;
         match &self.kind {
+            // -----------------
+            // Primitives
+            // -----------------
             K::Primitive(_) => self.render_dart_type(
                 &TypeInfoMap::default(),
                 RenderDartTypeOpts::raw(),
             ),
-            K::Unit => abort!(
-                self.rust_ident(),
-                "Should not export rust method that returns nothing"
-            ),
 
+            // -----------------
+            // Values
+            // -----------------
             K::Value(_) if self.kind.is_enum() => "int".to_string(),
             K::Value(val) => {
                 val.render_dart_pointer_type(self.dart_wrapper_rust_ident())
             }
+
+            // -----------------
+            // Composites Vec
+            // -----------------
             K::Composite(Composite::Vec, inner_type, _) => match inner_type {
                 Some(ty) => {
                     let item_type = ty.rust_ident();
@@ -49,6 +55,20 @@ impl RustType {
                     )
                 }
             },
+            // -----------------
+            // Composites HashMap
+            // -----------------
+            K::Composite(Composite::HashMap, key_type, val_type) => {
+                // TODO(thlorenz): HashMap
+                abort!(
+                    self.rust_ident(),
+                    "TODO: RustType::render_dart_pointer_type K::Composite::HashMap<{:?}, {:?}>",
+                    key_type, val_type
+                )
+            }
+            // -----------------
+            // Composites Option
+            // -----------------
             K::Composite(Composite::Option, inner_type, _) => {
                 match inner_type {
                     Some(ty) => {
@@ -71,14 +91,6 @@ impl RustType {
                     }
                 }
             }
-            K::Composite(Composite::HashMap, key_type, val_type) => {
-                // TODO(thlorenz): HashMap
-                abort!(
-                    self.rust_ident(),
-                    "TODO: RustType::render_dart_pointer_type K::Composite::HashMap<{:?}, {:?}>",
-                    key_type, val_type
-                )
-            }
             K::Composite(kind, _, _) => {
                 abort!(
                     self.rust_ident(),
@@ -86,6 +98,14 @@ impl RustType {
                     kind
                 )
             }
+
+            // -----------------
+            // Invalid
+            // -----------------
+            K::Unit => abort!(
+                self.rust_ident(),
+                "Should not export rust method that returns nothing"
+            ),
             K::Unknown => abort!(
                 self.rust_ident(),
                 "TODO: RustType::render_dart_pointer_type K::Unknown"
@@ -99,10 +119,16 @@ impl Value {
         use Category as C;
         use Value::*;
         match self {
-            // TODO(thlorenz): implement to_return_type for dart with the string conversion
+            // -----------------
+            // Strings
+            // -----------------
             CString => "String".to_string(),
             String => "String".to_string(),
-            Str => todo!("Value::render_dart_pointer_type ::Str"),
+            Str => "String".to_string(),
+
+            // -----------------
+            // Custom
+            // -----------------
             Custom(type_info, _) => match type_info.cat {
                 // NOTE: assumes that enums are `repr(C)`.
                 // If they are `repr(u8)` this would have to be a Uint8

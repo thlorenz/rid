@@ -29,12 +29,23 @@ pub fn render_return_type(
     let mut type_alias: Option<PointerTypeAlias> = None;
 
     let type_tok = match &rust_type.kind {
+        // -----------------
+        // Primitives
+        // -----------------
         K::Primitive(prim) => render_primitive_return(prim, &rust_type),
+
+        // -----------------
+        // Values
+        // -----------------
         K::Value(val) => {
             let (alias, tokens ) = render_value_return_type(val, &rust_type, access_kind);
             type_alias = alias;
             tokens
         }
+
+        // -----------------
+        // Composites Vec
+        // -----------------
         K::Composite(Composite::Vec, inner_ty, _) => match inner_ty {
             Some(ty) => {
                 let (alias, tokens) = render_vec_return_type(ty, access_kind);
@@ -45,6 +56,10 @@ pub fn render_return_type(
                 todo!("blow up since a composite should include inner type")
             }
         },
+
+        // -----------------
+        // Composites Option
+        // -----------------
         K::Composite(Composite::Option, inner_ty, _) => match inner_ty {
             Some(ty) => {
                 let (alias, tokens) = render_option_return_type(ty, access_kind);
@@ -55,13 +70,25 @@ pub fn render_return_type(
                 todo!("blow up since a composite should include inner type")
             }
         },
+        
+        // -----------------
+        // Composites HashMap
+        // -----------------
         K::Composite(Composite::HashMap, key_ty, val_ty) => {
             todo!("render_return_type::custom_composite HashMap<{:?}, {:?}>", key_ty, val_ty)
         }
         K::Composite(composite, rust_type, _) => {
             todo!("render_return_type::custom_composite {:?}", composite)
         },
+
+        // -----------------
+        // Unit
+        // -----------------
         K::Unit => quote! { () },
+
+        // -----------------
+        // Invalid
+        // -----------------
         K::Unknown => todo!("unknown .. need better error .. also gets triggered when exporting custom type without info "),
     };
     let ident = rust_type.rust_ident();

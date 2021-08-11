@@ -85,7 +85,7 @@ impl Value {
             // -----------------
             // Strings
             // -----------------
-            CString if is_field_access => {
+            CString if is_field_access || !reference.is_owned() => {
                 quote_spanned! { res_ident.span() => let #res_pointer = #res_ident.clone().into_raw(); }
             }
             CString => {
@@ -96,7 +96,11 @@ impl Value {
                     .expect(&format!("Invalid string encountered"));
                 let #res_pointer = cstring.into_raw();
             },
-            Str => todo!("Value::render_to_return::Str"),
+            Str => quote_spanned! { res_ident.span() =>
+                let cstring = ::std::ffi::CString::new(#res_ident)
+                    .expect(&format!("Invalid str encountered"));
+                let #res_pointer = cstring.into_raw();
+            },
             // -----------------
             // Custom Types
             // -----------------

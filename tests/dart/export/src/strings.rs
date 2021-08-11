@@ -23,6 +23,7 @@ impl RidStore<Msg> for Store {
 
 #[rid::export]
 impl Store {
+    // owned
     #[rid::export]
     pub fn title_owned(&self) -> String {
         self.title.to_string()
@@ -31,6 +32,22 @@ impl Store {
     #[rid::export]
     pub fn ctitle_owned(&self) -> CString {
         self.ctitle.clone()
+    }
+
+    // references
+    #[rid::export]
+    pub fn title_ref(&self) -> &String {
+        &self.title
+    }
+
+    #[rid::export]
+    pub fn ctitle_ref(&self) -> &CString {
+        &self.ctitle
+    }
+
+    #[rid::export]
+    pub fn title_as_str(&self) -> &str {
+        self.title.as_str()
     }
 }
 
