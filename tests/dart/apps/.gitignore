@@ -1,0 +1,4 @@
+.dart_tool/
+.packages
+lib/generated/
+target/
