@@ -27,6 +27,7 @@ impl RustType {
                 "Should not export rust method that returns nothing"
             ),
 
+            K::Value(_) if self.kind.is_enum() => "int".to_string(),
             K::Value(val) => {
                 val.render_dart_pointer_type(self.dart_wrapper_rust_ident())
             }
