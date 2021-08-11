@@ -5,6 +5,8 @@ use crate::{
 };
 use rid_common::{DART_FFI, STRING_TO_NATIVE_INT8};
 
+use super::ParsedReference;
+
 /// The Dart type representing a given Rust Type.
 /// The first field indicates if the Rust Type is `Option<T>` and thus the Dart type is nullable.
 #[derive(Debug, PartialEq)]
@@ -21,7 +23,11 @@ pub enum DartType {
 
 impl DartType {
     pub fn from(rust_type: &RustType, type_infos: &TypeInfoMap) -> Self {
-        DartType::from_with_nullable(rust_type, type_infos, false)
+        // TODO(thlorenz): This would seem more correct but currently breaks `Vec<&Todo>`
+        // let nullable =
+        //     !rust_type.is_primitive() && !rust_type.reference.is_owned();
+        let nullable = false;
+        DartType::from_with_nullable(rust_type, type_infos, nullable)
     }
 
     pub fn from_with_nullable(

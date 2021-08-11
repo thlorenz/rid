@@ -29,19 +29,45 @@ impl RustType {
     ) -> TokenStream {
         use TypeKind as K;
         match &self.kind {
-        K::Primitive(rust_type::Primitive::Bool) => quote_spanned! { res_ident.span() =>
-            let #res_pointer = if #res_ident { 1 } else { 0 };
-        },
-        K::Primitive(_) => quote_spanned! { res_ident.span() => let #res_pointer = #res_ident; },
+            // -----------------
+            // Primitives
+            // -----------------
+            K::Primitive(rust_type::Primitive::Bool) if self.reference.is_owned() => quote_spanned! { res_ident.span() =>
+                let #res_pointer = if #res_ident { 1 } else { 0 };
+            },
+            K::Primitive(rust_type::Primitive::Bool) => quote_spanned! { res_ident.span() =>
+                let #res_pointer = if *#res_ident { 1 } else { 0 };
+            },
+            K::Primitive(_) if self.reference.is_owned() => quote_spanned! { res_ident.span() =>
+                let #res_pointer = #res_ident;
+            },
+            K::Primitive(_) => quote_spanned! { res_ident.span() =>
+                let #res_pointer = *#res_ident;
+            },
+            // -----------------
+            // Values
+            // -----------------
+            K::Value(val) => val.render_to_return_type(res_ident, res_pointer, &self.reference, is_field_access),
+
+            // -----------------
+            // Composites
+            // -----------------
+            K::Composite(Composite::Vec, rust_type, _) => render_vec_to_return_type(res_ident, res_pointer, rust_type),
+            K::Composite(Composite::Option, rust_type, _) => render_option_to_return_type(res_ident, res_pointer, rust_type),
+            // TODO(thlorenz): HashMap
+            K::Composite(Composite::HashMap, key_type, val_type) =>  todo!("render_pointer::Composite::HashMap<{:?}, {:?}>", key_type, val_type),
+            K::Composite(composite, _, _) =>  todo!("render_pointer::Composite::{:?}", composite),
+
+            // -----------------
+            // Unit
+            // -----------------
             K::Unit => quote_spanned! { res_ident.span() => let #res_pointer = #res_ident; },
-        K::Value(val) => val.render_to_return_type(res_ident, res_pointer, &self.reference, is_field_access),
-        K::Composite(Composite::Vec, rust_type, _) => render_vec_to_return_type(res_ident, res_pointer, rust_type),
-        K::Composite(Composite::Option, rust_type, _) => render_option_to_return_type(res_ident, res_pointer, rust_type),
-        // TODO(thlorenz): HashMap
-        K::Composite(Composite::HashMap, key_type, val_type) =>  todo!("render_pointer::Composite::HashMap<{:?}, {:?}>", key_type, val_type),
-        K::Composite(composite, _, _) =>  todo!("render_pointer::Composite::{:?}", composite),
-        K::Unknown => todo!("render_pointer::Unknown - should error here or possibly that validation should happen before hand"),
-    }
+
+            // -----------------
+            // Invalid
+            // -----------------
+            K::Unknown => todo!("render_pointer::Unknown - should error here or possibly that validation should happen before hand"),
+        }
     }
 }
 
@@ -56,6 +82,9 @@ impl Value {
         use Category as C;
         use Value::*;
         match self {
+            // -----------------
+            // Strings
+            // -----------------
             CString if is_field_access => {
                 quote_spanned! { res_ident.span() => let #res_pointer = #res_ident.clone().into_raw(); }
             }
@@ -68,6 +97,9 @@ impl Value {
                 let #res_pointer = cstring.into_raw();
             },
             Str => todo!("Value::render_to_return::Str"),
+            // -----------------
+            // Custom Types
+            // -----------------
             Custom(type_info, type_name) => match type_info.cat {
                 C::Enum => {
                     quote_spanned! { res_ident.span() =>

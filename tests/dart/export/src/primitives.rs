@@ -45,6 +45,8 @@ impl Store {
     // -----------------
     // Exporting owned primitives
     // -----------------
+
+    // unsigned
     #[rid::export]
     pub fn s_id_owned(&self) -> u8 {
         self.s_id
@@ -64,6 +66,8 @@ impl Store {
     pub fn xl_id_owned(&self) -> u64 {
         self.xl_id
     }
+
+    // signed
     #[rid::export]
     pub fn s_signed_owned(&self) -> i8 {
         self.s_signed
@@ -84,6 +88,7 @@ impl Store {
         self.xl_signed
     }
 
+    // bool
     #[rid::export]
     pub fn ok_owned(&self) -> bool {
         self.ok
@@ -92,6 +97,62 @@ impl Store {
     #[rid::export]
     pub fn not_ok_owned(&self) -> bool {
         self.not_ok
+    }
+
+    // -----------------
+    // Exporting primitives refs
+    // -----------------
+
+    // unsigned
+    #[rid::export]
+    pub fn s_id_ref(&self) -> &u8 {
+        &self.s_id
+    }
+    #[rid::export]
+    pub fn m_id_ref(&self) -> &u16 {
+        &self.m_id
+    }
+
+    #[rid::export]
+    pub fn l_id_ref(&self) -> &u32 {
+        &self.l_id
+    }
+
+    #[rid::export]
+    pub fn xl_id_ref(&self) -> &u64 {
+        &self.xl_id
+    }
+
+    // signed
+    #[rid::export]
+    pub fn s_signed_ref(&self) -> &i8 {
+        &self.s_signed
+    }
+
+    #[rid::export]
+    pub fn m_signed_ref(&self) -> &i16 {
+        &self.m_signed
+    }
+
+    #[rid::export]
+    pub fn l_signed_ref(&self) -> &i32 {
+        &self.l_signed
+    }
+
+    #[rid::export]
+    pub fn xl_signed_ref(&self) -> &i64 {
+        &self.xl_signed
+    }
+
+    // bool
+    #[rid::export]
+    pub fn ok_ref(&self) -> &bool {
+        &self.ok
+    }
+
+    #[rid::export]
+    pub fn not_ok_ref(&self) -> &bool {
+        &self.not_ok
     }
 }
 

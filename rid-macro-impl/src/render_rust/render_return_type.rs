@@ -74,7 +74,8 @@ fn render_primitive_return(prim: &Primitive, ty: &RustType) -> TokenStream {
     use Primitive::*;
     let ref_token = match ty.reference {
         ParsedReference::Owned => TokenStream::new(),
-        ParsedReference::Ref(_) => quote! { &'static },
+        // We dereference primitive refs since they implement the copy trait
+        ParsedReference::Ref(_) => TokenStream::new(),
         ParsedReference::RefMut(_) => {
             abort!(ty.rust_ident(), "Cannot return RefMut types")
         }

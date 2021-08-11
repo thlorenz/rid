@@ -259,15 +259,6 @@ mod no_args_composite_vec_return_full {
         };
         assert_eq!(res.tokens.to_string(), expected.to_string());
         assert_eq!(res.type_aliases, "");
-
-        /* TODO: rendering dart access functions for Vec<primitive> is not properly
-         * implemented yet. Mainly vec return type is wrong.
-         * Same issue affects `rid_free_..|rid_get_item_..` rust function names above
-            let expected_dart = include_str!(
-                "./fixtures/function_export.return_vec_u8.dart.snapshot"
-            );
-            compare_strings_by_line(&res.dart_vec_access, expected_dart);
-        */
     }
 
     #[test]
