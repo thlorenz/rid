@@ -209,11 +209,6 @@ impl ParsedStruct {
                     let resolve_vec = resolve_vec_ptr(item_ty_ident);
                     let vec_ty = &field.rust_type;
 
-                    let vec_type_key = VecAccess::key_from_item_rust_ident(
-                        item_ty.rust_ident(),
-                        &AccessKind::FieldReference,
-                    );
-
                     // NOTE: that we decide if to actually render the vec inside
                     // ./render_field_access.rs  aggregate_vec_accesses
                     collection_access = Some(Box::new(VecAccess::new(

@@ -26,19 +26,27 @@ fn parse(
     }
 }
 
-fn render_impl(input: proc_macro2::TokenStream, owner: &str) -> String {
+fn render(
+    input: proc_macro2::TokenStream,
+    owner: &str,
+    config: RenderFunctionExportConfig,
+) -> String {
     let type_info = TypeInfo::from((owner, Category::Struct));
     let mut map = HashMap::new();
     map.insert(owner.to_string(), type_info.clone());
     let parsed_function =
         parse(input, Some((&type_info.key, &TypeInfoMap(map))));
 
-    let config = Some(RenderFunctionExportConfig::bare());
+    let config = Some(config);
     parsed_function.render_function_export(
         Some(type_info.key.clone()),
         "",
         config,
     )
+}
+
+fn render_impl(input: proc_macro2::TokenStream, owner: &str) -> String {
+    render(input, owner, RenderFunctionExportConfig::bare())
 }
 
 // -----------------
@@ -120,22 +128,52 @@ dart_ffi.Pointer<ffigen_bind.RawTodo>? find_todo(@dart_ffi.Int32() int arg0) {
         assert_eq!(res, expected);
     }
 
-    // TODO(thlorenz): This currently returns a `dart_ffi.Pointer<ffigen_bind.u32>?`, but
-    // should just return a `u32?` since we aren't returning a reference
-    // #[test]
+    #[test]
     fn u8_arg_return_option_u32() {
         let res = render_impl(
             quote! {
-                #[rid::structs(Todo)]
                 fn convert(id: u8) -> Option<u32> { }
             },
             "Model",
         );
         let expected = r###"
+dart_ffi.Pointer<ffigen_bind.u32>? convert(@dart_ffi.Int32() int arg0) {
+  final res = rid_ffi.rid_export_Model_convert(arg0);
+  final ret = res.address == 0x0 ? null : res;
+  return ret;
 }
 "###
         .trim();
-        // assert_eq!(res, expected);
-        dump_code(&res);
+        assert_eq!(res, expected);
+    }
+}
+
+// -----------------
+// Vec returns
+// -----------------
+mod impl_method_returning_vec {
+    use crate::common::dump_code;
+
+    use super::*;
+    #[test]
+    fn no_args_non_mut_receiver_return_vec_u8_ref() {
+        let res = render_impl(
+            quote! {
+                #[rid::export]
+                fn get_u8s(&self) -> Vec<&u8> {
+                    &self.todo
+                }
+            },
+            "Model",
+        );
+        let expected = r###"
+ffigen_bind.RidVec_u8 get_u8s() {
+  final res = rid_ffi.rid_export_Model_get_u8s(this);
+  final ret = res;
+  return ret;
+}
+"###
+        .trim();
+        assert_eq!(res, expected)
     }
 }

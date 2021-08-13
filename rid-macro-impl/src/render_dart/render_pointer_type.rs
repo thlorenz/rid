@@ -40,9 +40,14 @@ impl RustType {
             K::Composite(Composite::Vec, inner_type, _) => match inner_type {
                 Some(ty) => {
                     let item_type = ty.rust_ident();
+                    let pointer_prefix = if !ty.is_primitive() {
+                        PointerTypeAlias::POINTER_ALIAS_PREFIX
+                    } else {
+                        ""
+                    };
                     let pointer = format!(
                         "{ffigen_bind}.RidVec_{pointer_prefix}{ty}",
-                        pointer_prefix = PointerTypeAlias::POINTER_ALIAS_PREFIX,
+                        pointer_prefix = pointer_prefix,
                         ffigen_bind = FFI_GEN_BIND,
                         ty = item_type
                     );

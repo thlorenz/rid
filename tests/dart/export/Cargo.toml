@@ -24,10 +24,11 @@ name = "enums"
 crate-type = ["cdylib"]
 path = "src/enums.rs"
 
-# [[example]]
-# name = "vecs"
-# crate-type = ["cdylib"]
-# path = "src/vecs.rs"
+[[example]]
+name = "vecs"
+crate-type = ["cdylib"]
+path = "src/vecs.rs"
+
 
 [dependencies]
 rid = { path = "../../../" }

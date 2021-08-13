@@ -1,4 +1,4 @@
- extension Rid_Vec_ExtOnPointerRidVec_Pointer_MyStruct on ffigen_bind.RidVec_Pointer_MyStruct {
+ extension Rid_Vec_ExtOnRidVec_Pointer_MyStruct on ffigen_bind.RidVec_Pointer_MyStruct {
    dart_ffi.Pointer<ffigen_bind.RawMyStruct> operator [](int idx) {
      final len = this.length;
      if (!(0 <= idx && idx < len)) {

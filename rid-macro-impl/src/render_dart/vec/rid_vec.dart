@@ -1,4 +1,4 @@
-/// extension Rid_Vec_ExtOnPointer{vec_type} on {ffigen_bind}.{vec_type} {
+/// extension Rid_Vec_ExtOn{vec_type} on {ffigen_bind}.{vec_type} {
 ///   {dart_raw_item_type} operator [](int idx) {
 ///     final len = this.length;
 ///     if (!(0 <= idx && idx < len)) {

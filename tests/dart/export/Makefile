@@ -2,8 +2,8 @@ test-all:
 	$(MAKE) test TEST=primitives
 	$(MAKE) test TEST=strings
 	$(MAKE) test TEST=enums
+	$(MAKE) test TEST=vecs
 # 	$(MAKE) test TEST=structs
-# 	$(MAKE) test TEST=vecs
 
 test: ./.dart_tool/
 	cargo build --example $(TEST) && \

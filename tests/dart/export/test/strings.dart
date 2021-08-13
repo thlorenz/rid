@@ -12,6 +12,6 @@ void main() {
     // references
     expect(store.titleRef(), "T-shirt Store", reason: 'ref String');
     expect(store.ctitleRef(), "C-shirt Store", reason: 'ref CString');
-    expect(store.titleAsStr(), "C-shirt Store", reason: 'as_str String');
+    expect(store.titleAsStr(), "T-shirt Store", reason: 'as_str String');
   });
 }

@@ -68,11 +68,19 @@ impl ExpandState {
         }
     }
 
+    #[cfg(not(test))]
     pub fn unique_ident(&mut self, ident: Ident) -> Ident {
         let idents = self.emitted_idents.as_mut().unwrap();
         let count: u8 = idents.get(&ident).unwrap_or(&0_u8) + 1;
         let id = format_ident!("{}_{}", ident, count);
         idents.insert(ident, count);
+        id
+    }
+
+    // Test results need to be the same, no matter if we run just one or all in whichever order
+    #[cfg(test)]
+    pub fn unique_ident(&mut self, ident: Ident) -> Ident {
+        let id = format_ident!("{}_1", ident);
         id
     }
 

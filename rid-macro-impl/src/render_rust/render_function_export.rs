@@ -130,9 +130,14 @@ pub fn render_function_export(
     };
 
     let vec_access = if return_arg.is_vec() {
+        let inner_return_ty = return_arg.inner_composite_type().unwrap();
+
         let ret_ident = match &ret_alias {
             Some(PointerTypeAlias { alias, .. }) => alias,
-            Option::None => &return_arg.rust_ident(),
+            None if inner_return_ty.is_primitive() => {
+                inner_return_ty.rust_ident()
+            }
+            None => &return_arg.rust_ident(),
         };
 
         Some(VecAccess::new(

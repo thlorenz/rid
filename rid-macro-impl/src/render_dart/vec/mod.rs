@@ -71,9 +71,6 @@ impl VecAccess {
         comment: &str,
     ) -> String {
         // TODO: once we have recursive vecs, we need to pass the nested vecs to implement along
-        // TODO: this is not working for primitive types since they use RidVecs.
-        //  - we can try to reuse the template, but then we cannot include `Pointer<...>` as return
-        //  type in it, or we use a different template, i.e. `rid_vec.dart` for those
         let dart_item_type = &self
             .item_type
             .render_dart_type(type_infos, RenderDartTypeOpts::raw());

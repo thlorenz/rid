@@ -52,8 +52,11 @@ impl RustType {
             // -----------------
             // Composites
             // -----------------
-            K::Composite(Composite::Vec, rust_type, _) => render_vec_to_return_type(res_ident, res_pointer, rust_type),
-            K::Composite(Composite::Option, rust_type, _) => render_option_to_return_type(res_ident, res_pointer, rust_type),
+            K::Composite(Composite::Vec, rust_type, _) => 
+                render_vec_to_return_type(res_ident, res_pointer, rust_type),
+            K::Composite(Composite::Option, rust_type, _) =>
+                render_option_to_return_type(res_ident, res_pointer, rust_type),
+
             // TODO(thlorenz): HashMap
             K::Composite(Composite::HashMap, key_type, val_type) =>  todo!("render_pointer::Composite::HashMap<{:?}, {:?}>", key_type, val_type),
             K::Composite(composite, _, _) =>  todo!("render_pointer::Composite::{:?}", composite),
@@ -138,8 +141,14 @@ fn render_vec_to_return_type(
 ) -> TokenStream {
     match rust_type {
         Some(rust_type) => {
-            if rust_type.is_primitive() {
+            if rust_type.is_primitive() && rust_type.reference.is_owned() {
                 quote_spanned! { res_ident.span() =>
+                    let #res_pointer = rid::RidVec::from(#res_ident);
+                }
+            } else if rust_type.is_primitive() {
+                let owned_ty = rust_type.to_owned().render_rust_type().tokens;
+                quote_spanned! { res_ident.span() =>
+                    let #res_ident: Vec<#owned_ty> = #res_ident.into_iter().map(|x| *x).collect();
                     let #res_pointer = rid::RidVec::from(#res_ident);
                 }
             } else {
