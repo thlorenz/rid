@@ -54,6 +54,7 @@ impl RustType {
             // -----------------
             K::Composite(Composite::Vec, rust_type, _) => 
                 render_vec_to_return_type(res_ident, res_pointer, rust_type),
+
             K::Composite(Composite::Option, rust_type, _) =>
                 render_option_to_return_type(res_ident, res_pointer, rust_type),
 
@@ -141,23 +142,61 @@ fn render_vec_to_return_type(
 ) -> TokenStream {
     match rust_type {
         Some(rust_type) => {
-            if rust_type.is_primitive() && rust_type.reference.is_owned() {
-                quote_spanned! { res_ident.span() =>
+            type K = TypeKind;
+            let is_owned = rust_type.reference.is_owned();
+            match &rust_type.kind {
+                // -----------------
+                // Primitives
+                // -----------------
+                K::Primitive(_) if is_owned => quote_spanned! { res_ident.span() =>
                     let #res_pointer = rid::RidVec::from(#res_ident);
+                },
+                K::Primitive(_) => {
+                    let owned_ty = rust_type.to_owned().render_rust_type().tokens;
+                    quote_spanned! { res_ident.span() =>
+                        let #res_ident: Vec<#owned_ty> = #res_ident.into_iter().map(|x| *x).collect();
+                        let #res_pointer = rid::RidVec::from(#res_ident);
+                    }
+                },
+                // -----------------
+                // Values
+                // -----------------
+                K::Value(val) => {
+                    use Value::*;
+                    match val {
+                        CString => todo!("render_vec_to_return_type::Value::CString"),
+                        String => todo!("render_vec_to_return_type::Value::String"),
+                        Str => todo!("render_vec_to_return_type::Value::Str"),
+                        Custom(ty, _) => match ty.cat {
+                            Category::Enum => quote_spanned! { res_ident.span() =>
+                                let #res_ident: Vec<i32> = #res_ident
+                                    .into_iter()
+                                    .map(|x| x._rid_into_discriminant())
+                                    .collect();
+                                let #res_pointer = rid::RidVec::from(#res_ident);
+                            },
+                            Category::Struct => {
+                                let pointer_type = rust_type.render_pointer_type().tokens;
+                                quote_spanned! { res_ident.span() =>
+                                    let vec_with_pointers: Vec<#pointer_type> =
+                                        #res_ident.into_iter().map(|x| &*x as #pointer_type).collect();
+                                    let #res_pointer = rid::RidVec::from(vec_with_pointers);
+                                }
+                            }
+                            Category::Prim => TokenStream::new()
+                        },
+                    }
                 }
-            } else if rust_type.is_primitive() {
-                let owned_ty = rust_type.to_owned().render_rust_type().tokens;
-                quote_spanned! { res_ident.span() =>
-                    let #res_ident: Vec<#owned_ty> = #res_ident.into_iter().map(|x| *x).collect();
-                    let #res_pointer = rid::RidVec::from(#res_ident);
-                }
-            } else {
-                let pointer_type = rust_type.render_pointer_type().tokens;
-                quote_spanned! { res_ident.span() =>
-                    let vec_with_pointers: Vec<#pointer_type> =
-                        #res_ident.into_iter().map(|x| &*x as #pointer_type).collect();
-                    let #res_pointer = rid::RidVec::from(vec_with_pointers);
-                }
+                // -----------------
+                // Composites
+                // -----------------
+                K::Composite(_, _, _) =>
+                    abort!(res_ident, "TODO render_vec_to_return_type::Composite"),
+                // -----------------
+                // Invalids
+                // -----------------
+                K::Unit => abort!(res_ident, "Returning Vec<()> is not supported"),
+                K::Unknown => abort!(res_ident, "Cannot render_vec_to_return_type for unknown inner type"),
             }
         }
         None => abort!(res_ident, "Vec inner type should be defined"),

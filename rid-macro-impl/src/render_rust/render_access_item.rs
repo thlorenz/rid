@@ -78,7 +78,7 @@ fn render_vec_access_item(
     let RenderedReturnType {
         tokens: vec_arg_type,
         ..
-    } = render_return_type(outer_type, &AccessKind::FieldReference);
+    } = render_return_type(outer_type, access_kind);
 
     let RenderedReturnType {
         tokens: item_return_type,

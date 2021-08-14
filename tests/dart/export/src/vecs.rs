@@ -48,7 +48,7 @@ impl RidStore<Msg> for Store {
 #[rid::structs(Todo)]
 impl Store {
     // references
-    // TODO: #[rid::export]
+    #[rid::export]
     pub fn todos_ref(&self) -> Vec<&Todo> {
         self.todos.iter().collect()
     }
