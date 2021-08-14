@@ -66,7 +66,7 @@ pub fn render_function_export(
         tokens: ret_type,
         type_alias: ret_alias,
     } = render_return_type(return_arg, &AccessKind::MethodReturn);
-    ret_alias.clone().map(|x| ptr_type_aliases.push(x));
+    ret_alias.as_ref().map(|x| ptr_type_aliases.push(x.clone()));
 
     let ret_to_pointer = return_arg.render_to_return(
         &return_ident,

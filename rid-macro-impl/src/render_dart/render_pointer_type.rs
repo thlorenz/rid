@@ -30,9 +30,10 @@ impl RustType {
             // Values
             // -----------------
             K::Value(_) if self.kind.is_enum() => "int".to_string(),
-            K::Value(val) => {
-                val.render_dart_pointer_type(self.dart_wrapper_rust_ident())
-            }
+            K::Value(val) => val.render_dart_pointer_type(&format_ident!(
+                "{}",
+                self.dart_wrapper_rust_string()
+            )),
 
             // -----------------
             // Composites Vec
@@ -84,7 +85,7 @@ impl RustType {
                             ty = inner_type
                                 .as_ref()
                                 .unwrap()
-                                .dart_wrapper_rust_ident(),
+                                .dart_wrapper_rust_string(),
                         );
                         pointer
                     }

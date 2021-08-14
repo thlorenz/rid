@@ -42,7 +42,7 @@ impl RustType {
         use TypeKind as K;
         let call = match &self.kind {
             K::Unit => abort!(
-                self.dart_wrapper_rust_ident(),
+                self.rust_ident(),
                 "Should not export rust method that returns nothing"
             ),
             // TODO(thlorenz): All the below do the same, need to investigate if that makes sense

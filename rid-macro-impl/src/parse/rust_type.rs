@@ -43,12 +43,13 @@ impl RustType {
     /// Ident that should be used inside generated Dart wrapper methods
     /// For structs this is `ident` prefixed with `Raw` and equal to `ident` for all
     /// else.
-    pub fn dart_wrapper_rust_ident(&self) -> &Ident {
+    pub fn dart_wrapper_rust_string(&self) -> String {
         if self.needs_type_alias {
             &self.raw_ident
         } else {
             &self.ident
         }
+        .to_string()
     }
 
     /// Ident that came directly from the annotated Rust code
