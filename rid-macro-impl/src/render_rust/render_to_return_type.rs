@@ -165,7 +165,24 @@ fn render_vec_to_return_type(
                     use Value::*;
                     match val {
                         CString => todo!("render_vec_to_return_type::Value::CString"),
-                        String => todo!("render_vec_to_return_type::Value::String"),
+                        String if is_owned => todo!("render_vec_to_return_type::Value::String"),
+                        String =>{ 
+                            let pointer_type = rust_type.render_pointer_type().tokens;
+                            quote_spanned! { res_ident.span() => 
+                                let vec_with_pointers: Vec<#pointer_type> =
+                                    #res_ident
+                                        .into_iter()
+                                        .map(|x| {
+                                            let cstring = ::std::ffi::CString::new(x.as_str())
+                                                .expect(&format!("Invalid string encountered"));
+                                            unsafe { 
+                                                &*cstring.into_raw() as *const ::std::os::raw::c_char
+                                            }
+                                        })
+                                        .collect();
+                                let #res_pointer = rid::RidVec::from(vec_with_pointers);
+                            }
+                        },
                         Str => todo!("render_vec_to_return_type::Value::Str"),
                         Custom(ty, _) => match ty.cat {
                             Category::Enum => quote_spanned! { res_ident.span() =>
