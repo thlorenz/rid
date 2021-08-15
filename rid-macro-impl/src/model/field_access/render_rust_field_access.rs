@@ -213,7 +213,7 @@ impl ParsedStruct {
                     // ./render_field_access.rs  aggregate_vec_accesses
                     collection_access = Some(Box::new(VecAccess::new(
                         &vec_ty,
-                        &vec_ty.rust_ident(),
+                        vec_ty.rust_ident().clone(),
                         AccessKind::FieldReference,
                         &config.ffi_prelude_tokens,
                     )));

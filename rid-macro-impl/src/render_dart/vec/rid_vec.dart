@@ -10,11 +10,11 @@
 ///   /// **WARNING**: You cannot use this Vec pointer anymore after this call
 ///   /// completes unless you set [autoDispose] to [false].
 ///   ///
-///   /// Converts this Vec pointer into a Dart [List&lt;{dart_item_type}&gt;] and disposes the
+///   /// Converts this Vec pointer into a Dart [List&lt;{resolved_dart_item_type}&gt;] and disposes the
 ///   /// underlying Rust Vec unless [autoDispose] is set to [false].
 ///   /// As a result if [autoDispose] is [true] you cannot use the underlying
 ///   /// Vec anymore after this call completes.
-///   List<{dart_item_type}> toDart({bool autoDispose = true}) {
+///   List<{resolved_dart_item_type}> toDart({bool autoDispose = true}) {
 ///     ridStoreLock();
 ///     final list = this.iter(){map_to_dart}.toList();
 ///     if (autoDispose) dispose();

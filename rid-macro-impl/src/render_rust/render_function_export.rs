@@ -133,11 +133,14 @@ pub fn render_function_export(
         let inner_return_ty = return_arg.inner_composite_type().unwrap();
 
         let ret_ident = match &ret_alias {
-            Some(PointerTypeAlias { alias, .. }) => alias,
+            Some(PointerTypeAlias { alias, .. }) => alias.clone(),
             None if inner_return_ty.is_primitive() => {
-                inner_return_ty.rust_ident()
+                inner_return_ty.rust_ident().clone()
             }
-            None => &return_arg.rust_ident(),
+            None if inner_return_ty.is_enum() => {
+                format_ident!("i32")
+            }
+            None => return_arg.rust_ident().clone(),
         };
 
         Some(VecAccess::new(

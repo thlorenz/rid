@@ -46,6 +46,7 @@ impl RidStore<Msg> for Store {
 
 #[rid::export]
 #[rid::structs(Todo)]
+#[rid::enums(Filter)]
 impl Store {
     // references
     #[rid::export]
@@ -61,6 +62,11 @@ impl Store {
     #[rid::export]
     pub fn u16s_ref(&self) -> Vec<&u16> {
         self.u16s.iter().collect()
+    }
+
+    #[rid::export]
+    pub fn filters_ref(&self) -> Vec<&Filter> {
+        self.filters.iter().collect()
     }
 }
 

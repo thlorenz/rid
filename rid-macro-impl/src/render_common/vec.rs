@@ -43,7 +43,7 @@ pub struct VecAccess {
 impl VecAccess {
     pub fn new(
         vec_ty: &RustType,
-        vec_ty_ident: &Ident,
+        vec_ty_ident: Ident,
         kind: AccessKind,
         ffi_prelude: &TokenStream,
     ) -> Self {

@@ -40,11 +40,15 @@ impl RustType {
             // -----------------
             K::Composite(Composite::Vec, inner_type, _) => match inner_type {
                 Some(ty) => {
-                    let item_type = ty.rust_ident();
-                    let pointer_prefix = if !ty.is_primitive() {
-                        PointerTypeAlias::POINTER_ALIAS_PREFIX
+                    let item_type = if ty.is_enum() {
+                        "i32".to_string()
                     } else {
+                        ty.rust_ident().to_string()
+                    };
+                    let pointer_prefix = if ty.is_primitive() || ty.is_enum() {
                         ""
+                    } else {
+                        PointerTypeAlias::POINTER_ALIAS_PREFIX
                     };
                     let pointer = format!(
                         "{ffigen_bind}.RidVec_{pointer_prefix}{ty}",
@@ -67,10 +71,10 @@ impl RustType {
             K::Composite(Composite::HashMap, key_type, val_type) => {
                 // TODO(thlorenz): HashMap
                 abort!(
-                    self.rust_ident(),
-                    "TODO: RustType::render_dart_pointer_type K::Composite::HashMap<{:?}, {:?}>",
-                    key_type, val_type
-                )
+                        self.rust_ident(),
+                        "TODO: RustType::render_dart_pointer_type K::Composite::HashMap<{:?}, {:?}>",
+                        key_type, val_type
+                    )
             }
             // -----------------
             // Composites Option
@@ -99,10 +103,10 @@ impl RustType {
             }
             K::Composite(kind, _, _) => {
                 abort!(
-                    self.rust_ident(),
-                    "TODO: RustType::render_dart_pointer_type K::Composite({:?})",
-                    kind
-                )
+                        self.rust_ident(),
+                        "TODO: RustType::render_dart_pointer_type K::Composite({:?})",
+                        kind
+                    )
             }
 
             // -----------------

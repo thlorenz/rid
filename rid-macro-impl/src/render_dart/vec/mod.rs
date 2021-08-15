@@ -23,25 +23,10 @@ impl VecAccess {
         let vec_type = self.key().to_camel_case();
         let iterated_item_type = self.item_type.render_dart_field_return_type();
 
-        // TODO(thlorenz): some of this logic should possibly sit somewhere else
-        let resolved_dart_item_type = if self.item_type.is_struct() {
-            self.item_type.rust_ident().to_string()
-        } else if self.item_type.is_string_like() {
-            "String".to_string()
-        } else {
-            DartType::from(&self.item_type, type_infos).render_type(false)
-        };
+        let resolved_dart_item_type =
+            self.resolved_dart_item_type_string(type_infos);
 
-        let map_to_dart = if self.item_type.is_struct() {
-            format!(".map((raw) => raw.toDart())")
-        } else if self.item_type.is_enum() {
-            format!(
-                ".map((x) => {enum_type}.values[x])",
-                enum_type = resolved_dart_item_type
-            )
-        } else {
-            "".to_string()
-        };
+        let map_to_dart = self.map_to_dart_string(&resolved_dart_item_type);
 
         let item_to_dart = if self.item_type.is_string_like() {
             ".toDartString()".to_string()
@@ -70,22 +55,16 @@ impl VecAccess {
         type_infos: &TypeInfoMap,
         comment: &str,
     ) -> String {
-        // TODO: once we have recursive vecs, we need to pass the nested vecs to implement along
-        let dart_item_type = &self
-            .item_type
-            .render_dart_type(type_infos, RenderDartTypeOpts::raw());
+        let resolved_dart_item_type =
+            self.resolved_dart_item_type_string(type_infos);
+        let map_to_dart = self.map_to_dart_string(&resolved_dart_item_type);
 
-        let map_to_dart = if self.item_type.is_struct() {
-            format!(".map((raw) => raw.toDart())")
-        } else {
-            "".to_string()
-        };
         let dart_raw_item_type = &self.item_type.render_dart_pointer_type();
         TEMPLATE
             .replace("///", comment)
             .replace("{vec_type}", &self.vec_type_dart)
-            .replace("{dart_item_type}", &dart_item_type)
             .replace("{dart_raw_item_type}", &dart_raw_item_type)
+            .replace("{resolved_dart_item_type}", &resolved_dart_item_type)
             .replace("{map_to_dart}", &map_to_dart)
             .replace("{fn_len_ident}", &self.fn_len_ident.to_string())
             .replace("{fn_get_ident}", &self.fn_get_ident.to_string())
@@ -94,5 +73,34 @@ impl VecAccess {
             .replace("{dart_ffi}", DART_FFI)
             .replace("{rid_ffi}", RID_FFI)
             .replace("{dart_collection}", DART_COLLECTION)
+    }
+
+    // -----------------
+    // Common
+    // -----------------
+    fn resolved_dart_item_type_string(
+        &self,
+        type_infos: &TypeInfoMap,
+    ) -> String {
+        if self.item_type.is_struct() {
+            self.item_type.rust_ident().to_string()
+        } else if self.item_type.is_string_like() {
+            "String".to_string()
+        } else {
+            DartType::from(&self.item_type, type_infos).render_type(false)
+        }
+    }
+
+    fn map_to_dart_string(&self, dart_item_type: &str) -> String {
+        if self.item_type.is_struct() {
+            format!(".map((raw) => raw.toDart())")
+        } else if self.item_type.is_enum() {
+            format!(
+                ".map((x) => {enum_type}.values[x])",
+                enum_type = dart_item_type
+            )
+        } else {
+            "".to_string()
+        }
     }
 }

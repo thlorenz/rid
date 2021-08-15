@@ -1,4 +1,4 @@
-use crate::{common::state::get_state, rid_export_impl};
+use crate::rid_export_impl;
 use proc_macro2::TokenStream;
 use quote::quote;
 
@@ -102,15 +102,14 @@ mod _debug_export_issues {
     use super::*;
 
     // #[test]
-    fn no_args_returning_vec_u8_ref_full() {
-        let _attrs = TokenStream::new();
+    fn debug_export_issue() {
         let input: TokenStream = quote! {
-            #[rid::export]
-            impl MyStruct {
+            impl Store {
                 #[rid::export]
-                fn get_u8s() -> Vec<&u8> {}
-                #[rid::export]
-                fn get_u16() -> Vec<&u16> {}
+                #[rid::enums(Filter)]
+                pub fn filters_ref(&self) -> Vec<&Filter> {
+                    self.filters.iter().collect()
+                }
             }
         };
 
