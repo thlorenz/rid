@@ -68,6 +68,11 @@ impl Store {
     pub fn filters_ref(&self) -> Vec<&Filter> {
         self.filters.iter().collect()
     }
+
+    #[rid::export]
+    pub fn strings_ref(&self) -> Vec<&String> {
+        self.strings.iter().collect()
+    }
 }
 
 #[rid::message(Reply)]

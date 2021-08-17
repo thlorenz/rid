@@ -4,7 +4,8 @@
 ///     if (!(0 <= idx && idx < len)) {
 ///       throw AssertionError("Out of range access on List<{dart_raw_item_type}>[$idx] of length $len");
 ///     }
-///     return {rid_ffi}.{fn_get_ident}(this, idx);
+///     final raw = {rid_ffi}.{fn_get_ident}(this, idx);
+///     {access_item_return}
 ///   }
 ///
 ///   /// **WARNING**: You cannot use this Vec pointer anymore after this call

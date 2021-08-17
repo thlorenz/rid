@@ -11,6 +11,14 @@ use crate::attrs::{raw_typedef_ident, Category, TypeInfo, TypeInfoMap};
 use super::ParsedReference;
 
 #[derive(Debug, Clone, PartialEq)]
+pub enum RustTypeContext {
+    Default,
+    CollectionItem,
+    OptionItem,
+    CustomItem,
+}
+
+#[derive(Debug, Clone, PartialEq)]
 pub struct RustType {
     ident: Ident,
     raw_ident: Ident,
@@ -21,6 +29,10 @@ pub struct RustType {
 
     pub kind: TypeKind,
     pub reference: ParsedReference,
+
+    /// The context of the type, i.e. is it an inner type of `Vec<ty>` and thus a
+    /// CollectionInnerType
+    pub context: RustTypeContext,
 }
 
 impl RustType {
@@ -28,6 +40,7 @@ impl RustType {
         ident: Ident,
         kind: TypeKind,
         reference: ParsedReference,
+        context: RustTypeContext,
     ) -> Self {
         let raw_ident = raw_typedef_ident(&ident);
         let needs_type_alias = kind.is_struct() || kind.is_vec();
@@ -37,6 +50,7 @@ impl RustType {
             needs_type_alias,
             kind,
             reference,
+            context,
         }
     }
 
@@ -66,7 +80,7 @@ impl RustType {
         let value = Value::Custom(type_info, ident.to_string());
         let kind = TypeKind::Value(value);
         let reference = ParsedReference::Owned;
-        Self::new(ident.clone(), kind, reference)
+        Self::new(ident.clone(), kind, reference, RustTypeContext::Default)
     }
 
     pub fn from_owned_enum(ident: &Ident) -> Self {
@@ -78,7 +92,7 @@ impl RustType {
         let value = Value::Custom(type_info, ident.to_string());
         let kind = TypeKind::Value(value);
         let reference = ParsedReference::Owned;
-        Self::new(ident.clone(), kind, reference)
+        Self::new(ident.clone(), kind, reference, RustTypeContext::Default)
     }
 
     pub fn self_unaliased(self, owner_name: String) -> Self {
@@ -86,6 +100,7 @@ impl RustType {
             self.ident,
             self.kind.self_unaliased(owner_name),
             self.reference,
+            self.context,
         )
     }
 
@@ -101,6 +116,7 @@ impl RustType {
             self.ident,
             self.kind,
             self.reference.with_lifetime(lifetime),
+            self.context,
         )
     }
 
@@ -109,6 +125,7 @@ impl RustType {
             self.ident,
             self.kind,
             self.reference.ensured_lifetime(lifetime),
+            self.context,
         )
     }
 
@@ -134,6 +151,10 @@ impl RustType {
 
     pub fn is_vec(&self) -> bool {
         self.kind.is_vec()
+    }
+
+    pub fn is_collection_item(&self) -> bool {
+        self.context == RustTypeContext::CollectionItem
     }
 
     pub fn inner_composite_type(&self) -> Option<RustType> {
@@ -459,19 +480,23 @@ impl RustType {
         ty: Box<Type>,
         type_infos: &TypeInfoMap,
     ) -> Option<RustType> {
-        resolve_rust_ty(ty.as_ref(), type_infos)
+        resolve_rust_ty(ty.as_ref(), type_infos, RustTypeContext::Default)
     }
 
     pub fn from_type(ty: &Type, type_infos: &TypeInfoMap) -> Option<RustType> {
-        resolve_rust_ty(ty, type_infos)
+        resolve_rust_ty(ty, type_infos, RustTypeContext::Default)
     }
 
     pub fn from_plain_type(ty: &Type) -> Option<RustType> {
-        resolve_rust_ty(ty, &TypeInfoMap::default())
+        resolve_rust_ty(ty, &TypeInfoMap::default(), RustTypeContext::Default)
     }
 }
 
-fn resolve_rust_ty(ty: &Type, type_infos: &TypeInfoMap) -> Option<RustType> {
+fn resolve_rust_ty(
+    ty: &Type,
+    type_infos: &TypeInfoMap,
+    context: RustTypeContext,
+) -> Option<RustType> {
     let (ty, reference) = match ty {
         Type::Reference(r) => {
             let pr = ParsedReference::from(r);
@@ -491,7 +516,7 @@ fn resolve_rust_ty(ty: &Type, type_infos: &TypeInfoMap) -> Option<RustType> {
         _ => return None,
     };
 
-    Some(RustType::new(ident.clone(), kind, reference))
+    Some(RustType::new(ident.clone(), kind, reference, context))
 }
 
 fn ident_to_kind(
@@ -546,16 +571,32 @@ fn ident_to_kind(
             // For now assuming one arg
             match &args[0] {
                 GenericArgument::Type(ty) => {
-                    let inner =
-                        resolve_rust_ty(ty, type_infos).map(|x| Box::new(x));
                     match ident_str.as_str() {
                         "Vec" => {
+                            let inner = resolve_rust_ty(
+                                ty,
+                                type_infos,
+                                RustTypeContext::CollectionItem,
+                            )
+                            .map(|x| Box::new(x));
                             TypeKind::Composite(Composite::Vec, inner, None)
                         }
                         "Option" => {
+                            let inner = resolve_rust_ty(
+                                ty,
+                                type_infos,
+                                RustTypeContext::OptionItem,
+                            )
+                            .map(|x| Box::new(x));
                             TypeKind::Composite(Composite::Option, inner, None)
                         }
                         "HashMap" => {
+                            let inner = resolve_rust_ty(
+                                ty,
+                                type_infos,
+                                RustTypeContext::CollectionItem,
+                            )
+                            .map(|x| Box::new(x));
                             // TODO(thlorenz): HashMap needs two inner types
                             TypeKind::Composite(
                                 Composite::HashMap,
@@ -566,6 +607,13 @@ fn ident_to_kind(
                         _ => {
                             if let Some(type_info) = type_infos.get(&ident_str)
                             {
+                                let inner = resolve_rust_ty(
+                                    ty,
+                                    type_infos,
+                                    RustTypeContext::CustomItem,
+                                )
+                                .map(|x| Box::new(x));
+
                                 TypeKind::Composite(
                                     Composite::Custom(
                                         type_info.clone(),

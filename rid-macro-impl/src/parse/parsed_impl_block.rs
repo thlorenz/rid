@@ -11,6 +11,7 @@ use super::{
 use crate::{
     attrs::{self, raw_typedef_ident, RidAttr},
     common::abort,
+    parse::rust_type::RustTypeContext,
 };
 
 #[derive(Debug)]
@@ -49,6 +50,7 @@ impl ParsedImplBlock {
                     ident.clone(),
                     TypeKind::Value(Value::Custom(type_info, ident_str)),
                     reference.clone(),
+                    RustTypeContext::Default,
                 )
             }
             Some(ty) => ty,

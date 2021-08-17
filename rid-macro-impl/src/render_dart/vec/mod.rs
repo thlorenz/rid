@@ -1,5 +1,7 @@
 use heck::{CamelCase, SnakeCase};
-use rid_common::{DART_COLLECTION, DART_FFI, FFI_GEN_BIND, RID_FFI};
+use rid_common::{
+    DART_COLLECTION, DART_FFI, FFI_GEN_BIND, RID_FFI, STRING_REF_ACCESS,
+};
 
 use crate::{
     attrs::TypeInfoMap,
@@ -59,6 +61,17 @@ impl VecAccess {
             self.resolved_dart_item_type_string(type_infos);
         let map_to_dart = self.map_to_dart_string(&resolved_dart_item_type);
 
+        let access_item_return = if self.item_type.is_string_like()
+            && !self.item_type.reference.is_owned()
+        {
+            format!(
+                "return {rid_ffi}.{string_ref_access}(raw).toDartString();",
+                rid_ffi = RID_FFI,
+                string_ref_access = STRING_REF_ACCESS,
+            )
+        } else {
+            "return raw;".to_string()
+        };
         let dart_raw_item_type = &self.item_type.render_dart_pointer_type();
         TEMPLATE
             .replace("///", comment)
@@ -69,6 +82,7 @@ impl VecAccess {
             .replace("{fn_len_ident}", &self.fn_len_ident.to_string())
             .replace("{fn_get_ident}", &self.fn_get_ident.to_string())
             .replace("{fn_free_ident}", &self.fn_free_ident.to_string())
+            .replace("{access_item_return}", &access_item_return)
             .replace("{ffigen_bind}", FFI_GEN_BIND)
             .replace("{dart_ffi}", DART_FFI)
             .replace("{rid_ffi}", RID_FFI)

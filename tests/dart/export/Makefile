@@ -11,7 +11,7 @@ test: ./.dart_tool/
 	dart run test ./test/$(TEST).dart
 
 expand:
-	cargo expand --example $(TEST)
+	@cargo expand --example $(TEST)
 
 ./.dart_tool/:
 	pub get

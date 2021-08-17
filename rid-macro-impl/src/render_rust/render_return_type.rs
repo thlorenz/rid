@@ -203,8 +203,15 @@ fn render_value_return_type(
     use Value as V;
 
     match value {
-        V::CString | V::String | V::Str => {
+        V::CString | V::String | V::Str if !ty.is_collection_item() || ty.reference.is_owned() => {
             (None, quote! { *const ::std::os::raw::c_char })
+        }
+
+        V::CString | V::String | V::Str => {
+            let (alias, ref_tok) = ty
+                .reference
+                .render_pointer(&ty.rust_ident().to_string(), false);
+            (alias, quote_spanned! { ty.rust_ident().span() => #ref_tok })
         }
         V::Custom(type_info, type_name) => match type_info.cat {
             C::Enum if access_kind == &AccessKind::MethodReturn => {

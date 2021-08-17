@@ -28,4 +28,11 @@ void main() {
     expect(filters.length, 2, reason: 'filters len');
     expect(filters[0], Filter.Completed, reason: 'filters idx');
   });
+
+  test('export: Vec<&string>', () {
+    final strings = store.stringsRef();
+    expect(strings.length, 2, reason: 'strings len');
+    expect(strings[0], "hello", reason: 'strings[0]');
+    expect(strings[1], "world", reason: 'strings[1]');
+  });
 }

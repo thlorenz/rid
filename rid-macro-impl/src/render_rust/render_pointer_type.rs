@@ -5,7 +5,7 @@ use crate::{
         rust_type::{Composite, Primitive, RustType, TypeKind, Value},
         ParsedReference,
     },
-    render_common::PointerTypeAlias,
+    render_common::{AccessKind, PointerTypeAlias},
 };
 use quote::{format_ident, quote, quote_spanned};
 
@@ -79,8 +79,19 @@ impl Value {
         use Value as V;
 
         match self {
-            V::CString | V::String | V::Str => {
+            V::CString | V::String | V::Str
+                if rust_type.reference.is_owned() =>
+            {
                 (None, quote! { *const ::std::os::raw::c_char })
+            }
+            V::CString | V::String | V::Str => {
+                let (alias, aliased_tok) = rust_type
+                    .reference
+                    .render_pointer(&rust_type.rust_ident().to_string(), false);
+                (
+                    alias,
+                    quote_spanned! { rust_type.rust_ident().span() => #aliased_tok },
+                )
             }
             Value::Custom(info, _) => {
                 let (alias, aliased_tok) = rust_type
