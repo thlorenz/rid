@@ -289,11 +289,6 @@ mod no_args_composite_vec_return_full {
 
         assert_eq!(res.tokens.to_string(), expected.to_string());
         assert_eq!(res.type_aliases, "Pointer_MyStruct");
-
-        let expected_dart = include_str!(
-            "./fixtures/function_export.return_vec_struct_ref.dart.snapshot"
-        );
-        compare_strings_by_line(&res.dart_vec_access, expected_dart);
     }
 }
 
