@@ -17,9 +17,11 @@ pub fn utils_module_tokens() -> TokenStream {
     if get_state()
         .needs_implementation(&ImplementationType::UtilsModule, UTILS_MODULE)
     {
+        let cstring_struct_declaration = cstring_struct_declaration();
         let cstring_free = cstring_free();
         quote! {
             mod __rid_utils_module {
+                #cstring_struct_declaration
                 #cstring_free
             }
         }
@@ -44,6 +46,15 @@ fn cstring_free() -> TokenStream {
     }
 }
 
+// cbindgen doesn't know what CString is, also technically it is not FFI safe.
+// We just use it to point to items in a collection, Never actually sending a pointer directly and
+// resolving it later.
+fn cstring_struct_declaration() -> TokenStream {
+    quote! {
+        #[no_mangle]
+        pub struct CString {}
+    }
+}
 // -----------------
 // String
 // -----------------
