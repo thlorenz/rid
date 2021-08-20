@@ -73,6 +73,16 @@ impl Store {
     pub fn strings_ref(&self) -> Vec<&String> {
         self.strings.iter().collect()
     }
+
+    #[rid::export]
+    pub fn cstrings_ref(&self) -> Vec<&CString> {
+        self.cstrings.iter().collect()
+    }
+
+    #[rid::export]
+    pub fn str_ref(&self) -> Vec<&str> {
+        self.strings.iter().map(|x| x.as_ref()).collect()
+    }
 }
 
 #[rid::message(Reply)]

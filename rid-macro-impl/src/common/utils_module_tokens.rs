@@ -18,9 +18,11 @@ pub fn utils_module_tokens() -> TokenStream {
         .needs_implementation(&ImplementationType::UtilsModule, UTILS_MODULE)
     {
         let cstring_struct_declaration = cstring_struct_declaration();
+        let str_struct_declaration = str_struct_declaration();
         let cstring_free = cstring_free();
         quote! {
             mod __rid_utils_module {
+                #str_struct_declaration
                 #cstring_struct_declaration
                 #cstring_free
             }
@@ -55,25 +57,13 @@ fn cstring_struct_declaration() -> TokenStream {
         pub struct CString {}
     }
 }
-// -----------------
-// String
-// -----------------
-fn string_ref_access() -> TokenStream {
-    let string_ref_access_ident = format_ident!("{}", STRING_REF_ACCESS);
-    quote_spanned! {
-        proc_macro2::Span::call_site() =>
-        #[no_mangle]
-        pub extern "C" fn #string_ref_access_ident(
-            ptr: *mut String,
-        ) -> *const ::std::os::raw::c_char {
-            let s: &String = unsafe {
-                assert!(!ptr.is_null());
-                let ptr: *mut String = &mut *ptr;
-                ptr.as_mut().expect("resolve_ptr.as_mut failed")
-            };
 
-            let cstring = ::std::ffi::CString::new(s.as_str()).unwrap();
-            cstring.into_raw()
-        }
+// -----------------
+// Str
+// -----------------
+fn str_struct_declaration() -> TokenStream {
+    quote! {
+        #[no_mangle]
+        pub struct str {}
     }
 }

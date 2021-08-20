@@ -35,4 +35,18 @@ void main() {
     expect(strings[0], "hello", reason: 'strings[0]');
     expect(strings[1], "world", reason: 'strings[1]');
   });
+
+  test('export: Vec<&cstring>', () {
+    final cstrings = store.cstringsRef();
+    expect(cstrings.length, 2, reason: 'cstrings len');
+    expect(cstrings[0], "hello", reason: 'cstrings[0]');
+    expect(cstrings[1], "world", reason: 'cstrings[1]');
+  });
+
+  test('export: Vec<&str>', () {
+    final strs = store.strRef();
+    expect(strs.length, 2, reason: 'strs len');
+    expect(strs[0], "hello", reason: 'strs[0]');
+    expect(strs[1], "world", reason: 'strs[1]');
+  });
 }

@@ -117,7 +117,16 @@ fn render_vec_access_item(
                 cstring.clone().into_raw()
             }
         } else if item_type.is_str() {
-            TokenStream::new()
+            quote! {
+                let s: &str = unsafe {
+                    assert!(!ptr.is_null());
+                    let ptr: *mut str = ptr as *mut str;
+                    ptr.as_mut()
+                        .expect("resolve ptr from vec item as_mut failed")
+                };
+                let cstring = ::std::ffi::CString::new(s).unwrap();
+                cstring.into_raw()
+            }
         } else {
             panic!("Should have covered all string-like cases")
         };
