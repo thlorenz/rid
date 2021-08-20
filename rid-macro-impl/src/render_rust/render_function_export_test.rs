@@ -254,7 +254,8 @@ mod no_args_composite_vec_return_full {
                 arg.free();
             }
             fn rid_get_item_ridvec_u8(vec: rid::RidVec<u8>, idx: usize) -> u8 {
-                vec[idx]
+                let ptr = vec[idx];
+                ptr
             }
         };
         assert_eq!(res.tokens.to_string(), expected.to_string());
@@ -283,7 +284,8 @@ mod no_args_composite_vec_return_full {
                 vec: rid::RidVec<Pointer_MyStruct>,
                 idx: usize
             ) -> Pointer_MyStruct {
-                vec[idx]
+                let ptr = vec[idx];
+                ptr
             }
         };
 

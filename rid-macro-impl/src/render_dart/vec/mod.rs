@@ -64,11 +64,7 @@ impl VecAccess {
         let access_item_return = if self.item_type.is_string_like()
             && !self.item_type.reference.is_owned()
         {
-            format!(
-                "return {rid_ffi}.{string_ref_access}(raw).toDartString();",
-                rid_ffi = RID_FFI,
-                string_ref_access = STRING_REF_ACCESS,
-            )
+            "return raw.toDartString();".to_string()
         } else {
             "return raw;".to_string()
         };

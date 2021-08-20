@@ -1,6 +1,6 @@
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote, quote_spanned};
-use rid_common::{CSTRING_FREE, STRING_REF_ACCESS, UTILS_MODULE};
+use rid_common::{CSTRING_FREE, UTILS_MODULE};
 
 use crate::common::state::{get_state, ImplementationType};
 
@@ -18,11 +18,9 @@ pub fn utils_module_tokens() -> TokenStream {
         .needs_implementation(&ImplementationType::UtilsModule, UTILS_MODULE)
     {
         let cstring_free = cstring_free();
-        let string_ref_access = string_ref_access();
         quote! {
             mod __rid_utils_module {
                 #cstring_free
-                #string_ref_access
             }
         }
     } else {

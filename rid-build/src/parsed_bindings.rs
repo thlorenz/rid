@@ -144,6 +144,7 @@ impl ParsedBindings {
 
         let updated_binding =
             replace_struct_aliases(binding, &structs, &struct_aliases);
+        let updated_binding = fix_cbindgen_issues(&updated_binding);
 
         let dart_code = join_sections(dart_sections);
         let swift_calls: Vec<String> = function_headers
@@ -311,4 +312,11 @@ fn structs_to_include(
             None => x.to_string(),
         })
         .collect()
+}
+
+fn fix_cbindgen_issues(binding: &str) -> String {
+    // cbindgen doesn't know what CString is, also technically it is FFI safe.
+    // We just use it to point to items in a collection, Never actually sending a pointer directly
+    // and resolving it later.
+    format!("typedef struct CString CString;\n{}", binding)
 }
