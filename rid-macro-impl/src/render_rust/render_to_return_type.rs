@@ -164,9 +164,9 @@ fn render_vec_to_return_type(
                 K::Value(val) => {
                     use Value::*;
                     match val {
-                        CString => todo!("render_vec_to_return_type::Value::CString"),
-                        String if is_owned => todo!("render_vec_to_return_type::Value::String"),
-                        String =>{ 
+                        CString if is_owned => todo!("render_vec_to_return_type::Value::CString owned"),
+                        String if is_owned => todo!("render_vec_to_return_type::Value::String owned"),
+                        CString | String =>{ 
                             let pointer_type = rust_type.render_pointer_type().tokens;
                             quote_spanned! { res_ident.span() =>
                                 let vec_with_pointers: Vec<#pointer_type> =

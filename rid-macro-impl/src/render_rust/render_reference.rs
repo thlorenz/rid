@@ -28,9 +28,10 @@ impl ParsedReference {
     pub fn render_pointer(
         &self,
         type_name: &str,
+        qualified_type_name: &str,
         is_primitive: bool,
     ) -> (Option<PointerTypeAlias>, TokenStream) {
-        let name_tok: TokenStream = type_name.parse().unwrap();
+        let name_tok: TokenStream = qualified_type_name.parse().unwrap();
 
         match self {
             ParsedReference::Owned => {
@@ -84,7 +85,7 @@ pub fn render_lifetime_def(lifetime: Option<&syn::Ident>) -> TokenStream {
 }
 
 fn aliased_pointer(
-    type_name: &str,
+    alias_type_name: &str,
     name_tok: TokenStream,
     is_mut: bool,
 ) -> (Option<PointerTypeAlias>, TokenStream) {
@@ -92,14 +93,14 @@ fn aliased_pointer(
         let alias = format_ident!(
             "{}{}",
             PointerTypeAlias::POINTER_MUT_ALIAS_PREFIX,
-            type_name
+            alias_type_name
         );
         (alias.clone(), quote! { type #alias = *mut #name_tok; })
     } else {
         let alias = format_ident!(
             "{}{}",
             PointerTypeAlias::POINTER_ALIAS_PREFIX,
-            type_name
+            alias_type_name
         );
         (alias.clone(), quote! { type #alias = *const #name_tok; })
     };
@@ -109,7 +110,7 @@ fn aliased_pointer(
         Some(PointerTypeAlias {
             alias,
             typedef,
-            type_name: type_name.to_string(),
+            type_name: alias_type_name.to_string(),
             needs_free: is_mut,
         }),
         tokens,

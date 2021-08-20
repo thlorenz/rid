@@ -71,6 +71,14 @@ impl RustType {
         &self.ident
     }
 
+    /// Same as [RustType::rust_ident()] but qualifies namespace where necessary
+    pub fn fully_qualified_rust_ident(&self) -> String {
+        match self.rust_ident().to_string().as_str() {
+            "CString" => "::std::ffi::CString".to_string(),
+            _ => self.rust_ident().to_string(),
+        }
+    }
+
     pub fn from_owned_struct(ident: &Ident) -> Self {
         let type_info = TypeInfo {
             cat: Category::Struct,
@@ -135,6 +143,14 @@ impl RustType {
 
     pub fn is_string(&self) -> bool {
         self.kind.is_string()
+    }
+
+    pub fn is_cstring(&self) -> bool {
+        self.kind.is_cstring()
+    }
+
+    pub fn is_str(&self) -> bool {
+        self.kind.is_str()
     }
 
     pub fn is_string_like(&self) -> bool {
@@ -241,6 +257,22 @@ impl TypeKind {
     pub fn is_string(&self) -> bool {
         if let TypeKind::Value(val) = self {
             val.is_string()
+        } else {
+            false
+        }
+    }
+
+    pub fn is_cstring(&self) -> bool {
+        if let TypeKind::Value(val) = self {
+            val.is_cstring()
+        } else {
+            false
+        }
+    }
+
+    pub fn is_str(&self) -> bool {
+        if let TypeKind::Value(val) = self {
+            val.is_str()
         } else {
             false
         }

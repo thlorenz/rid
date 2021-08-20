@@ -72,6 +72,10 @@ impl Primitive {
 }
 
 impl Value {
+    // NOTE: this is super similar to render_value_return_type() inside
+    // src/render_rust/render_return_type.rs:197.
+    // There are collection item specific differences in the other, but if it turns out that
+    // there is really no difference consider merging this code.
     fn render_pointer_type(
         &self,
         rust_type: &RustType,
@@ -85,18 +89,28 @@ impl Value {
                 (None, quote! { *const ::std::os::raw::c_char })
             }
             V::CString | V::String | V::Str => {
-                let (alias, aliased_tok) = rust_type
-                    .reference
-                    .render_pointer(&rust_type.rust_ident().to_string(), false);
+                let type_name = &rust_type.rust_ident().to_string();
+                let qualified_type_name =
+                    &rust_type.fully_qualified_rust_ident().to_string();
+                let (alias, aliased_tok) = rust_type.reference.render_pointer(
+                    &type_name,
+                    &qualified_type_name,
+                    false,
+                );
                 (
                     alias,
                     quote_spanned! { rust_type.rust_ident().span() => #aliased_tok },
                 )
             }
             Value::Custom(info, _) => {
-                let (alias, aliased_tok) = rust_type
-                    .reference
-                    .render_pointer(&rust_type.rust_ident().to_string(), false);
+                let type_name = &rust_type.rust_ident().to_string();
+                let qualified_type_name =
+                    &rust_type.fully_qualified_rust_ident().to_string();
+                let (alias, aliased_tok) = rust_type.reference.render_pointer(
+                    &type_name,
+                    &qualified_type_name,
+                    false,
+                );
                 (alias, quote_spanned! { info.key.span() => #aliased_tok })
             }
         }

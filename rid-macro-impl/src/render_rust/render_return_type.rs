@@ -208,9 +208,12 @@ fn render_value_return_type(
         }
 
         V::CString | V::String | V::Str => {
+            let type_name = &ty.rust_ident().to_string();
+            let qualified_type_name = &ty.fully_qualified_rust_ident().to_string();
+
             let (alias, ref_tok) = ty
                 .reference
-                .render_pointer(&ty.rust_ident().to_string(), false);
+                .render_pointer(&type_name, &qualified_type_name, false);
             (alias, quote_spanned! { ty.rust_ident().span() => #ref_tok })
         }
         V::Custom(type_info, type_name) => match type_info.cat {
@@ -218,9 +221,11 @@ fn render_value_return_type(
                 (None, quote_spanned! { type_info.key.span() => i32 })
             }
             _ => {
+            let type_name = &ty.rust_ident().to_string();
+            let qualified_type_name = &ty.fully_qualified_rust_ident().to_string();
                 let (alias, ref_tok) = ty
                     .reference
-                    .render_pointer(&ty.rust_ident().to_string(), false);
+                    .render_pointer(&type_name, &qualified_type_name, false);
                 (alias, quote_spanned! { type_info.key.span() => #ref_tok })
             }
         },
