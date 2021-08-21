@@ -17,7 +17,13 @@ impl RustType {
     pub fn render_dart_field_return_type(&self) -> String {
         use TypeKind as K;
         match &self.kind {
+            // -----------------
+            // Primitives
+            // -----------------
             K::Primitive(_) => self.render_dart_pointer_type(),
+            // -----------------
+            // Strings
+            // -----------------
             K::Value(val) => match val {
                 Value::CString | Value::String | Value::Str => {
                     "String".to_string()
@@ -31,7 +37,10 @@ impl RustType {
                     ),
                 },
             },
-            K::Composite(Composite::Vec, inner_type) => match inner_type {
+            // -----------------
+            // Collection Types
+            // -----------------
+            K::Composite(Composite::Vec, inner_type, _) => match inner_type {
                 Some(ty) => {
                     let item_type = ty.rust_ident();
                     format!(
@@ -48,16 +57,44 @@ impl RustType {
                     )
                 }
             },
-            K::Composite(Composite::Option, inner_type) => {
+            K::Composite(Composite::HashMap, key_type, val_type) => match (key_type, val_type) {
+                (Some(key), Some(val)) => {
+                    let key_type = key.rust_ident();
+                    let val_type = val.rust_ident();
+                    format!(
+                        "{dart_ffi}.Pointer<{ffigen_bind}.HashMap_{key}__{val}>",
+                        dart_ffi = DART_FFI,
+                        ffigen_bind = FFI_GEN_BIND,
+                        key = key_type,
+                        val  = val_type
+                    )
+                }
+                _ => {
+                    abort!(
+                        self.rust_ident(),
+                        "Rust HashMap composite should include key and val type"
+                    )
+                }
+            },
+            // -----------------
+            // Option
+            // -----------------
+            K::Composite(Composite::Option, inner_type, _) => {
                 self.render_dart_pointer_type()
             }
-            K::Composite(kind, _) => {
+            // -----------------
+            // Not yet supported
+            // -----------------
+            K::Composite(kind, _, _) => {
                 abort!(
                     self.rust_ident(),
                     "TODO: RustType::render_dart_field_return_type K::Composite({:?})",
                     kind
                 )
             }
+            // -----------------
+            // Invalid
+            // -----------------
             K::Unit => {
                 abort!(self.rust_ident(), "Should not include unit field type")
             }

@@ -1,7 +1,7 @@
 use super::{render_function_export, vec::*};
 
 use proc_macro2::TokenStream;
-use quote::quote_spanned;
+use quote::{format_ident, quote_spanned};
 use rid_common::{DART_FFI, FFI_GEN_BIND, RID_FFI, STORE};
 use syn::Ident;
 
@@ -56,7 +56,10 @@ pub fn render_instance_method_extension(
                     None,
                 ));
                 acc.wrapper.push(x.render_function_reexport(
-                    Some(impl_block.ty.dart_wrapper_rust_ident().clone()),
+                    Some(format_ident!(
+                        "{}",
+                        impl_block.ty.dart_wrapper_rust_string()
+                    )),
                     INDENT,
                     None,
                 ));
@@ -86,7 +89,7 @@ pub fn render_instance_method_extension(
 {comment} ```
 "###,
         comment = comment,
-        RawStruct = impl_block.ty.dart_wrapper_rust_ident(),
+        RawStruct = impl_block.ty.dart_wrapper_rust_string(),
         Struct = impl_block.ty.rust_ident(),
         dart_ffi = DART_FFI,
         ffigen_bind = FFI_GEN_BIND,

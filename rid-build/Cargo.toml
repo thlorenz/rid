@@ -10,7 +10,7 @@ doctest = false
 [dependencies]
 rid_common = { path = "../rid-common" }
 rid_ffi = { path = "../rid-ffi" }
-cbindgen = "0.18.0"
+cbindgen = "0.20.0"
 getrandom = { version = "0.2", features = ["js"] }
 tempfile = "3.2.0"
 

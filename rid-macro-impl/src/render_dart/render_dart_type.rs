@@ -1,5 +1,5 @@
 use quote::format_ident;
-use rid_common::{DART_FFI, STRING_TO_NATIVE_INT8};
+use rid_common::{DART_COLLECTION, DART_FFI, STRING_TO_NATIVE_INT8};
 use syn::Ident;
 
 use crate::{
@@ -24,14 +24,23 @@ impl DartType {
     pub fn render_type(&self, raw: bool) -> String {
         use DartType::*;
         match self {
+            // -----------------
+            // Primitives
+            // -----------------
             Int32(nullable) | Int64(nullable) if *nullable => {
                 "int?".to_string()
             }
             Int32(_) | Int64(_) => "int".to_string(),
             Bool(nullable) if *nullable => "bool?".to_string(),
             Bool(_) => "bool".to_string(),
+            // -----------------
+            // Strings
+            // -----------------
             String(nullable) if *nullable => "String?".to_string(),
             String(_) => "String".to_string(),
+            // -----------------
+            // Custom
+            // -----------------
             Custom(nullable, info, ty) => {
                 use Category::*;
                 match info.cat {
@@ -53,12 +62,34 @@ impl DartType {
                     Struct | Prim => ty.to_string(),
                 }
             }
+            // -----------------
+            // Collection Types
+            // -----------------
             Vec(nullable, inner) if *nullable => {
                 format!("List<{inner}>?", inner = inner.render_type(raw))
             }
             Vec(_, inner) => {
                 format!("List<{inner}>", inner = inner.render_type(raw))
             }
+            HashMap(nullable, key, val) if *nullable => {
+                format!(
+                    "{dart_collection}.HashMap<{key}, {val}>?",
+                    dart_collection = DART_COLLECTION,
+                    key = key.render_type(raw),
+                    val = val.render_type(raw)
+                )
+            }
+            HashMap(_, key, val) => {
+                format!(
+                    "{dart_collection}.HashMap<{key}, {val}>",
+                    dart_collection = DART_COLLECTION,
+                    key = key.render_type(raw),
+                    val = val.render_type(raw)
+                )
+            }
+            // -----------------
+            // Invalid
+            // -----------------
             DartType::Unit => "".to_string(),
         }
     }
@@ -78,6 +109,14 @@ impl DartType {
     pub fn render_resolved_ffi_arg(&self, slot: usize) -> String {
         use DartType::*;
         match self {
+            // -----------------
+            // Primitives
+            // -----------------
+            // TODO(thlorenz): All the below also would resolve to a different type when nullable
+            Int32(nullable) | Int64(nullable) if *nullable => {
+                format!("arg{}", slot)
+            }
+            Int32(_) | Int64(_) => format!("arg{}", slot),
             Bool(nullable) if *nullable => {
                 format!(
                     "arg{slot} == null ? 0 : arg{slot} ? 1 : 0",
@@ -85,6 +124,10 @@ impl DartType {
                 )
             }
             Bool(_) => format!("arg{} ? 1 : 0", slot),
+
+            // -----------------
+            // Strings
+            // -----------------
             // TODO(thlorenz): I doubt his is correct
             String(nullable) if *nullable => format!(
                 "arg{slot}?.{toNativeInt8}()",
@@ -96,13 +139,21 @@ impl DartType {
                 slot = slot,
                 toNativeInt8 = STRING_TO_NATIVE_INT8
             ),
-            // TODO(thlorenz): All the below also would resolve to a different type when nullable
-            Int32(nullable) | Int64(nullable) if *nullable => {
-                format!("arg{}", slot)
-            }
-            Int32(_) | Int64(_) => format!("arg{}", slot),
+
+            // -----------------
+            // Custom
+            // -----------------
             Custom(_, _, _) => format!("arg{}", slot),
+
+            // -----------------
+            // Collection Types
+            // -----------------
             Vec(_, _) => format!("arg{}", slot),
+            HashMap(_, _, _) => format!("arg{}", slot),
+
+            // -----------------
+            // Invalid
+            // -----------------
             Unit => todo!("render_resolved_ffi_arg"),
         }
     }
@@ -110,15 +161,26 @@ impl DartType {
     pub fn render_to_dart_for_snippet(&self, snip: &str) -> String {
         use DartType::*;
         match self {
+            // -----------------
+            // Primitives
+            // -----------------
             Int32(nullable) | Int64(nullable) | Bool(nullable) if *nullable => {
                 format!("{snip}?", snip = snip)
             }
             Int32(_) | Int64(_) | Bool(_) => snip.to_string(),
+
+            // -----------------
+            // Strings
+            // -----------------
             // NOTE: Raw Strings are already converted to Dart Strings
             String(nullable) if *nullable => {
                 format!("{snip}?", snip = snip)
             }
             String(_) => snip.to_string(),
+
+            // -----------------
+            // Custom
+            // -----------------
             Custom(nullable, info, type_name) if *nullable => {
                 use Category::*;
                 match info.cat {
@@ -149,12 +211,28 @@ impl DartType {
                     Prim => snip.to_string(),
                 }
             }
+
+            // -----------------
+            // Collection Types
+            // -----------------
+
             // NOTE: All vecs are expected have a `toDart` extension method implemented
             // which maps all it's items `toDart` before converting it `toList`
             Vec(nullable, _) if *nullable => {
                 format!("{snip}?.toDart()", snip = snip)
             }
             Vec(_, _) => format!("{snip}.toDart()", snip = snip),
+
+            // NOTE: All hashmaps are expected have a `toDart` extension method implemented
+            // which maps all it's keys/values `toDart` before converting it `toHashMap`
+            HashMap(nullable, _, _) if *nullable => {
+                format!("{snip}?.toDart()", snip = snip)
+            }
+            HashMap(_, _, _) => format!("{snip}.toDart()", snip = snip),
+
+            // -----------------
+            // Invalid
+            // -----------------
             Unit => {
                 abort!(
                     format_ident!("()"),

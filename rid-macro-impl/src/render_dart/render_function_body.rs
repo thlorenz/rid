@@ -26,7 +26,7 @@ impl RustType {
         comment: &str,
     ) -> String {
         let to_return_type =
-            self.render_dart_to_return_type(RES_IDENT, RET_IDENT);
+            self.render_dart_to_return_type(RES_IDENT, RET_IDENT, comment);
 
         let this_arg = match receiver {
             Some(_) if args.is_empty() => "this",
@@ -42,7 +42,7 @@ impl RustType {
         use TypeKind as K;
         let call = match &self.kind {
             K::Unit => abort!(
-                self.dart_wrapper_rust_ident(),
+                self.rust_ident(),
                 "Should not export rust method that returns nothing"
             ),
             // TODO(thlorenz): All the below do the same, need to investigate if that makes sense
@@ -68,7 +68,7 @@ impl RustType {
                 this_arg = this_arg,
                 params = params
             ),
-           K::Composite(Composite::Vec, rust_type) => format!(
+           K::Composite(Composite::Vec, rust_type, _) => format!(
                 "{comment}{indent}  final {res_ident} = {rid_ffi}.{rid_fn_ident}({this_arg}{params});",
                 comment = comment,
                 indent = indent,
@@ -78,7 +78,7 @@ impl RustType {
                 this_arg = this_arg,
                 params = params
             ),
-            K::Composite(Composite::Option, rust_type) => format!(
+            K::Composite(Composite::Option, rust_type, _) => format!(
                 "{comment}{indent}  final {res_ident} = {rid_ffi}.{rid_fn_ident}({this_arg}{params});",
                 comment = comment,
                 indent = indent,
@@ -88,7 +88,11 @@ impl RustType {
                 this_arg = this_arg,
                 params = params
             ),
-            K::Composite(kind, _) => {
+            K::Composite(Composite::HashMap, key_type, val_type) => {
+                // TODO(thlorenz): HashMap 
+                abort!(self.rust_ident(), "TODO: RustType::render_fn_body K::Composite::HashMap<{:?}, {:?}>", key_type, val_type)
+            },
+            K::Composite(kind, _, _) => {
                 abort!(self.rust_ident(), "TODO: RustType::render_fn_body K::Composite({:?})", kind)
             }
             K::Unknown => abort!(self.rust_ident(), "TODO: RustType::render_fn_body K::Unknown"),

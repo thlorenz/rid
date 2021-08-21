@@ -9,10 +9,18 @@ use crate::export::ExportConfig;
 // More detailed tests with arg/return combinations are tested inside ../render_rust/render_function_export_test.rs
 // -----------------
 
-fn render_export(input: TokenStream) -> TokenStream {
+fn render(input: TokenStream, config: ExportConfig) -> TokenStream {
     let item = syn::parse2::<syn::Item>(input).unwrap();
     let args = syn::AttributeArgs::new();
-    rid_export_impl(item, args, ExportConfig::for_tests())
+    rid_export_impl(item, args, config)
+}
+
+fn render_export(input: TokenStream) -> TokenStream {
+    render(input, ExportConfig::for_tests())
+}
+
+fn render_export_full(input: TokenStream) -> TokenStream {
+    render(input, ExportConfig::default())
 }
 
 // -----------------
@@ -23,6 +31,9 @@ mod struct_impl_methods {
 
     use super::*;
 
+    // -----------------
+    // Returning Self
+    // -----------------
     #[test]
     fn no_args_returning_self() {
         let _attrs = TokenStream::new();
@@ -49,5 +60,60 @@ mod struct_impl_methods {
 
         let tokens = render_export(input);
         assert_eq!(tokens.to_string().trim(), expected.to_string().trim());
+    }
+
+    // -----------------
+    // Returning Vec
+    // -----------------
+    #[test]
+    fn no_args_returning_vec_u8_ref() {
+        let _attrs = TokenStream::new();
+        let input: TokenStream = quote! {
+            #[rid::export]
+            impl MyStruct {
+                #[rid::export]
+                fn get_u8s() -> Vec<&u8> {}
+            }
+        };
+
+        let expected = quote! {
+            #[allow(non_snake_case)]
+            mod __rid_MyStruct_impl_1 {
+                use super::*;
+                fn rid_export_MyStruct_get_u8s() -> rid::RidVec<u8> {
+                    let ret = MyStruct::get_u8s();
+                    let ret: Vec<u8> = ret.into_iter().map(|x| *x).collect();
+                    let ret_ptr = rid::RidVec::from(ret);
+                    ret_ptr
+                }
+            }
+        };
+
+        let tokens = render_export(input);
+        dump_tokens(&tokens);
+        assert_eq!(tokens.to_string().trim(), expected.to_string().trim());
+    }
+}
+
+// DEBUG: export, use this to debug export issues
+mod _debug_export_issues {
+    use crate::common::dump_tokens;
+
+    use super::*;
+
+    // #[test]
+    fn debug_export_issue() {
+        let input: TokenStream = quote! {
+            impl Store {
+                #[rid::export]
+                #[rid::enums(Filter)]
+                pub fn filters_ref(&self) -> Vec<&Filter> {
+                    self.filters.iter().collect()
+                }
+            }
+        };
+
+        let tokens = render_export_full(input);
+        dump_tokens(&tokens);
     }
 }

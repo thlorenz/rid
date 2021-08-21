@@ -144,6 +144,7 @@ impl ParsedBindings {
 
         let updated_binding =
             replace_struct_aliases(binding, &structs, &struct_aliases);
+        // let updated_binding = fix_cbindgen_issues(&updated_binding);
 
         let dart_code = join_sections(dart_sections);
         let swift_calls: Vec<String> = function_headers

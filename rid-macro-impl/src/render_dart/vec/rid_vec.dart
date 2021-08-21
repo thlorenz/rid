@@ -1,20 +1,21 @@
-/// extension Rid_Vec_ExtOnPointer{vec_type} on {ffigen_bind}.{vec_type} {
+/// extension Rid_Vec_ExtOn{vec_type} on {ffigen_bind}.{vec_type} {
 ///   {dart_raw_item_type} operator [](int idx) {
 ///     final len = this.length;
 ///     if (!(0 <= idx && idx < len)) {
 ///       throw AssertionError("Out of range access on List<{dart_raw_item_type}>[$idx] of length $len");
 ///     }
-///     return {rid_ffi}.{fn_get_ident}(this, idx);
+///     final raw = {rid_ffi}.{fn_get_ident}(this, idx);
+///     {access_item_return}
 ///   }
 ///
 ///   /// **WARNING**: You cannot use this Vec pointer anymore after this call
 ///   /// completes unless you set [autoDispose] to [false].
 ///   ///
-///   /// Converts this Vec pointer into a Dart [List&lt;{dart_item_type}&gt;] and disposes the
+///   /// Converts this Vec pointer into a Dart [List&lt;{resolved_dart_item_type}&gt;] and disposes the
 ///   /// underlying Rust Vec unless [autoDispose] is set to [false].
 ///   /// As a result if [autoDispose] is [true] you cannot use the underlying
 ///   /// Vec anymore after this call completes.
-///   List<{dart_item_type}> toDart({bool autoDispose = true}) {
+///   List<{resolved_dart_item_type}> toDart({bool autoDispose = true}) {
 ///     ridStoreLock();
 ///     final list = this.iter(){map_to_dart}.toList();
 ///     if (autoDispose) dispose();

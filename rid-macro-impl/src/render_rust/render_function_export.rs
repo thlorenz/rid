@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 
 use super::{
-    render_access_item, render_free, render_lifetime, render_lifetime_def,
-    render_return_type, ReceiverArg, RenderedReturnType,
+    render_free, render_lifetime, render_lifetime_def, render_return_type,
+    ReceiverArg, RenderedReturnType,
 };
 use crate::{
     attrs::Category,
@@ -11,14 +11,13 @@ use crate::{
         ParsedFunction, ParsedReceiver, ParsedReference,
     },
     render_common::{
-        fn_ident_and_impl_ident_string, PointerTypeAlias,
-        RenderFunctionExportConfig, VecAccess, VecKind,
+        fn_ident_and_impl_ident_string, AccessKind, PointerTypeAlias,
+        RenderFunctionExportConfig, VecAccess,
     },
     render_rust::{ffi_prelude, render_rust_arg, RenderedReceiverArgPass},
 };
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote, quote_spanned};
-use render_access_item::RenderedAccessItem;
 use render_free::RenderedFree;
 use render_rust_arg::RustArg;
 use syn::Ident;
@@ -66,8 +65,8 @@ pub fn render_function_export(
     let RenderedReturnType {
         tokens: ret_type,
         type_alias: ret_alias,
-    } = render_return_type(return_arg);
-    ret_alias.clone().map(|x| ptr_type_aliases.push(x));
+    } = render_return_type(return_arg, &AccessKind::MethodReturn);
+    ret_alias.as_ref().map(|x| ptr_type_aliases.push(x.clone()));
 
     let ret_to_pointer = return_arg.render_to_return(
         &return_ident,
@@ -131,15 +130,23 @@ pub fn render_function_export(
     };
 
     let vec_access = if return_arg.is_vec() {
+        let inner_return_ty = return_arg.inner_composite_type().unwrap();
+
         let ret_ident = match &ret_alias {
-            Some(PointerTypeAlias { alias, .. }) => alias,
-            Option::None => &return_arg.rust_ident(),
+            Some(PointerTypeAlias { alias, .. }) => alias.clone(),
+            None if inner_return_ty.is_primitive() => {
+                inner_return_ty.rust_ident().clone()
+            }
+            None if inner_return_ty.is_enum() => {
+                format_ident!("i32")
+            }
+            None => return_arg.rust_ident().clone(),
         };
 
         Some(VecAccess::new(
             &return_arg,
             ret_ident,
-            VecKind::MethodReturn,
+            AccessKind::MethodReturn,
             &ffi_prelude,
         ))
     } else {

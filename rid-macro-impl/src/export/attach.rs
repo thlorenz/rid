@@ -18,6 +18,7 @@ use crate::{
 use crate::{attrs::parse_rid_attrs, common::abort};
 use quote::{format_ident, quote};
 
+use crate::render_common::RenderableAccess;
 use proc_macro2::TokenStream;
 use render_dart::render_instance_method_extension;
 use syn::Ident;
@@ -81,7 +82,7 @@ pub fn rid_export_impl(
             let mut ptr_type_aliases_map =
                 HashMap::<String, TokenStream>::new();
             let mut frees = HashMap::<String, PointerTypeAlias>::new();
-            let mut vec_accesses = HashMap::<Ident, VecAccess>::new();
+            let mut vec_accesses = HashMap::<String, VecAccess>::new();
             let rust_fn_tokens = &parsed
                 .methods
                 .iter()
@@ -119,9 +120,7 @@ pub fn rid_export_impl(
                             );
                         }
                     }
-                    vec_access.map(|x| {
-                        vec_accesses.insert(x.vec_type.rust_ident().clone(), x)
-                    });
+                    vec_access.map(|x| vec_accesses.insert(x.key(), x));
 
                     tokens
                 })
@@ -135,7 +134,7 @@ pub fn rid_export_impl(
 
             let vec_access_tokens = if config.render_vec_access {
                 let needed_vec_accesses = get_state().need_implemtation(
-                    &ImplementationType::VecAccess,
+                    &ImplementationType::CollectionAccess,
                     vec_accesses,
                 );
                 render_vec_accesses(

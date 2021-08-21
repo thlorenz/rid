@@ -9,7 +9,7 @@ use crate::{
     parse::ParsedFunction,
     render_common::{
         render_vec_accesses, PointerTypeAlias, RenderFunctionExportConfig,
-        VecAccess,
+        RenderableAccess, VecAccess,
     },
 };
 
@@ -254,20 +254,12 @@ mod no_args_composite_vec_return_full {
                 arg.free();
             }
             fn rid_get_item_ridvec_u8(vec: rid::RidVec<u8>, idx: usize) -> u8 {
-                vec[idx]
+                let ptr = vec[idx];
+                ptr
             }
         };
         assert_eq!(res.tokens.to_string(), expected.to_string());
         assert_eq!(res.type_aliases, "");
-
-        /* TODO: rendering dart access functions for Vec<primitive> is not properly
-         * implemented yet. Mainly vec return type is wrong.
-         * Same issue affects `rid_free_..|rid_get_item_..` rust function names above
-            let expected_dart = include_str!(
-                "./fixtures/function_export.return_vec_u8.dart.snapshot"
-            );
-            compare_strings_by_line(&res.dart_vec_access, expected_dart);
-        */
     }
 
     #[test]
@@ -292,17 +284,13 @@ mod no_args_composite_vec_return_full {
                 vec: rid::RidVec<Pointer_MyStruct>,
                 idx: usize
             ) -> Pointer_MyStruct {
-                vec[idx]
+                let ptr = vec[idx];
+                ptr
             }
         };
 
         assert_eq!(res.tokens.to_string(), expected.to_string());
         assert_eq!(res.type_aliases, "Pointer_MyStruct");
-
-        let expected_dart = include_str!(
-            "./fixtures/function_export.return_vec_struct_ref.dart.snapshot"
-        );
-        compare_strings_by_line(&res.dart_vec_access, expected_dart);
     }
 }
 

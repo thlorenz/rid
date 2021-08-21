@@ -5,6 +5,8 @@ use crate::{
 };
 use rid_common::{DART_FFI, STRING_TO_NATIVE_INT8};
 
+use super::ParsedReference;
+
 /// The Dart type representing a given Rust Type.
 /// The first field indicates if the Rust Type is `Option<T>` and thus the Dart type is nullable.
 #[derive(Debug, PartialEq)]
@@ -15,12 +17,17 @@ pub enum DartType {
     String(bool),
     Custom(bool, TypeInfo, String),
     Vec(bool, Box<DartType>),
+    HashMap(bool, Box<DartType>, Box<DartType>),
     Unit,
 }
 
 impl DartType {
     pub fn from(rust_type: &RustType, type_infos: &TypeInfoMap) -> Self {
-        DartType::from_with_nullable(rust_type, type_infos, false)
+        // TODO(thlorenz): This would seem more correct but currently breaks `Vec<&Todo>`
+        // let nullable =
+        //     !rust_type.is_primitive() && !rust_type.reference.is_owned();
+        let nullable = false;
+        DartType::from_with_nullable(rust_type, type_infos, nullable)
     }
 
     pub fn from_with_nullable(
@@ -54,10 +61,11 @@ impl DartType {
                 }
             }
             Unit => DartType::Unit,
-            Composite(composite, ty) => match composite {
+            Composite(composite, fst_ty, snd_ty) => match composite {
                 C::Vec => {
                     let inner = DartType::from_with_nullable(
-                        ty.as_ref()
+                        fst_ty
+                            .as_ref()
                             .expect("Vec Composite should have inner type")
                             .as_ref(),
                         type_infos,
@@ -66,10 +74,33 @@ impl DartType {
                     DartType::Vec(nullable, Box::new(inner))
                 }
                 C::Option => DartType::from_with_nullable(
-                    ty.as_ref().unwrap(),
+                    fst_ty.as_ref().unwrap(),
                     type_infos,
                     true,
                 ),
+                C::HashMap => {
+                    let fst_inner = DartType::from_with_nullable(
+                        fst_ty
+                            .as_ref()
+                            .expect("HahsMap Composite should have key type")
+                            .as_ref(),
+                        type_infos,
+                        false,
+                    );
+                    let snd_inner = DartType::from_with_nullable(
+                        snd_ty
+                            .as_ref()
+                            .expect("HahsMap Composite should have value type")
+                            .as_ref(),
+                        type_infos,
+                        false,
+                    );
+                    DartType::HashMap(
+                        nullable,
+                        Box::new(fst_inner),
+                        Box::new(snd_inner),
+                    )
+                }
                 C::Custom(_, _) => abort!(
                     rust_type.rust_ident(),
                     "TODO: convert custom composite rust type to dart type"

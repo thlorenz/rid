@@ -25,6 +25,29 @@ pub fn resolve_vec_ptr(ty: &syn::Ident) -> TokenStream {
     }
 }
 
+pub fn resolve_hash_set_ptr(ty: &syn::Ident) -> TokenStream {
+    quote_spanned! { ty.span() =>
+        unsafe {
+            assert!(!ptr.is_null());
+            let ptr: *mut ::std::collections::HashSet<#ty> = &mut *ptr;
+            ptr.as_mut().expect("resolve_hash_set_ptr.as_mut failed")
+        }
+    }
+}
+
+pub fn resolve_hash_map_ptr(
+    key_ty: &syn::Ident,
+    val_ty: &syn::Ident,
+) -> TokenStream {
+    quote_spanned! { key_ty.span() =>
+        unsafe {
+            assert!(!ptr.is_null());
+            let ptr: *mut ::std::collections::HashMap<#key_ty, #val_ty> = &mut *ptr;
+            ptr.as_mut().expect("resolve_hash_map_ptr.as_mut failed")
+        }
+    }
+}
+
 pub fn resolve_string_ptr(arg: &syn::Ident, reassign: bool) -> TokenStream {
     if reassign {
         quote_spanned! { arg.span() =>

@@ -34,7 +34,7 @@ mod self_aliasing {
             }
         });
         assert_eq!(
-            ty.dart_wrapper_rust_ident().to_string(),
+            ty.dart_wrapper_rust_string(),
             "RawMyStruct",
             "return ident"
         );
@@ -132,7 +132,7 @@ mod method_exports {
         });
 
         assert_eq!(
-            owner_ty.dart_wrapper_rust_ident().to_string(),
+            owner_ty.dart_wrapper_rust_string(),
             "RawStore",
             "return ident"
         );

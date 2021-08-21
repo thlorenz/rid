@@ -18,24 +18,41 @@ impl RustType {
     pub fn render_dart_pointer_type(&self) -> String {
         use TypeKind as K;
         match &self.kind {
+            // -----------------
+            // Primitives
+            // -----------------
             K::Primitive(_) => self.render_dart_type(
                 &TypeInfoMap::default(),
                 RenderDartTypeOpts::raw(),
             ),
-            K::Unit => abort!(
-                self.rust_ident(),
-                "Should not export rust method that returns nothing"
-            ),
 
-            K::Value(val) => {
-                val.render_dart_pointer_type(self.dart_wrapper_rust_ident())
-            }
-            K::Composite(Composite::Vec, inner_type) => match inner_type {
+            // -----------------
+            // Values
+            // -----------------
+            K::Value(_) if self.kind.is_enum() => "int".to_string(),
+            K::Value(val) => val.render_dart_pointer_type(&format_ident!(
+                "{}",
+                self.dart_wrapper_rust_string()
+            )),
+
+            // -----------------
+            // Composites Vec
+            // -----------------
+            K::Composite(Composite::Vec, inner_type, _) => match inner_type {
                 Some(ty) => {
-                    let item_type = ty.rust_ident();
+                    let item_type = if ty.is_enum() {
+                        "i32".to_string()
+                    } else {
+                        ty.rust_ident().to_string()
+                    };
+                    let pointer_prefix = if ty.is_primitive() || ty.is_enum() {
+                        ""
+                    } else {
+                        PointerTypeAlias::POINTER_ALIAS_PREFIX
+                    };
                     let pointer = format!(
                         "{ffigen_bind}.RidVec_{pointer_prefix}{ty}",
-                        pointer_prefix = PointerTypeAlias::POINTER_ALIAS_PREFIX,
+                        pointer_prefix = pointer_prefix,
                         ffigen_bind = FFI_GEN_BIND,
                         ty = item_type
                     );
@@ -48,33 +65,57 @@ impl RustType {
                     )
                 }
             },
-            K::Composite(Composite::Option, inner_type) => match inner_type {
-                Some(ty) => {
-                    let pointer = format!(
-                        "{dart_ffi}.Pointer<{ffigen_bind}.{ty}>?",
-                        dart_ffi = DART_FFI,
-                        ffigen_bind = FFI_GEN_BIND,
-                        ty = inner_type
-                            .as_ref()
-                            .unwrap()
-                            .dart_wrapper_rust_ident(),
-                    );
-                    pointer
-                }
-                None => {
-                    abort!(
-                        self.rust_ident(),
-                        "Rust Option composite should include inner type"
-                    )
-                }
-            },
-            K::Composite(kind, _) => {
+            // -----------------
+            // Composites HashMap
+            // -----------------
+            K::Composite(Composite::HashMap, key_type, val_type) => {
+                // TODO(thlorenz): HashMap
                 abort!(
-                    self.rust_ident(),
-                    "TODO: RustType::render_dart_pointer_type K::Composite({:?})",
-                    kind
-                )
+                        self.rust_ident(),
+                        "TODO: RustType::render_dart_pointer_type K::Composite::HashMap<{:?}, {:?}>",
+                        key_type, val_type
+                    )
             }
+            // -----------------
+            // Composites Option
+            // -----------------
+            K::Composite(Composite::Option, inner_type, _) => {
+                match inner_type {
+                    Some(ty) => {
+                        let pointer = format!(
+                            "{dart_ffi}.Pointer<{ffigen_bind}.{ty}>?",
+                            dart_ffi = DART_FFI,
+                            ffigen_bind = FFI_GEN_BIND,
+                            ty = inner_type
+                                .as_ref()
+                                .unwrap()
+                                .dart_wrapper_rust_string(),
+                        );
+                        pointer
+                    }
+                    None => {
+                        abort!(
+                            self.rust_ident(),
+                            "Rust Option composite should include inner type"
+                        )
+                    }
+                }
+            }
+            K::Composite(kind, _, _) => {
+                abort!(
+                        self.rust_ident(),
+                        "TODO: RustType::render_dart_pointer_type K::Composite({:?})",
+                        kind
+                    )
+            }
+
+            // -----------------
+            // Invalid
+            // -----------------
+            K::Unit => abort!(
+                self.rust_ident(),
+                "Should not export rust method that returns nothing"
+            ),
             K::Unknown => abort!(
                 self.rust_ident(),
                 "TODO: RustType::render_dart_pointer_type K::Unknown"
@@ -88,10 +129,16 @@ impl Value {
         use Category as C;
         use Value::*;
         match self {
-            // TODO(thlorenz): implement to_return_type for dart with the string conversion
+            // -----------------
+            // Strings
+            // -----------------
             CString => "String".to_string(),
             String => "String".to_string(),
-            Str => todo!("Value::render_dart_pointer_type ::Str"),
+            Str => "String".to_string(),
+
+            // -----------------
+            // Custom
+            // -----------------
             Custom(type_info, _) => match type_info.cat {
                 // NOTE: assumes that enums are `repr(C)`.
                 // If they are `repr(u8)` this would have to be a Uint8

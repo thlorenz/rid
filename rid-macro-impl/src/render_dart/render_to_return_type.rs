@@ -1,6 +1,6 @@
 use crate::{
     common::abort,
-    parse::rust_type::{Composite, RustType, TypeKind, Value},
+    parse::rust_type::{self, Composite, RustType, TypeKind, Value},
 };
 use rid_common::{DART_FFI, FFI_GEN_BIND, RID_FFI};
 
@@ -9,43 +9,67 @@ impl RustType {
         &self,
         res_ident: &str,
         ret_ident: &str,
+        comment: &str,
     ) -> String {
         use TypeKind as K;
         match &self.kind {
+            K::Primitive(rust_type::Primitive::Bool) => format!(
+                "final {ret_ident} = {res_ident} == 1;",
+                ret_ident = ret_ident,
+                res_ident = res_ident
+            ),
             K::Primitive(_) => format!(
                 "final {ret_ident} = {res_ident};",
                 ret_ident = ret_ident,
                 res_ident = res_ident
+            ),
+            K::Value(val) if self.kind.is_string_like() => format!(
+                r###"
+{comment}     final {ret_ident} = {res_ident}.toDartString();
+{comment}     {res_ident}.free();"###,
+                ret_ident = ret_ident,
+                res_ident = res_ident,
+                comment = comment
             ),
             K::Value(val) => format!(
                 "final {ret_ident} = {res_ident};",
                 ret_ident = ret_ident,
                 res_ident = res_ident
             ),
-            K::Composite(Composite::Vec, inner_type) => format!(
+            K::Composite(Composite::Vec, inner_type, _) => format!(
                 "final {ret_ident} = {res_ident};",
                 ret_ident = ret_ident,
                 res_ident = res_ident
             ),
-            K::Composite(Composite::Option, inner_type) => match inner_type {
-                Some(ty) => {
-                    format!(
+            K::Composite(Composite::Option, inner_type, _) => {
+                match inner_type {
+                    Some(ty) => {
+                        format!(
                         "final {ret_ident} = {res_ident}.address == 0x0 ? null : {res_ident};",
                         ret_ident = ret_ident,
                         res_ident = res_ident
                     )
+                    }
+                    None => {
+                        abort!(
+                            self.rust_ident(),
+                            "Rust Option composite should include inner type"
+                        )
+                    }
                 }
-                None => {
-                    abort!(
-                        self.rust_ident(),
-                        "Rust Option composite should include inner type"
-                    )
-                }
-            },
-            K::Composite(kind, _) => {
+            }
+            K::Composite(Composite::HashMap, key_type, val_type) => {
+                // TODO(thlorenz): HashMap
                 abort!(
                     self.rust_ident(),
-                    "TODO: RustType::render_dart_pointer_type K::Composite({:?})",
+                    "TODO: RustType::render_dart_to_return_type K::Composite::HashMap<{:?}, {:?}>",
+                    key_type, val_type
+                )
+            }
+            K::Composite(kind, _, _) => {
+                abort!(
+                    self.rust_ident(),
+                    "TODO: RustType::render_dart_to_return_type K::Composite({:?})",
                     kind
                 )
             }

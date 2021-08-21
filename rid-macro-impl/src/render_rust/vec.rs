@@ -4,7 +4,10 @@ use render_return_type::RenderedReturnType;
 
 use crate::{
     common::{abort, tokens::resolve_vec_ptr},
-    render_common::{PointerTypeAlias, VecAccess, VecKind},
+    render_common::{
+        AccessKind, PointerTypeAlias, RenderableAccess, RenderedAccessRust,
+        VecAccess,
+    },
     render_rust::{render_return_type, render_to_return_type},
 };
 
@@ -12,24 +15,12 @@ use super::{
     render_access_item, render_free, RenderedAccessItem, RenderedFree,
 };
 
-pub struct RenderedVecRust {
-    pub tokens: TokenStream,
-    pub type_aliases: Vec<PointerTypeAlias>,
-}
-
 impl VecAccess {
-    pub fn render_rust(&self) -> RenderedVecRust {
-        match self.kind {
-            VecKind::FieldReference => self.render_rust_field_access(),
-            VecKind::MethodReturn => self.render_rust_method_return(),
-        }
-    }
-
     // TODO: for now ignoring type aliases as they should have been added already when
     // the function using the vec whose access methods we render here were rendered.
     // If it turns out that we don't need those then we don't have to return them from
     // `render_free` or `render_access_item` either.
-    fn render_rust_method_return(&self) -> RenderedVecRust {
+    pub fn render_rust_method_return(&self) -> RenderedAccessRust {
         let mut type_aliases = Vec::<PointerTypeAlias>::new();
 
         let RenderedFree {
@@ -39,6 +30,7 @@ impl VecAccess {
             &self.vec_type,
             &self.fn_free_ident,
             &self.rust_ffi_prelude,
+            &AccessKind::MethodReturn,
         );
         type_alias.map(|x| type_aliases.push(x));
 
@@ -49,6 +41,7 @@ impl VecAccess {
             &self.vec_type,
             &self.fn_get_ident,
             &self.rust_ffi_prelude,
+            &AccessKind::MethodReturn,
         );
         type_alias.map(|x| type_aliases.push(x));
 
@@ -56,7 +49,7 @@ impl VecAccess {
             #free_tokens
             #access_tokens
         };
-        RenderedVecRust {
+        RenderedAccessRust {
             tokens,
             type_aliases,
         }
@@ -65,7 +58,7 @@ impl VecAccess {
     /// Main difference to [VecAccess::render_rust] is that we work with references to a vec
     /// that is attached to a model. Thus we do not need `free` and don't wrap inside
     /// a [RidVec]. Instead we pass `*const Vec<T>` around.
-    fn render_rust_field_access(&self) -> RenderedVecRust {
+    pub fn render_rust_field_access(&self) -> RenderedAccessRust {
         let ffi_prelude = &self.rust_ffi_prelude;
 
         let item_ty = self.item_type.rust_ident();
@@ -110,7 +103,10 @@ impl VecAccess {
         } else if self.item_type.is_string_like() {
             let RenderedReturnType {
                 tokens: return_ty, ..
-            } = render_return_type(&self.item_type);
+            } = render_return_type(
+                &self.item_type,
+                &AccessKind::FieldReference,
+            );
 
             let res_ident = format_ident!("item");
             let res_pointer = format_ident!("item_ptr");
@@ -153,7 +149,7 @@ impl VecAccess {
             #len_impl
             #get_impl
         };
-        RenderedVecRust {
+        RenderedAccessRust {
             tokens,
             type_aliases: vec![],
         }

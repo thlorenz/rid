@@ -17,9 +17,13 @@ pub fn utils_module_tokens() -> TokenStream {
     if get_state()
         .needs_implementation(&ImplementationType::UtilsModule, UTILS_MODULE)
     {
+        let cstring_struct_declaration = cstring_struct_declaration();
+        let str_struct_declaration = str_struct_declaration();
         let cstring_free = cstring_free();
         quote! {
             mod __rid_utils_module {
+                #str_struct_declaration
+                #cstring_struct_declaration
                 #cstring_free
             }
         }
@@ -28,6 +32,9 @@ pub fn utils_module_tokens() -> TokenStream {
     }
 }
 
+// -----------------
+// CString
+// -----------------
 fn cstring_free() -> TokenStream {
     let cstring_free_ident = format_ident!("{}", CSTRING_FREE);
     quote_spanned! {
@@ -38,5 +45,25 @@ fn cstring_free() -> TokenStream {
                 ::core::mem::drop(unsafe { ::std::ffi::CString::from_raw(ptr) });
             }
         }
+    }
+}
+
+// cbindgen doesn't know what CString is, also technically it is not FFI safe.
+// We just use it to point to items in a collection, Never actually sending a pointer directly and
+// resolving it later.
+fn cstring_struct_declaration() -> TokenStream {
+    quote! {
+        #[no_mangle]
+        pub struct CString {}
+    }
+}
+
+// -----------------
+// Str
+// -----------------
+fn str_struct_declaration() -> TokenStream {
+    quote! {
+        #[no_mangle]
+        pub struct str {}
     }
 }
