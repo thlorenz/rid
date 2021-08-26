@@ -24,7 +24,7 @@ impl HashMapAccess {
         let fn_len_ident = &self.fn_len_ident;
         let len_impl = quote_spanned! { fn_len_ident.span() =>
             #ffi_prelude
-            fn #fn_len_ident(ptr: *mut HashMap<#key_ty, #val_ty>) -> usize {
+            fn #fn_len_ident(ptr: *const HashMap<#key_ty, #val_ty>) -> usize {
                 #resolve_hash_map.len()
             }
         };
@@ -39,7 +39,7 @@ impl HashMapAccess {
         // TODO(thlorenz): HashMap consider non-primitive key and/or val types
         let get_impl = quote_spanned! { fn_get_ident.span() =>
             #ffi_prelude
-            fn #fn_get_ident<'a>(ptr: *mut HashMap<#key_ty, #val_ty>, key: #key_ty) -> Option<&'a #val_ty>  {
+            fn #fn_get_ident<'a>(ptr: *const HashMap<#key_ty, #val_ty>, key: #key_ty) -> Option<&'a #val_ty>  {
                 let item = #resolve_hash_map.get(&key);
                 item
             }
@@ -52,7 +52,7 @@ impl HashMapAccess {
         // TODO(thlorenz): HashMap consider non-primitive key types
         let contains_key_impl = quote_spanned! { fn_contains_key_ident.span() =>
             #ffi_prelude
-            fn #fn_contains_key_ident(ptr: *mut HashMap<#key_ty, #val_ty>, key: #key_ty) -> u8  {
+            fn #fn_contains_key_ident(ptr: *const HashMap<#key_ty, #val_ty>, key: #key_ty) -> u8  {
                 let hash_map = #resolve_hash_map;
                 if hash_map.contains_key(&key) {
                     1
@@ -65,13 +65,22 @@ impl HashMapAccess {
         // -----------------
         // HashMap::keys
         // -----------------
-        // TODO: HashMap - currently we use a `rid:export` for this in the tests, but ideally
-        // we should just add this implementation
+        let fn_keys_ident = &self.fn_keys_ident;
+        let keys_impl = quote_spanned! { fn_keys_ident.span() =>
+            #ffi_prelude
+            fn #fn_keys_ident(ptr: *const HashMap<#key_ty, #val_ty>) -> rid::RidVec<#key_ty> {
+                let map: &HashMap<#key_ty, #val_ty> = #resolve_hash_map;
+                let ret: Vec<#key_ty> = map.keys().into_iter().map(|x| *x).collect();
+                let ret_ptr = rid::RidVec::from(ret);
+                ret_ptr
+            }
+        };
 
         let tokens = quote! {
             #len_impl
             #get_impl
             #contains_key_impl
+            #keys_impl
         };
         RenderedAccessRust {
             tokens,

@@ -36,6 +36,9 @@ pub struct HashMapAccess {
     /// Name of function to query if hash map contains a key
     pub fn_contains_key_ident: Ident,
 
+    /// Name of function to retrieve a Vec containing the keys of the hash map
+    pub fn_keys_ident: Ident,
+
     /// Name of function to free hash map (not used for field access)
     pub fn_free_ident: Ident,
 }
@@ -61,6 +64,7 @@ impl HashMapAccess {
         let fn_free_ident = format_ident!("rid_free_{}", key);
         let fn_get_ident = format_ident!("rid_get_{}", key);
         let fn_contains_key_ident = format_ident!("rid_contains_key_{}", key);
+        let fn_keys_ident = format_ident!("rid_keys_{}", key);
 
         Self {
             hash_map_type: hash_map_ty.clone(),
@@ -72,6 +76,7 @@ impl HashMapAccess {
             fn_free_ident,
             fn_get_ident,
             fn_contains_key_ident,
+            fn_keys_ident,
             kind,
         }
     }
