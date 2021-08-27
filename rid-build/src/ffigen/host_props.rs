@@ -1,12 +1,14 @@
 use std::env;
 
-const LINUX_LLVM_PATHS: [&str; 5] = [
-    "/usr/lib/llvm-9/lib/",
-    "/usr/lib/llvm-10/lib/",
-    "/usr/lib/llvm-11/lib/",
-    "/usr/lib/",
-    "/usr/lib64/",
+const LINUX_LLVM_PATHS: [&str; 6] = [
+    "/usr/lib/llvm-6.0/lib/libclang.so",
+    "/usr/lib/llvm-9/lib/libclang.so",
+    "/usr/lib/llvm-10/lib/libclang.so",
+    "/usr/lib/llvm-11/lib/libclang.so",
+    "/usr/lib/libclang.so",
+    "/usr/lib64/libclang.so",
 ];
+
 const MACOS_LLVM_PATHS: [&str; 1] = ["/usr/local/opt/llvm/lib/"];
 const WINDOWS_LLVM_PATHS: [&str; 1] = [r#"C:\Program Files\LLVM\bin\"#];
 
