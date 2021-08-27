@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use proc_macro2::{Span, TokenStream};
 
 use crate::attrs::TypeInfoMap;
@@ -23,8 +25,14 @@ pub enum AccessRender {
 }
 
 pub struct RenderedAccessRust {
+    /// Rendered access
     pub tokens: TokenStream,
+
+    /// Type aliases used to render access for which a typedef needs to be rendered
     pub type_aliases: Vec<PointerTypeAlias>,
+
+    /// Accesses required by this access, i.e. a `Vec<key>` for `HashMap<key, val>`
+    pub nested_accesses: Option<HashMap<String, Box<dyn RenderableAccess>>>,
 }
 
 // -----------------

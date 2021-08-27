@@ -52,6 +52,7 @@ impl VecAccess {
         RenderedAccessRust {
             tokens,
             type_aliases,
+            nested_accesses: None,
         }
     }
 
@@ -152,6 +153,7 @@ impl VecAccess {
         RenderedAccessRust {
             tokens,
             type_aliases: vec![],
+            nested_accesses: None,
         }
     }
 }

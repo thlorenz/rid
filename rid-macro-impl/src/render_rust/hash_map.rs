@@ -1,10 +1,14 @@
+use std::collections::HashMap;
+
 use proc_macro2::TokenStream;
-use quote::{quote, quote_spanned};
+use quote::{format_ident, quote, quote_spanned, ToTokens};
 
 use crate::{
     common::tokens::resolve_hash_map_ptr,
+    parse::{rust_type::RustType, ParsedReference},
     render_common::{
-        AccessKind, HashMapAccess, PointerTypeAlias, RenderedAccessRust,
+        AccessKind, HashMapAccess, PointerTypeAlias, RenderableAccess,
+        RenderedAccessRust, VecAccess,
     },
 };
 
@@ -65,16 +69,39 @@ impl HashMapAccess {
         // -----------------
         // HashMap::keys
         // -----------------
+        let type_alias = PointerTypeAlias::for_const_pointer(
+            &key_ty.to_string(),
+            &key_ty.to_token_stream(),
+            false,
+        );
+        let key_ty_alias = &type_alias.alias;
+
         let fn_keys_ident = &self.fn_keys_ident;
         let keys_impl = quote_spanned! { fn_keys_ident.span() =>
             #ffi_prelude
-            fn #fn_keys_ident(ptr: *const HashMap<#key_ty, #val_ty>) -> rid::RidVec<#key_ty> {
+            fn #fn_keys_ident(ptr: *const HashMap<#key_ty, #val_ty>) -> rid::RidVec<#key_ty_alias> {
                 let map: &HashMap<#key_ty, #val_ty> = #resolve_hash_map;
-                let ret: Vec<#key_ty> = map.keys().into_iter().map(|x| *x).collect();
+                let ret: Vec<#key_ty_alias> = map.keys().map(|x| x as #key_ty_alias).collect();
                 let ret_ptr = rid::RidVec::from(ret);
                 ret_ptr
             }
         };
+
+        // In order to iterate the RidVec<key> that is returned from the above method,
+        // we need to ensure the access functions are rendered.
+        let vec_ty = RustType::from_vec(
+            self.key_type.clone(),
+            ParsedReference::Ref(None),
+        );
+        let vec_access = VecAccess::new(
+            &vec_ty,
+            vec_ty.rust_ident().clone(),
+            AccessKind::MethodReturn,
+            &ffi_prelude,
+        );
+        let mut nested_accesses: HashMap<String, Box<dyn RenderableAccess>> =
+            HashMap::new();
+        nested_accesses.insert(vec_access.key(), Box::new(vec_access));
 
         let tokens = quote! {
             #len_impl
@@ -84,7 +111,8 @@ impl HashMapAccess {
         };
         RenderedAccessRust {
             tokens,
-            type_aliases: vec![],
+            type_aliases: vec![type_alias],
+            nested_accesses: Some(nested_accesses),
         }
     }
 

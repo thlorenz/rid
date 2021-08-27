@@ -137,6 +137,17 @@ impl RustType {
         )
     }
 
+    pub fn from_vec(inner_type: RustType, reference: ParsedReference) -> Self {
+        let ident = format_ident!("Vec");
+        let kind = TypeKind::Composite(
+            Composite::Vec,
+            Some(Box::new(inner_type)),
+            None,
+        );
+        let context = RustTypeContext::Default;
+        Self::new(ident, kind, reference, context)
+    }
+
     pub fn is_primitive(&self) -> bool {
         self.kind.is_primitive()
     }
