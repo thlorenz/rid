@@ -89,30 +89,13 @@ fn aliased_pointer(
     name_tok: TokenStream,
     is_mut: bool,
 ) -> (Option<PointerTypeAlias>, TokenStream) {
-    let (alias, typedef) = if is_mut {
-        let alias = format_ident!(
-            "{}{}",
-            PointerTypeAlias::POINTER_MUT_ALIAS_PREFIX,
-            alias_type_name
-        );
-        (alias.clone(), quote! { type #alias = *mut #name_tok; })
+    let pointer_alias = if is_mut {
+        PointerTypeAlias::for_mut_pointer(alias_type_name, &name_tok, true)
     } else {
-        let alias = format_ident!(
-            "{}{}",
-            PointerTypeAlias::POINTER_ALIAS_PREFIX,
-            alias_type_name
-        );
-        (alias.clone(), quote! { type #alias = *const #name_tok; })
+        PointerTypeAlias::for_const_pointer(alias_type_name, &name_tok, false)
     };
 
+    let alias = &pointer_alias.alias;
     let tokens = quote! { #alias };
-    (
-        Some(PointerTypeAlias {
-            alias,
-            typedef,
-            type_name: alias_type_name.to_string(),
-            needs_free: is_mut,
-        }),
-        tokens,
-    )
+    (Some(pointer_alias), tokens)
 }
