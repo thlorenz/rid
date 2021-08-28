@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use proc_macro2::TokenStream;
-use quote::{quote, quote_spanned};
+use quote::{format_ident, quote, quote_spanned};
 
 use crate::{
     attrs::TypeInfoMap,
@@ -28,6 +28,7 @@ pub fn render_collection_accesses(
     rust_config: &RenderRustFieldAccessConfig,
     dart_config: &RenderDartFieldAccessConfig,
 ) -> (TokenStream, String) {
+    let first_key = &accesses.keys().next().unwrap().clone();
     let aggregated = aggregate_collection_accesses(
         accesses,
         type_infos,
@@ -50,7 +51,15 @@ pub fn render_collection_accesses(
         "".to_string()
     };
     let dart_tokens: TokenStream = if dart_config.render && dart_config.tokens {
-        rendered_dart.parse().unwrap()
+        let dart_tokens: TokenStream = rendered_dart.parse().unwrap();
+        let fn_include_dart_ident =
+            format_ident!("__include_dart_for_{}", first_key);
+        let ffi_prelude = &rust_config.ffi_prelude_tokens;
+        quote! {
+            #dart_tokens
+            #ffi_prelude
+            fn #fn_include_dart_ident() {}
+        }
     } else {
         TokenStream::new()
     };
@@ -91,10 +100,11 @@ fn aggregate_collection_accesses(
                 darts: vec![],
             },
             |mut accesses, x| {
+                let key = x.key();
                 let access_needs_implementation = get_state()
                     .needs_implementation(
                         &ImplementationType::CollectionAccess,
-                        &x.key(),
+                        &key,
                     );
                 let should_render_rust_access = match rust_config.accesses {
                     AccessRender::Force => true,
@@ -119,12 +129,21 @@ fn aggregate_collection_accesses(
                             all_nested_accesses.insert(k, v);
                         }
                     }
-                    let typedef_tokens: Vec<TokenStream> =
-                        type_aliases.into_iter().map(|x| x.typedef).collect();
+                    let typedef_tokens: Vec<TokenStream> = type_aliases
+                        .values()
+                        .into_iter()
+                        .map(|x| x.typedef.clone())
+                        .collect();
 
+                    // We need to wrap this in these in a module in case the nested accesses
+                    // result in rendering the same typedefs.
+                    let mod_ident = format_ident!("mod_{}_access", x.key());
                     let rust = quote_spanned! { x.span() =>
-                        #(#typedef_tokens)*
-                        #rust_tokens
+                        mod #mod_ident {
+                            use super::*;
+                            #(#typedef_tokens)*
+                            #rust_tokens
+                        }
                     };
                     accesses.rust_tokens.push(rust);
                 }

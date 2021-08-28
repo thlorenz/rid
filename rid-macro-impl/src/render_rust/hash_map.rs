@@ -87,10 +87,14 @@ impl HashMapAccess {
             }
         };
 
+        // -----------------
+        // HashMap::keys VecAccess
+        // -----------------
+
         // In order to iterate the RidVec<key> that is returned from the above method,
         // we need to ensure the access functions are rendered.
-        let vec_ty = RustType::from_vec(
-            self.key_type.clone(),
+        let vec_ty = RustType::from_vec_with_pointer_alias(
+            &key_ty,
             ParsedReference::Ref(None),
         );
         let vec_access = VecAccess::new(
@@ -99,6 +103,7 @@ impl HashMapAccess {
             AccessKind::MethodReturn,
             &ffi_prelude,
         );
+
         let mut nested_accesses: HashMap<String, Box<dyn RenderableAccess>> =
             HashMap::new();
         nested_accesses.insert(vec_access.key(), Box::new(vec_access));
@@ -109,9 +114,14 @@ impl HashMapAccess {
             #contains_key_impl
             #keys_impl
         };
+        let type_aliases = {
+            let mut map = HashMap::new();
+            map.insert(type_alias.alias.to_string(), type_alias);
+            map
+        };
         RenderedAccessRust {
             tokens,
-            type_aliases: vec![type_alias],
+            type_aliases,
             nested_accesses: Some(nested_accesses),
         }
     }

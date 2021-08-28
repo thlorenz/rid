@@ -97,37 +97,3 @@ impl HashMapAccess {
         .to_lowercase()
     }
 }
-
-pub fn render_hash_map_accesses(
-    hash_map_accesses: &[HashMapAccess],
-    type_infos: &TypeInfoMap,
-    comment: &str,
-) -> Vec<TokenStream> {
-    todo!("render_hash_map_accesses")
-    /*
-    hash_map_accesses
-        .iter()
-        .map(|x| {
-            let rust_tokens = x.render_rust().tokens;
-
-            let implement_vecs = x.render_dart(type_infos, comment);
-            let dart_string: String = format!(
-                r###"
-            {comment} Vector access methods matching the below Rust methods.
-            {comment}
-            {comment} ```dart
-            {implement_vecs}
-            {comment} ```"###,
-                comment = comment,
-                implement_vecs = implement_vecs
-            );
-            let dart_tokens: TokenStream = dart_string.parse().unwrap();
-
-            quote! {
-                #dart_tokens
-                #rust_tokens
-            }
-        })
-        .collect()
-        */
-}

@@ -29,21 +29,3 @@ pub enum Msg {
 pub enum Reply {
     NotUsed,
 }
-
-#[rid::export]
-impl Store {
-    #[rid::export]
-    pub fn u8_keys(&self) -> Vec<&u8> {
-        self.u8s.keys().collect::<Vec<&u8>>()
-    }
-}
-
-#[no_mangle]
-#[allow(non_snake_case)]
-pub extern "C" fn rid_u8_keys(ptr: *const HashMap<u8, u8>) -> rid::RidVec<u8> {
-    let map: &HashMap<u8, u8> = unsafe { ptr.as_ref().unwrap() };
-    let ret = map.keys();
-    let ret: Vec<u8> = ret.into_iter().map(|x| *x).collect();
-    let ret_ptr = rid::RidVec::from(ret);
-    ret_ptr
-}

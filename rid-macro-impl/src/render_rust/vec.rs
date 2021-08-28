@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote, quote_spanned};
 use render_return_type::RenderedReturnType;
@@ -21,7 +23,7 @@ impl VecAccess {
     // If it turns out that we don't need those then we don't have to return them from
     // `render_free` or `render_access_item` either.
     pub fn render_rust_method_return(&self) -> RenderedAccessRust {
-        let mut type_aliases = Vec::<PointerTypeAlias>::new();
+        let mut type_aliases = HashMap::<String, PointerTypeAlias>::new();
 
         let RenderedFree {
             tokens: free_tokens,
@@ -32,7 +34,7 @@ impl VecAccess {
             &self.rust_ffi_prelude,
             &AccessKind::MethodReturn,
         );
-        type_alias.map(|x| type_aliases.push(x));
+        type_alias.map(|x| type_aliases.insert(x.alias.to_string(), x));
 
         let RenderedAccessItem {
             tokens: access_tokens,
@@ -43,7 +45,7 @@ impl VecAccess {
             &self.rust_ffi_prelude,
             &AccessKind::MethodReturn,
         );
-        type_alias.map(|x| type_aliases.push(x));
+        type_alias.map(|x| type_aliases.insert(x.alias.to_string(), x));
 
         let tokens = quote! {
             #free_tokens
@@ -152,7 +154,7 @@ impl VecAccess {
         };
         RenderedAccessRust {
             tokens,
-            type_aliases: vec![],
+            type_aliases: HashMap::new(),
             nested_accesses: None,
         }
     }

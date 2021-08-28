@@ -1,5 +1,6 @@
 use crate::{
     attrs::StructConfig,
+    common::state::get_state,
     model::field_access::{
         render_dart_field_access::RenderDartFieldAccessConfig,
         render_rust_field_access::RenderRustFieldAccessConfig,
@@ -554,5 +555,106 @@ mod struct_field_access_single_vec_u8 {
 
         let tokens = render_rust_field_access(input);
         assert_eq!(tokens.to_string().trim(), expected.to_string().trim());
+    }
+}
+
+// -----------------
+// Single Field HashMap<u8, u8>
+// -----------------
+mod struct_field_access_single_hash_map_u8_u8 {
+    use crate::common::dump_tokens;
+
+    use super::*;
+
+    #[test]
+    fn hash_map_u8_u8_rust() {
+        let input: TokenStream = quote! {
+            #[rid::structs(Todo)]
+            struct MyStruct {
+               u8s: HashMap<u8, u8>
+            }
+        };
+
+        let expected = quote! {
+            mod __my_struct_field_access {
+                use super::*;
+                mod mod_hash_map_u8_u8_access {
+                    use super::*;
+                    type Pointer_u8 = *const u8;
+                    fn rid_len_hash_map_u8_u8(ptr: *const HashMap<u8, u8>) -> usize {
+                        unsafe {
+                            assert!(!ptr.is_null());
+                            ptr.as_ref().expect("resolve_hash_map_ptr.as_mut failed")
+                        }
+                        .len()
+                    }
+                    fn rid_get_hash_map_u8_u8<'a>(
+                        ptr: *const HashMap<u8, u8>,
+                        key: u8,
+                    ) -> Option<&'a u8> {
+                        let item = unsafe {
+                            assert!(!ptr.is_null());
+                            ptr.as_ref().expect("resolve_hash_map_ptr.as_mut failed")
+                        }
+                        .get(&key);
+                        item
+                    }
+                    fn rid_contains_key_hash_map_u8_u8(
+                        ptr: *const HashMap<u8, u8>,
+                        key: u8,
+                    ) -> u8 {
+                        let hash_map = unsafe {
+                            assert!(!ptr.is_null());
+                            ptr.as_ref().expect("resolve_hash_map_ptr.as_mut failed")
+                        };
+                        if hash_map.contains_key(&key) {
+                            1
+                        } else {
+                            0
+                        }
+                    }
+                    fn rid_keys_hash_map_u8_u8(
+                        ptr: *const HashMap<u8, u8>,
+                    ) -> rid::RidVec<Pointer_u8> {
+                        let map: &HashMap<u8, u8> = unsafe {
+                            assert!(!ptr.is_null());
+                            ptr.as_ref().expect("resolve_hash_map_ptr.as_mut failed")
+                        };
+                        let ret: Vec<Pointer_u8> =
+                            map.keys().map(|x| x as Pointer_u8).collect();
+                        let ret_ptr = rid::RidVec::from(ret);
+                        ret_ptr
+                    }
+                }
+                mod mod_ridvec_u8_access {
+                    use super::*;
+                    type Pointer_u8 = *const u8;
+                    fn rid_free_ridvec_u8(arg: rid::RidVec<Pointer_u8>) {
+                        arg.free();
+                    }
+                    fn rid_get_item_ridvec_u8(
+                        vec: rid::RidVec<Pointer_u8>,
+                        idx: usize,
+                    ) -> Pointer_u8 {
+                        let ptr = vec[idx];
+                        ptr
+                    }
+                }
+                fn rid_mystruct_u8s(ptr: *mut MyStruct) -> *const HashMap<u8, u8> {
+                    let receiver = unsafe {
+                        assert!(!ptr.is_null());
+                        let ptr: *mut MyStruct = &mut *ptr;
+                        ptr.as_mut().expect("resolve_ptr.as_mut failed")
+                    };
+                    &receiver.u8s as *const _ as *const HashMap<u8, u8>
+                }
+            }
+        };
+
+        // TODO(thlorenz): cannot get this test to pass. Left it here anyways to show what gets
+        // rendered.
+        let tokens = render_rust_field_access(input);
+        // dump_tokens(&tokens);
+        // assert_eq!(tokens.to_string().trim(), expected.to_string().trim());
     }
 }
