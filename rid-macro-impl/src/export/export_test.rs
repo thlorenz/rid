@@ -2,7 +2,7 @@ use crate::rid_export_impl;
 use proc_macro2::TokenStream;
 use quote::quote;
 
-use crate::export::ExportConfig;
+use super::export_config::ExportConfig;
 
 // -----------------
 // Note these are just a few high level integration tests to see that all comes together.
