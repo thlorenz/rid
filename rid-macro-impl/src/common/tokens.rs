@@ -36,14 +36,15 @@ pub fn resolve_hash_set_ptr(ty: &syn::Ident) -> TokenStream {
 }
 
 pub fn resolve_hash_map_ptr(
+    arg: &syn::Ident,
     key_ty: &syn::Ident,
     val_ty: &syn::Ident,
 ) -> TokenStream {
     quote_spanned! { key_ty.span() =>
-        unsafe {
-            assert!(!ptr.is_null());
-            ptr.as_ref().expect("resolve_hash_map_ptr.as_mut failed")
-        }
+        let #arg: &HashMap<#key_ty, #val_ty> = unsafe {
+            assert!(!#arg.is_null());
+            #arg.as_ref().expect("resolve_hash_map_ptr.as_mut failed")
+        };
     }
 }
 

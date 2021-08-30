@@ -90,11 +90,51 @@ mod struct_impl_methods {
         };
 
         let tokens = render_export(input);
-        dump_tokens(&tokens);
         assert_eq!(tokens.to_string().trim(), expected.to_string().trim());
     }
 }
+mod struct_impl_args_methods {
+    use crate::common::dump_tokens;
 
+    use super::*;
+
+    // -----------------
+    // HashMap Arg
+    // -----------------
+    #[test]
+    fn hash_map_u8_u8_arg_returning_vec_ref_u8() {
+        let _attrs = TokenStream::new();
+        let input: TokenStream = quote! {
+            #[rid::export]
+            impl MyStruct {
+                #[rid::export]
+                fn get_keys(map: &HashMap<u8, u8>) -> Vec<&u8> {
+                    map.keys().collect()
+                }
+            }
+        };
+
+        let expected = quote! {
+            #[allow(non_snake_case)]
+            mod __rid_MyStruct_impl_1 {
+                use super::*;
+                fn rid_export_MyStruct_get_keys(arg0: *const HashMap<u8, u8>) -> rid::RidVec<u8> {
+                    let arg0: &HashMap<u8, u8> = unsafe {
+                        assert!(!arg0.is_null());
+                        arg0.as_ref().expect("resolve_hash_map_ptr.as_mut failed")
+                    };
+                    let ret = MyStruct::get_keys(arg0);
+                    let ret: Vec<u8> = ret.into_iter().map(|x| *x).collect();
+                    let ret_ptr = rid::RidVec::from(ret);
+                    ret_ptr
+                }
+            }
+        };
+
+        let tokens = render_export(input);
+        assert_eq!(tokens.to_string().trim(), expected.to_string().trim());
+    }
+}
 // DEBUG: export, use this to debug export issues
 mod _debug_export_issues {
     use crate::common::dump_tokens;

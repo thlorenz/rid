@@ -17,8 +17,9 @@ impl HashMapAccess {
         let ffi_prelude = &self.rust_ffi_prelude;
         let key_ty = self.key_type.rust_ident();
         let val_ty = self.val_type.rust_ident();
+        let arg = format_ident!("hash_map_arg");
 
-        let resolve_hash_map = resolve_hash_map_ptr(&key_ty, &val_ty);
+        let resolve_hash_map = resolve_hash_map_ptr(&arg, &key_ty, &val_ty);
 
         // -----------------
         // HashMap::len()
@@ -28,8 +29,9 @@ impl HashMapAccess {
         let fn_len_ident = &self.fn_len_ident;
         let len_impl = quote_spanned! { fn_len_ident.span() =>
             #ffi_prelude
-            fn #fn_len_ident(ptr: *const HashMap<#key_ty, #val_ty>) -> usize {
-                #resolve_hash_map.len()
+            fn #fn_len_ident(#arg: *const HashMap<#key_ty, #val_ty>) -> usize {
+                #resolve_hash_map
+                #arg.len()
             }
         };
 
@@ -43,8 +45,9 @@ impl HashMapAccess {
         // TODO(thlorenz): HashMap consider non-primitive key and/or val types
         let get_impl = quote_spanned! { fn_get_ident.span() =>
             #ffi_prelude
-            fn #fn_get_ident<'a>(ptr: *const HashMap<#key_ty, #val_ty>, key: #key_ty) -> Option<&'a #val_ty>  {
-                let item = #resolve_hash_map.get(&key);
+            fn #fn_get_ident<'a>(#arg: *const HashMap<#key_ty, #val_ty>, key: #key_ty) -> Option<&'a #val_ty>  {
+                #resolve_hash_map
+                let item = #arg.get(&key);
                 item
             }
         };
@@ -56,9 +59,9 @@ impl HashMapAccess {
         // TODO(thlorenz): HashMap consider non-primitive key types
         let contains_key_impl = quote_spanned! { fn_contains_key_ident.span() =>
             #ffi_prelude
-            fn #fn_contains_key_ident(ptr: *const HashMap<#key_ty, #val_ty>, key: #key_ty) -> u8  {
-                let hash_map = #resolve_hash_map;
-                if hash_map.contains_key(&key) {
+            fn #fn_contains_key_ident(#arg: *const HashMap<#key_ty, #val_ty>, key: #key_ty) -> u8  {
+                #resolve_hash_map
+                if #arg.contains_key(&key) {
                     1
                 } else {
                     0
