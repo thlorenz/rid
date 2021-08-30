@@ -28,7 +28,10 @@ pub fn render_collection_accesses(
     rust_config: &RenderRustFieldAccessConfig,
     dart_config: &RenderDartFieldAccessConfig,
 ) -> (TokenStream, String) {
-    let first_key = &accesses.keys().next().unwrap().clone();
+    if accesses.is_empty() {
+        return (TokenStream::new(), String::new());
+    }
+    let first_key = accesses.keys().next().unwrap().clone();
     let aggregated = aggregate_collection_accesses(
         accesses,
         type_infos,
