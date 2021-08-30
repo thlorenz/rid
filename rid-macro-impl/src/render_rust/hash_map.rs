@@ -78,15 +78,16 @@ impl HashMapAccess {
             false,
         );
         let key_ty_alias = &type_alias.alias;
-
         let fn_keys_ident = &self.fn_keys_ident;
+
         let keys_impl = quote_spanned! { fn_keys_ident.span() =>
-            #ffi_prelude
-            fn #fn_keys_ident(ptr: *const HashMap<#key_ty, #val_ty>) -> rid::RidVec<#key_ty_alias> {
-                let map: &HashMap<#key_ty, #val_ty> = #resolve_hash_map;
-                let ret: Vec<#key_ty_alias> = map.keys().map(|x| x as #key_ty_alias).collect();
-                let ret_ptr = rid::RidVec::from(ret);
-                ret_ptr
+            struct __RidInternalExports;
+            #[rid::export]
+            impl __RidInternalExports {
+                #[rid::export]
+                fn #fn_keys_ident(map: &HashMap<#key_ty, #val_ty>) -> Vec<&#key_ty> {
+                    map.keys().collect()
+                }
             }
         };
 
@@ -125,7 +126,7 @@ impl HashMapAccess {
         RenderedAccessRust {
             tokens,
             type_aliases,
-            nested_accesses: Some(nested_accesses),
+            nested_accesses: None,
         }
     }
 

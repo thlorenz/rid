@@ -237,8 +237,6 @@ impl ParsedStruct {
                     (Some(key_ty), Some(val_ty)) => {
                         let key_ty_ident = key_ty.rust_ident();
                         let val_ty_ident = val_ty.rust_ident();
-                        let resolve_hash_map =
-                            resolve_hash_map_ptr(key_ty_ident, val_ty_ident);
                         let hash_map_ty = &field.rust_type;
 
                         collection_access = Some(Box::new(HashMapAccess::new(
