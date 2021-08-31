@@ -81,13 +81,9 @@ impl HashMapAccess {
         let fn_keys_ident = &self.fn_keys_ident;
 
         let keys_impl = quote_spanned! { fn_keys_ident.span() =>
-            struct __RidInternalExports;
             #[rid::export]
-            impl __RidInternalExports {
-                #[rid::export]
-                fn #fn_keys_ident(map: &HashMap<#key_ty, #val_ty>) -> Vec<&#key_ty> {
-                    map.keys().collect()
-                }
+            fn #fn_keys_ident(map: &HashMap<#key_ty, #val_ty>) -> Vec<&#key_ty> {
+                map.keys().collect()
             }
         };
 

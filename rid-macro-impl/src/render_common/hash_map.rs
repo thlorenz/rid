@@ -36,7 +36,8 @@ pub struct HashMapAccess {
     /// Name of function to query if hash map contains a key
     pub fn_contains_key_ident: Ident,
 
-    /// Name of function to retrieve a Vec containing the keys of the hash map
+    /// Name under which the function to retrieve a Vec containing the keys of
+    /// the hash map is exported
     pub fn_keys_ident: Ident,
 
     /// Name of function to free hash map (not used for field access)

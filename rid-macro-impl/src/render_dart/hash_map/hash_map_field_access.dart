@@ -12,10 +12,11 @@
 ///     ridStoreLock();
 ///     final hashMap = new {dart_collection}.HashMap<{key_type}, {val_type}>();
 ///
-///     final keys = {rid_ffi}.{fn_keys_ident}(this);
+///     final keys = {rid_ffi}.rid_export_{fn_keys_ident}(this);
 ///     for (final key in keys.iter()) {
 ///       hashMap[key] = this.get(key)!;
 ///     }
+///     keys.dispose();
 ///     ridStoreUnlock();
 ///     return hashMap;
 ///   }
