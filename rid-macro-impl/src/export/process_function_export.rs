@@ -25,7 +25,6 @@ pub fn process_function_export(
     impl_ident: Option<Ident>,
     include_ffi: bool,
     ptr_type_aliases_map: &mut HashMap<String, TokenStream>,
-    frees: &mut HashMap<String, PointerTypeAlias>,
     vec_accesses: &mut HashMap<String, VecAccess>,
 ) -> TokenStream {
     {
@@ -50,15 +49,13 @@ pub fn process_function_export(
         {
             ptr_type_aliases_map.insert(alias.to_string(), typedef.clone());
             if needs_free {
-                frees.insert(
-                    type_name.clone(),
-                    PointerTypeAlias {
-                        alias,
-                        typedef,
-                        type_name,
-                        needs_free,
-                    },
-                );
+                // NOTE: if this ever throws we need to undo part of the change which removed free.
+                // It will most likely be needed again when we return owned custom structs from an
+                // export as things like RidVec render their own free methods.
+                // We should reintroduce it in a manner that doesn't need the impl owner type
+                // to be provided and possibly render the free call in place using state to avoid
+                // rendering duplicates.
+                panic!("Rid removed free implementation for Rust and Dart since it wasn't complete nor used");
             }
         }
         vec_access.map(|x| vec_accesses.insert(x.key(), x));
@@ -69,17 +66,13 @@ pub fn process_function_export(
 
 pub struct ExtractedTokens<'a> {
     pub vec_access_tokens: Vec<TokenStream>,
-    pub free_tokens: Vec<TokenStream>,
-    pub dart_free_extensions_tokens: Vec<TokenStream>,
     pub ptr_typedef_tokens: Vec<&'a TokenStream>,
     pub utils_module: TokenStream,
 }
 
 pub fn extract_tokens<'a>(
     vec_accesses: HashMap<String, VecAccess>,
-    frees: HashMap<String, PointerTypeAlias>,
     ptr_type_aliases_map: &'a HashMap<String, TokenStream>,
-    parsed_impl_ty: &RustType,
     type_infos: &TypeInfoMap,
     config: &ExportConfig,
 ) -> ExtractedTokens<'a> {
@@ -97,36 +90,6 @@ pub fn extract_tokens<'a>(
     };
 
     // -----------------
-    // frees
-    // -----------------
-    let free_tokens = if config.render_frees {
-        let needed_frees = get_state()
-            .need_implemtation(&ImplementationType::Free, frees.clone());
-        needed_frees
-            .into_iter()
-            .map(|x| x.render_free(ffi_prelude()))
-            .collect()
-    } else {
-        vec![]
-    };
-
-    let (infos, free_tokens) = unpack_tuples(free_tokens);
-
-    // TODO: non-instance method strings
-    let dart_free_extensions_tokens =
-        if config.render_frees && config.render_dart_free_extension {
-            infos
-                .into_iter()
-                .map(|RenderedTypeAliasInfo { alias, fn_ident }| {
-                    parsed_impl_ty
-                        .render_dart_dispose_extension(fn_ident, &alias, "///")
-                })
-                .collect()
-        } else {
-            vec![]
-        };
-
-    // -----------------
     // Type Aliases
     // -----------------
     let ptr_typedef_tokens: Vec<&TokenStream> =
@@ -139,23 +102,7 @@ pub fn extract_tokens<'a>(
 
     ExtractedTokens {
         vec_access_tokens,
-        free_tokens,
-        dart_free_extensions_tokens,
         ptr_typedef_tokens,
         utils_module,
     }
-}
-
-// -----------------
-// Utils
-// -----------------
-fn unpack_tuples<T, U>(tpls: Vec<(T, U)>) -> (Vec<T>, Vec<U>) {
-    let mut xs: Vec<T> = Vec::with_capacity(tpls.len());
-    let mut ys: Vec<U> = Vec::with_capacity(tpls.len());
-    for (x, y) in tpls {
-        xs.push(x);
-        ys.push(y);
-    }
-
-    (xs, ys)
 }

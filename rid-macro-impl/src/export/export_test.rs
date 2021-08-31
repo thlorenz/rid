@@ -34,7 +34,12 @@ mod struct_impl_methods {
     // -----------------
     // Returning Self
     // -----------------
-    #[test]
+    // Disabled since creating custom structs directly is not currently supported.
+    // It was used to create the store and return it to Dart, but this is no longer
+    // done in this manner. It only worked for that case as well, i.e. no other custom
+    // struct but the one which impl a method was exported could be freed that way.
+    // For more info see: src/export/process_function_export.rs `process_function_export`
+    // #[test]
     fn no_args_returning_self() {
         let _attrs = TokenStream::new();
         let input: TokenStream = quote! {

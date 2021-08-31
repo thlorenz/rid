@@ -41,7 +41,6 @@ pub fn rid_export_impl(
 
             let mut ptr_type_aliases_map =
                 HashMap::<String, TokenStream>::new();
-            let mut frees = HashMap::<String, PointerTypeAlias>::new();
             let mut vec_accesses = HashMap::<String, VecAccess>::new();
             let rust_fn_tokens = &parsed
                 .methods
@@ -52,7 +51,6 @@ pub fn rid_export_impl(
                         Some(parsed.ty.rust_ident().clone()),
                         config.include_ffi,
                         &mut ptr_type_aliases_map,
-                        &mut frees,
                         &mut vec_accesses,
                     )
                 })
@@ -66,15 +64,11 @@ pub fn rid_export_impl(
 
             let ExtractedTokens {
                 vec_access_tokens,
-                free_tokens,
-                dart_free_extensions_tokens,
                 ptr_typedef_tokens,
                 utils_module,
             } = extract_tokens(
                 vec_accesses,
-                frees,
                 &ptr_type_aliases_map,
-                &parsed.ty,
                 parsed.type_infos(),
                 &config,
             );
@@ -82,7 +76,6 @@ pub fn rid_export_impl(
             // -----------------
             // Dart impl Extension
             // -----------------
-            // TODO(thlorenz): will need one for just an array of methods (or one)
             let dart_extension_tokens = if config.render_dart_extension {
                 render_instance_method_extension(&parsed, None)
             } else {
@@ -97,8 +90,6 @@ pub fn rid_export_impl(
                     #dart_extension_tokens
                     #(#rust_fn_tokens)*
                     #(#vec_access_tokens)*
-                    #(#dart_free_extensions_tokens)*
-                    #(#free_tokens)*
                     #utils_module
                 }
             }
