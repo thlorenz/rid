@@ -46,6 +46,9 @@ pub fn rid_export_impl(
                 .methods
                 .iter()
                 .map(|x| {
+                    get_state()
+                        .register_handled_impl_method_export(&x.fn_ident);
+
                     process_function_export(
                         x,
                         Some(parsed.ty.rust_ident().clone()),
@@ -100,6 +103,12 @@ pub fn rid_export_impl(
             sig,      // Signature,
             block: _, // Box<Block>,
         }) => {
+            // Ensure that we don't render an export that was already handled as an
+            // impl method export
+            if get_state().handled_impl_method_export(&sig.ident) {
+                return TokenStream::new();
+            }
+
             let owner = None;
             let owner_type_infos = None;
 

@@ -8,8 +8,18 @@ use syn::Ident;
 
 pub struct ExpandState {
     initialized: bool,
+    /// Implementations for supporting functions, i.e. frees or collection accesses
+    /// that have been emitted
     emitted_implementations: Option<HashSet<String>>,
+
+    /// Identifiers emitted, i.e. to name wrapping modules.
+    /// Used to ensure unique identifier names.
     emitted_idents: Option<HashMap<Ident, u8>>,
+
+    /// Function/Method exports that have been processed as part of an impl.
+    /// Needed to avoid processing a method export inside an impl twice, once
+    /// as part of the impl and then again separately as a function.
+    handled_impl_method_exports: Option<HashSet<String>>,
 }
 
 pub enum ImplementationType {
@@ -32,7 +42,7 @@ impl fmt::Display for ImplementationType {
                 write!(f, "Free")
             }
             ImplementationType::UtilsModule => {
-                write!(f, "UtilsModle")
+                write!(f, "UtilsModel")
             }
         }
     }
@@ -44,9 +54,13 @@ impl ExpandState {
             self.initialized = true;
             self.emitted_implementations = Some(HashSet::new());
             self.emitted_idents = Some(HashMap::new());
+            self.handled_impl_method_exports = Some(HashSet::new());
         }
     }
 
+    // -----------------
+    // Implementations
+    // -----------------
     pub fn needs_implementation(
         &mut self,
         impl_type: &ImplementationType,
@@ -68,6 +82,25 @@ impl ExpandState {
         }
     }
 
+    pub fn need_implemtation<K: fmt::Display, V>(
+        &mut self,
+        impl_type: &ImplementationType,
+        all: HashMap<K, V>,
+    ) -> Vec<V> {
+        all.into_iter()
+            .filter_map(|(k, v)| {
+                if self.needs_implementation(impl_type, &k.to_string()) {
+                    Some(v)
+                } else {
+                    None
+                }
+            })
+            .collect()
+    }
+
+    // -----------------
+    // Idents
+    // -----------------
     #[cfg(not(test))]
     pub fn unique_ident(&mut self, ident: Ident) -> Ident {
         let idents = self.emitted_idents.as_mut().unwrap();
@@ -84,20 +117,21 @@ impl ExpandState {
         id
     }
 
-    pub fn need_implemtation<K: fmt::Display, V>(
-        &mut self,
-        impl_type: &ImplementationType,
-        all: HashMap<K, V>,
-    ) -> Vec<V> {
-        all.into_iter()
-            .filter_map(|(k, v)| {
-                if self.needs_implementation(impl_type, &k.to_string()) {
-                    Some(v)
-                } else {
-                    None
-                }
-            })
-            .collect()
+    // -----------------
+    // Exports
+    // -----------------
+    pub fn register_handled_impl_method_export(&mut self, ident: &Ident) {
+        self.handled_impl_method_exports
+            .as_mut()
+            .unwrap()
+            .insert(ident.to_string());
+    }
+
+    pub fn handled_impl_method_export(&self, ident: &Ident) -> bool {
+        self.handled_impl_method_exports
+            .as_ref()
+            .unwrap()
+            .contains(&ident.to_string())
     }
 }
 
@@ -105,6 +139,7 @@ static mut STATE: ExpandState = ExpandState {
     initialized: false,
     emitted_implementations: None,
     emitted_idents: None,
+    handled_impl_method_exports: None,
 };
 
 pub fn get_state() -> &'static mut ExpandState {
