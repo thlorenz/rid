@@ -8,8 +8,8 @@ use crate::{
     common::dump_tokens,
     parse::ParsedFunction,
     render_common::{
-        render_vec_accesses, PointerTypeAlias, RenderFunctionExportConfig,
-        RenderableAccess, VecAccess,
+        PointerTypeAlias, RenderFunctionExportConfig, RenderableAccess,
+        VecAccess,
     },
 };
 

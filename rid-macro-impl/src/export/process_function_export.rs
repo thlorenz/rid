@@ -71,20 +71,22 @@ pub struct ExtractedTokens<'a> {
 }
 
 pub fn extract_tokens<'a>(
-    vec_accesses: HashMap<String, VecAccess>,
+    collection_accesses: HashMap<String, VecAccess>,
     ptr_type_aliases_map: &'a HashMap<String, TokenStream>,
     type_infos: &TypeInfoMap,
     config: &ExportConfig,
 ) -> ExtractedTokens<'a> {
     // -----------------
-    // vec access
+    // Collection Accesses
     // -----------------
-    let vec_access_tokens = if config.render_vec_access {
-        let needed_vec_accesses = get_state().need_implemtation(
+    // TODO(thlorenz): Generalize to all collections via RenderableAccess
+    // see src/model/field_access/render_collection_accesses.rs
+    let collection_access_tokens = if config.render_collection_access {
+        let needed_accesses = get_state().need_implemtation(
             &ImplementationType::CollectionAccess,
-            vec_accesses,
+            collection_accesses,
         );
-        render_vec_accesses(&needed_vec_accesses, type_infos, "///")
+        render_vec_accesses(&needed_accesses, type_infos, "///")
     } else {
         vec![]
     };
@@ -101,7 +103,7 @@ pub fn extract_tokens<'a>(
     let utils_module = utils_module_tokens_if(config.render_utils_module);
 
     ExtractedTokens {
-        vec_access_tokens,
+        vec_access_tokens: collection_access_tokens,
         ptr_typedef_tokens,
         utils_module,
     }

@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use crate::{
-    attrs::ImplBlockConfig,
+    attrs::{self, FunctionConfig, ImplBlockConfig},
     common::{
         state::{get_state, ImplementationType},
         utils_module_tokens_if,
@@ -22,7 +22,7 @@ use super::{
     },
 };
 use crate::{attrs::parse_rid_attrs, common::abort};
-use quote::{format_ident, quote};
+use quote::{format_ident, quote, quote_spanned};
 
 use crate::render_common::RenderableAccess;
 use proc_macro2::TokenStream;
@@ -95,26 +95,54 @@ pub fn rid_export_impl(
             }
         }
         syn::Item::Fn(syn::ItemFn {
-            attrs: _, // Vec<Attribute>,
+            attrs,    // Vec<Attribute>,
             vis: _,   // Visibility,
-            sig: _,   // Signature,
+            sig,      // Signature,
             block: _, // Box<Block>,
         }) => {
-            // TODO: fix this
-            // NOTE: at this point we don't support exports on top level functions, but impl
-            // methods only.
-            // In the future we may allow this again, but might use a different attribute.
-            // The reason is that it is hard to know if a function is part of an impl and thus was
-            // exported already.
-            // An alternative would be to track already exported functions in our store via an id
-            // that is based on function name and possibly content.
-            // Another alternative is to require users to have a separate impl block with only
-            // methods meant to be exported, possibly excluding some via a #[rid::skip] attr.
+            let owner = None;
+            let owner_type_infos = None;
 
-            // let attrs = attrs::parse_rid_attrs(&attrs);
-            // let parsed = ParsedFunction::new(sig, &attrs, None);
-            // render_function_export(&parsed, None, Default::default())
-            TokenStream::new()
+            let attrs = attrs::parse_rid_attrs(&attrs);
+            let fn_config = FunctionConfig::new(&attrs, owner);
+            let parsed_fn = ParsedFunction::new(sig, fn_config, owner);
+
+            let mut ptr_type_aliases_map =
+                HashMap::<String, TokenStream>::new();
+            let mut vec_accesses = HashMap::<String, VecAccess>::new();
+
+            let rust_fn_tokens = process_function_export(
+                &parsed_fn,
+                owner_type_infos,
+                config.include_ffi,
+                &mut ptr_type_aliases_map,
+                &mut vec_accesses,
+            );
+
+            let ExtractedTokens {
+                vec_access_tokens,
+                ptr_typedef_tokens,
+                utils_module,
+            } = extract_tokens(
+                vec_accesses,
+                &ptr_type_aliases_map,
+                parsed_fn.type_infos(),
+                &config,
+            );
+
+            let module_ident =
+                format_ident!("__rid_export_{}", parsed_fn.fn_ident);
+
+            quote_spanned! { parsed_fn.fn_ident.span() =>
+                #[allow(non_snake_case)]
+                mod #module_ident {
+                    use super::*;
+                    #(#ptr_typedef_tokens)*
+                    #rust_fn_tokens
+                    #(#vec_access_tokens)*
+                    #utils_module
+                }
+            }
         }
 
         syn::Item::Const(_)
