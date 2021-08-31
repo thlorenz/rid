@@ -28,8 +28,9 @@ void main() {
     expect(store.u8s.containsKey(5), false,
         reason: 'u8s containsKey 5 -> false');
 
-    expect(store.u8s[1], 11, reason: 'u8s get(1)');
-    expect(store.u8s[3], 33, reason: 'u8s get(3)');
-    expect(store.u8s[5], null, reason: 'u8s get(5) -> null');
+    final u8s = store.u8s;
+    expect(u8s[1], 11, reason: 'u8s get(1)');
+    expect(u8s[3], 33, reason: 'u8s get(3)');
+    expect(u8s[5], null, reason: 'u8s get(5) -> null');
   });
 }
