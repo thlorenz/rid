@@ -122,7 +122,6 @@ impl HashMapAccess {
         RenderedAccessRust {
             tokens,
             type_aliases,
-            nested_accesses: None,
         }
     }
 

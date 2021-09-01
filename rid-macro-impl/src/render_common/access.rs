@@ -30,9 +30,6 @@ pub struct RenderedAccessRust {
 
     /// Type aliases used to render access for which a typedef needs to be rendered
     pub type_aliases: HashMap<String, PointerTypeAlias>,
-
-    /// Accesses required by this access, i.e. a `Vec<key>` for `HashMap<key, val>`
-    pub nested_accesses: Option<HashMap<String, Box<dyn RenderableAccess>>>,
 }
 
 // -----------------

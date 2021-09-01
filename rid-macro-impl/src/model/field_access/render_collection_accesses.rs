@@ -125,13 +125,7 @@ fn aggregate_collection_accesses(
                     let RenderedAccessRust {
                         tokens: rust_tokens,
                         type_aliases,
-                        nested_accesses,
                     } = x.render_rust();
-                    if let Some(nested_accesses) = nested_accesses {
-                        for (k, v) in nested_accesses {
-                            all_nested_accesses.insert(k, v);
-                        }
-                    }
                     let typedef_tokens: Vec<TokenStream> = type_aliases
                         .values()
                         .into_iter()
@@ -159,20 +153,6 @@ fn aggregate_collection_accesses(
                 accesses
             },
         );
-
-        // Append accesses that are needed to support the accesses we just aggregated
-        if !all_nested_accesses.is_empty() {
-            let mut nested_aggregated = aggregate_collection_accesses(
-                all_nested_accesses,
-                type_infos,
-                rust_config,
-                dart_config,
-            );
-            aggregated
-                .rust_tokens
-                .append(&mut nested_aggregated.rust_tokens);
-            aggregated.darts.append(&mut nested_aggregated.darts);
-        }
 
         aggregated
     }

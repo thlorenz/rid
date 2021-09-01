@@ -54,7 +54,6 @@ impl VecAccess {
         RenderedAccessRust {
             tokens,
             type_aliases,
-            nested_accesses: None,
         }
     }
 
@@ -155,7 +154,6 @@ impl VecAccess {
         RenderedAccessRust {
             tokens,
             type_aliases: HashMap::new(),
-            nested_accesses: None,
         }
     }
 }
