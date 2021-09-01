@@ -2,7 +2,7 @@ use crate::rid_export_impl;
 use proc_macro2::TokenStream;
 use quote::quote;
 
-use crate::export::ExportConfig;
+use super::export_config::ExportConfig;
 
 // -----------------
 // Note these are just a few high level integration tests to see that all comes together.
@@ -34,7 +34,12 @@ mod struct_impl_methods {
     // -----------------
     // Returning Self
     // -----------------
-    #[test]
+    // Disabled since creating custom structs directly is not currently supported.
+    // It was used to create the store and return it to Dart, but this is no longer
+    // done in this manner. It only worked for that case as well, i.e. no other custom
+    // struct but the one which impl a method was exported could be freed that way.
+    // For more info see: src/export/process_function_export.rs `process_function_export`
+    // #[test]
     fn no_args_returning_self() {
         let _attrs = TokenStream::new();
         let input: TokenStream = quote! {
@@ -90,7 +95,116 @@ mod struct_impl_methods {
         };
 
         let tokens = render_export(input);
-        dump_tokens(&tokens);
+        assert_eq!(tokens.to_string().trim(), expected.to_string().trim());
+    }
+}
+mod struct_impl_args_methods {
+    use crate::common::dump_tokens;
+
+    use super::*;
+
+    // -----------------
+    // HashMap Arg
+    // -----------------
+    #[test]
+    fn hash_map_u8_u8_arg_returning_vec_ref_u8() {
+        let _attrs = TokenStream::new();
+        let input: TokenStream = quote! {
+            #[rid::export]
+            impl MyStruct {
+                #[rid::export]
+                fn get_keys(map: &HashMap<u8, u8>) -> Vec<&u8> {
+                    map.keys().collect()
+                }
+            }
+        };
+
+        let expected = quote! {
+            #[allow(non_snake_case)]
+            mod __rid_MyStruct_impl_1 {
+                use super::*;
+                fn rid_export_MyStruct_get_keys(arg0: *const HashMap<u8, u8>) -> rid::RidVec<u8> {
+                    let arg0: &HashMap<u8, u8> = unsafe {
+                        assert!(!arg0.is_null());
+                        arg0.as_ref().expect("resolve_hash_map_ptr.as_mut failed")
+                    };
+                    let ret = MyStruct::get_keys(arg0);
+                    let ret: Vec<u8> = ret.into_iter().map(|x| *x).collect();
+                    let ret_ptr = rid::RidVec::from(ret);
+                    ret_ptr
+                }
+            }
+        };
+
+        let tokens = render_export(input);
+        assert_eq!(tokens.to_string().trim(), expected.to_string().trim());
+    }
+}
+
+mod functions_no_args {
+    use crate::common::dump_tokens;
+
+    use super::*;
+    #[test]
+    fn returning_u8() {
+        let input: TokenStream = quote! {
+            #[rid::export]
+            fn get_u8() -> u8 { 1 }
+        };
+
+        let expected = quote! {
+            #[allow(non_snake_case)]
+            mod __rid_export_get_u8 {
+                use super::*;
+                fn rid_export_get_u8() -> u8 {
+                    let ret = get_u8();
+                    let ret_ptr = ret;
+                    ret_ptr
+                }
+            }
+        };
+
+        let tokens = render_export(input);
+        assert_eq!(tokens.to_string().trim(), expected.to_string().trim());
+    }
+}
+
+mod functions_with_args {
+    use crate::common::dump_tokens;
+
+    use super::*;
+
+    // -----------------
+    // HashMap Arg
+    // -----------------
+    #[test]
+    fn hash_map_u8_u8_arg_returning_vec_ref_u8() {
+        let _attrs = TokenStream::new();
+        let input: TokenStream = quote! {
+            #[rid::export]
+            fn get_keys(map: &HashMap<u8, u8>) -> Vec<&u8> {
+                map.keys().collect()
+            }
+        };
+
+        let expected = quote! {
+            #[allow(non_snake_case)]
+            mod __rid_export_get_keys {
+                use super::*;
+                fn rid_export_get_keys(arg0: *const HashMap<u8, u8>) -> rid::RidVec<u8> {
+                    let arg0: &HashMap<u8, u8> = unsafe {
+                        assert!(!arg0.is_null());
+                        arg0.as_ref().expect("resolve_hash_map_ptr.as_mut failed")
+                    };
+                    let ret = get_keys(arg0);
+                    let ret: Vec<u8> = ret.into_iter().map(|x| *x).collect();
+                    let ret_ptr = rid::RidVec::from(ret);
+                    ret_ptr
+                }
+            }
+        };
+
+        let tokens = render_export(input);
         assert_eq!(tokens.to_string().trim(), expected.to_string().trim());
     }
 }

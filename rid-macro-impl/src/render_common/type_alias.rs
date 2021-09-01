@@ -1,4 +1,5 @@
 use proc_macro2::TokenStream;
+use quote::{format_ident, quote};
 use syn::Ident;
 
 /// Types like `*const X` and `*mut X` are aliased in order to avoid confusing and
@@ -8,8 +9,55 @@ use syn::Ident;
 /// `RidVec_Pointer_Item` instead of something like `RidVec______Item`.
 #[derive(Debug, Clone)]
 pub struct PointerTypeAlias {
+    /// The alias for the type, i.e. `Pointer_u8`
     pub alias: Ident,
+
+    /// typedef tokens, i.e. `type Pointer_u8 = *const u8;
     pub typedef: TokenStream,
+
+    /// Name of the type to alias
     pub type_name: String,
+
+    /// If this type needs to have a Rust method to free it.
     pub needs_free: bool,
+}
+
+impl PointerTypeAlias {
+    pub fn for_const_pointer(
+        alias_type_name: &str,
+        name_tok: &TokenStream,
+        needs_free: bool,
+    ) -> Self {
+        let alias = format_ident!(
+            "{}{}",
+            PointerTypeAlias::POINTER_ALIAS_PREFIX,
+            alias_type_name
+        );
+        let typedef = quote! { type #alias = *const #name_tok; };
+        PointerTypeAlias {
+            alias,
+            typedef,
+            type_name: alias_type_name.to_string(),
+            needs_free,
+        }
+    }
+
+    pub fn for_mut_pointer(
+        alias_type_name: &str,
+        name_tok: &TokenStream,
+        needs_free: bool,
+    ) -> Self {
+        let alias = format_ident!(
+            "{}{}",
+            PointerTypeAlias::POINTER_MUT_ALIAS_PREFIX,
+            alias_type_name
+        );
+        let typedef = quote! { type #alias = *mut #name_tok; };
+        PointerTypeAlias {
+            alias,
+            typedef,
+            type_name: alias_type_name.to_string(),
+            needs_free,
+        }
+    }
 }

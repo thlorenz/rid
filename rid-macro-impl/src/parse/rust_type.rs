@@ -137,6 +137,47 @@ impl RustType {
         )
     }
 
+    pub fn from_vec_with_pointer_alias(
+        inner_poiner_alias_ident: &Ident,
+        inner_reference: ParsedReference,
+    ) -> Self {
+        let inner_type = Self::from_pointer_alias(
+            inner_poiner_alias_ident,
+            inner_reference,
+            RustTypeContext::CollectionItem,
+        );
+        Self::from_vec(inner_type, ParsedReference::Owned)
+    }
+
+    pub fn from_pointer_alias(
+        ident: &Ident,
+        reference: ParsedReference,
+        context: RustTypeContext,
+    ) -> Self {
+        // TODO(thlorenz): should be Category::Pointer and/or do we need TypeKind::Pointer?
+        let type_info = TypeInfo {
+            cat: Category::Prim,
+            key: ident.clone(),
+            typedef: Some(ident.clone()),
+        };
+
+        let value = Value::Custom(type_info, ident.to_string());
+        let kind = TypeKind::Value(value);
+
+        Self::new(ident.clone(), kind, reference, context)
+    }
+
+    pub fn from_vec(inner_type: RustType, reference: ParsedReference) -> Self {
+        let ident = format_ident!("Vec");
+        let kind = TypeKind::Composite(
+            Composite::Vec,
+            Some(Box::new(inner_type)),
+            None,
+        );
+        let context = RustTypeContext::Default;
+        Self::new(ident, kind, reference, context)
+    }
+
     pub fn is_primitive(&self) -> bool {
         self.kind.is_primitive()
     }

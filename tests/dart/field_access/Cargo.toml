@@ -29,6 +29,11 @@ name = "vecs"
 crate-type = ["cdylib"]
 path = "src/vecs.rs"
 
+[[example]]
+name = "hash_maps"
+crate-type = ["cdylib"]
+path = "src/hash_maps.rs"
+
 [dependencies]
 rid = { path = "../../../" }
 rid_build = { path = "../../../rid-build" }

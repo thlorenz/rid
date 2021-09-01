@@ -40,6 +40,9 @@ impl RidStore<Msg> for Store {
     }
 }
 
+// -----------------
+// Impl Method Exports
+// -----------------
 #[rid::export]
 impl Store {
     // -----------------
@@ -155,6 +158,72 @@ impl Store {
         &self.not_ok
     }
 }
+
+// -----------------
+// Function Exports
+// -----------------
+
+// -----------------
+// Owned Primitives
+// -----------------
+
+// unsigned
+#[rid::export]
+pub fn fn_s_id_owned() -> u8 {
+    8
+}
+
+#[rid::export]
+pub fn fn_m_id_owned() -> u16 {
+    16
+}
+
+#[rid::export]
+pub fn fn_l_id_owned() -> u32 {
+    32
+}
+
+#[rid::export]
+pub fn fn_xl_id_owned() -> u64 {
+    64
+}
+
+// signed
+#[rid::export]
+pub fn fn_s_signed_owned() -> i8 {
+    -8
+}
+
+#[rid::export]
+pub fn fn_m_signed_owned() -> i16 {
+    -16
+}
+
+#[rid::export]
+pub fn fn_l_signed_owned() -> i32 {
+    -32
+}
+
+#[rid::export]
+pub fn fn_xl_signed_owned() -> i64 {
+    -64
+}
+
+// bool
+#[rid::export]
+pub fn fn_ok_owned() -> bool {
+    true
+}
+
+#[rid::export]
+pub fn fn_not_ok_owned() -> bool {
+    false
+}
+
+// -----------------
+// Refs
+// -----------------
+// TODO: get hold of something to reference, i.e. a struct and implement those tests
 
 #[rid::message(Reply)]
 pub enum Msg {

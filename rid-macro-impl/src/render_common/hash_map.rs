@@ -36,6 +36,10 @@ pub struct HashMapAccess {
     /// Name of function to query if hash map contains a key
     pub fn_contains_key_ident: Ident,
 
+    /// Name under which the function to retrieve a Vec containing the keys of
+    /// the hash map is exported
+    pub fn_keys_ident: Ident,
+
     /// Name of function to free hash map (not used for field access)
     pub fn_free_ident: Ident,
 }
@@ -61,6 +65,7 @@ impl HashMapAccess {
         let fn_free_ident = format_ident!("rid_free_{}", key);
         let fn_get_ident = format_ident!("rid_get_{}", key);
         let fn_contains_key_ident = format_ident!("rid_contains_key_{}", key);
+        let fn_keys_ident = format_ident!("rid_keys_{}", key);
 
         Self {
             hash_map_type: hash_map_ty.clone(),
@@ -72,6 +77,7 @@ impl HashMapAccess {
             fn_free_ident,
             fn_get_ident,
             fn_contains_key_ident,
+            fn_keys_ident,
             kind,
         }
     }
@@ -91,38 +97,4 @@ impl HashMapAccess {
         }
         .to_lowercase()
     }
-}
-
-pub fn render_hash_map_accesses(
-    hash_map_accesses: &[HashMapAccess],
-    type_infos: &TypeInfoMap,
-    comment: &str,
-) -> Vec<TokenStream> {
-    todo!("render_hash_map_accesses")
-    /*
-    hash_map_accesses
-        .iter()
-        .map(|x| {
-            let rust_tokens = x.render_rust().tokens;
-
-            let implement_vecs = x.render_dart(type_infos, comment);
-            let dart_string: String = format!(
-                r###"
-            {comment} Vector access methods matching the below Rust methods.
-            {comment}
-            {comment} ```dart
-            {implement_vecs}
-            {comment} ```"###,
-                comment = comment,
-                implement_vecs = implement_vecs
-            );
-            let dart_tokens: TokenStream = dart_string.parse().unwrap();
-
-            quote! {
-                #dart_tokens
-                #rust_tokens
-            }
-        })
-        .collect()
-        */
 }
