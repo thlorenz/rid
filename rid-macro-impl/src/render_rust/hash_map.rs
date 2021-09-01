@@ -8,7 +8,7 @@ use crate::{
     parse::{rust_type::RustType, ParsedReference},
     render_common::{
         AccessKind, HashMapAccess, PointerTypeAlias, RenderableAccess,
-        RenderedAccessRust, VecAccess,
+        RenderedAccessRust,
     },
 };
 
@@ -86,27 +86,6 @@ impl HashMapAccess {
                 map.keys().collect()
             }
         };
-
-        // -----------------
-        // HashMap::keys VecAccess
-        // -----------------
-
-        // In order to iterate the RidVec<key> that is returned from the above method,
-        // we need to ensure the access functions are rendered.
-        let vec_ty = RustType::from_vec_with_pointer_alias(
-            &key_ty,
-            ParsedReference::Ref(None),
-        );
-        let vec_access = VecAccess::new(
-            &vec_ty,
-            vec_ty.rust_ident().clone(),
-            AccessKind::MethodReturn,
-            &ffi_prelude,
-        );
-
-        let mut nested_accesses: HashMap<String, Box<dyn RenderableAccess>> =
-            HashMap::new();
-        nested_accesses.insert(vec_access.key(), Box::new(vec_access));
 
         let tokens = quote! {
             #len_impl

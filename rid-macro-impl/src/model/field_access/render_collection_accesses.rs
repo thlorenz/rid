@@ -88,9 +88,6 @@ fn aggregate_collection_accesses(
     rust_config: &RenderRustFieldAccessConfig,
     dart_config: &RenderDartFieldAccessConfig,
 ) -> AggregatedRenderedAccesses {
-    let mut all_nested_accesses: HashMap<String, Box<dyn RenderableAccess>> =
-        HashMap::new();
-
     if accesses.is_empty() {
         AggregatedRenderedAccesses {
             rust_tokens: vec![],
