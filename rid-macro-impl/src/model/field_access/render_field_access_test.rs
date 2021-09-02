@@ -3,6 +3,7 @@ use crate::{
     attrs::StructConfig,
     common::state::get_state,
     parse::ParsedStruct,
+    render_rust::allow_prelude,
     rid_export_impl,
 };
 use proc_macro2::TokenStream;
@@ -433,9 +434,11 @@ mod struct_field_access_single_vec_custom_struct {
             }
         };
 
+        let allow = allow_prelude();
         let expected = quote! {
             mod __my_struct_field_access {
                 use super::*;
+                #allow
                 mod mod_vec_todo_access {
                     use super::*;
                     fn rid_len_vec_todo(ptr: *mut Vec<Todo>) -> usize {
@@ -512,9 +515,11 @@ mod struct_field_access_single_vec_u8 {
             }
         };
 
+        let allow = allow_prelude();
         let expected = quote! {
             mod __my_struct_field_access {
                 use super::*;
+                #allow
                 mod mod_vec_u8_access {
                     use super::*;
                     fn rid_len_vec_u8(ptr: *mut Vec<u8>) -> usize {

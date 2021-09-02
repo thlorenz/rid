@@ -1,4 +1,7 @@
-use crate::{common::extract_variant_names, parse::rust_type::RustType};
+use crate::{
+    common::extract_variant_names, parse::rust_type::RustType,
+    render_rust::allow_prelude,
+};
 
 use super::{render_debug, RenderDebugConfig};
 use proc_macro2::TokenStream;
@@ -34,6 +37,8 @@ fn render(input: proc_macro2::TokenStream) -> TokenStream {
 }
 
 mod enums_debug_impl {
+    use crate::render_rust::allow_prelude;
+
     use super::*;
 
     #[test]
@@ -44,11 +49,12 @@ mod enums_debug_impl {
             }
         });
 
+        let allow = allow_prelude();
         let expected = quote! {
             mod __rid_mod_rid_single_debug {
                 use super::*;
                 #[no_mangle]
-                #[allow(non_snake_case)]
+                #allow
                 pub extern "C" fn rid_single_debug(n: i32) -> *const ::std::os::raw::c_char {
                     let instance = match n {
                         0 => Single::First,
@@ -59,7 +65,7 @@ mod enums_debug_impl {
                     cstring.into_raw()
                 }
                 #[no_mangle]
-                #[allow(non_snake_case)]
+                #allow
                 pub extern "C" fn rid_single_debug_pretty(n: i32) -> *const ::std::os::raw::c_char {
                     let instance = match n {
                         0 => Single::First,
@@ -77,6 +83,7 @@ mod enums_debug_impl {
 }
 
 mod structs_debug_impl {
+
     use super::*;
 
     #[test]
@@ -85,11 +92,12 @@ mod structs_debug_impl {
             struct Single { id: u32 }
         });
 
+        let allow = allow_prelude();
         let expected = quote! {
             mod __rid_mod_rid_single_debug {
                 use super::*;
                 #[no_mangle]
-                #[allow(non_snake_case)]
+                #allow
                 pub extern "C" fn rid_single_debug(ptr: *mut Single) -> *const ::std::os::raw::c_char {
                     let single = unsafe {
                         assert!(!ptr.is_null());
@@ -101,7 +109,7 @@ mod structs_debug_impl {
                     cstring.into_raw()
                 }
                 #[no_mangle]
-                #[allow(non_snake_case)]
+                #allow
                 pub extern "C" fn rid_single_debug_pretty(ptr: *mut Single) -> *const ::std::os::raw::c_char {
                     let single = unsafe {
                         assert!(!ptr.is_null());

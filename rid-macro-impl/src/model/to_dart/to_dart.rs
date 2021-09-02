@@ -15,7 +15,7 @@ use crate::{
     },
     parse::{rust_type::RustType, ParsedStruct},
     render_dart::ParsedStructRenderConfig,
-    render_rust::RenderedDisplayImpl,
+    render_rust::{allow_prelude, RenderedDisplayImpl},
 };
 
 pub struct DartRenderImplConfig {
@@ -91,8 +91,9 @@ pub fn render_to_dart(
     let ident = &parsed_struct.ident;
     let mod_ident = format_ident!("__rid_{}_dart_mod", ident);
     let fn_ident = format_ident!("_to_dart_for_{}", ident);
+    let allow = allow_prelude();
     quote_spanned! { ident.span() =>
-        #[allow(non_snake_case)]
+        #allow
         mod #mod_ident {
             #dart_tokens
             #[no_mangle]
