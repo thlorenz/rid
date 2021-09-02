@@ -4,6 +4,10 @@ use proc_macro2::TokenStream;
 use quote::{format_ident, quote_spanned};
 
 use crate::{
+    accesses::{
+        AccessKind, AccessRender, HashMapAccess, RenderRustAccessConfig,
+        RenderableAccess, VecAccess,
+    },
     attrs,
     common::{
         abort,
@@ -14,47 +18,9 @@ use crate::{
         rust_type::{self, TypeKind},
         ParsedStruct, ParsedStructField,
     },
-    render_common::{
-        AccessKind, AccessRender, HashMapAccess, RenderableAccess, VecAccess,
-    },
     render_dart::vec,
     render_rust::ffi_prelude,
 };
-
-pub struct RenderRustFieldAccessConfig {
-    pub ffi_prelude_tokens: TokenStream,
-    pub render: bool,
-    pub accesses: AccessRender,
-}
-
-impl Default for RenderRustFieldAccessConfig {
-    fn default() -> Self {
-        Self {
-            ffi_prelude_tokens: ffi_prelude(),
-            render: true,
-            accesses: AccessRender::Default,
-        }
-    }
-}
-impl RenderRustFieldAccessConfig {
-    pub fn for_rust_tests(accesses: AccessRender) -> Self {
-        Self {
-            ffi_prelude_tokens: TokenStream::new(),
-            render: true,
-            accesses,
-        }
-    }
-}
-
-impl RenderRustFieldAccessConfig {
-    pub fn for_dart_tests(accesses: AccessRender) -> Self {
-        Self {
-            ffi_prelude_tokens: TokenStream::new(),
-            render: false,
-            accesses,
-        }
-    }
-}
 
 pub struct RenderRustFieldAccessResult {
     pub tokens: TokenStream,
@@ -64,7 +30,7 @@ pub struct RenderRustFieldAccessResult {
 impl ParsedStruct {
     pub fn render_rust_fields_access(
         &self,
-        config: &RenderRustFieldAccessConfig,
+        config: &RenderRustAccessConfig,
     ) -> RenderRustFieldAccessResult {
         let mut collection_accesses: HashMap<
             String,
@@ -91,7 +57,7 @@ impl ParsedStruct {
 
     fn render_rust_field_access(
         &self,
-        config: &RenderRustFieldAccessConfig,
+        config: &RenderRustAccessConfig,
         field: &ParsedStructField,
     ) -> (TokenStream, Option<Box<dyn RenderableAccess>>) {
         use TypeKind::*;

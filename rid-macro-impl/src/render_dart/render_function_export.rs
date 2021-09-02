@@ -5,7 +5,7 @@ use syn::Ident;
 use crate::{
     parse::ParsedFunction,
     render_common::{
-        fn_ident_and_impl_ident_string, RenderFunctionExportConfig, VecAccess,
+        fn_ident_and_impl_ident_string, RenderFunctionExportConfig,
     },
     render_dart::DartArg,
 };

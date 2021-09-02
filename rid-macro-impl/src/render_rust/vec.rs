@@ -5,11 +5,9 @@ use quote::{format_ident, quote, quote_spanned};
 use render_return_type::RenderedReturnType;
 
 use crate::{
+    accesses::{AccessKind, RenderedAccessRust, VecAccess},
     common::{abort, tokens::resolve_vec_ptr},
-    render_common::{
-        AccessKind, PointerTypeAlias, RenderableAccess, RenderedAccessRust,
-        VecAccess,
-    },
+    render_common::PointerTypeAlias,
     render_rust::{render_return_type, render_to_return_type},
 };
 

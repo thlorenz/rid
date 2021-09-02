@@ -4,12 +4,10 @@ use proc_macro2::TokenStream;
 use quote::{format_ident, quote, quote_spanned, ToTokens};
 
 use crate::{
+    accesses::{HashMapAccess, RenderedAccessRust},
     common::tokens::resolve_hash_map_ptr,
     parse::{rust_type::RustType, ParsedReference},
-    render_common::{
-        AccessKind, HashMapAccess, PointerTypeAlias, RenderableAccess,
-        RenderedAccessRust,
-    },
+    render_common::PointerTypeAlias,
 };
 
 impl HashMapAccess {

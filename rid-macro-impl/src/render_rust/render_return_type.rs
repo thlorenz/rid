@@ -1,13 +1,10 @@
 use std::ops::Deref;
 
-use crate::{
-    attrs::Category,
-    common::{abort, missing_struct_enum_info},
-    parse::{
+use crate::{accesses::AccessKind, attrs::Category, common::{abort, missing_struct_enum_info}, parse::{
         rust_type::{Composite, Primitive, RustType, TypeKind, Value},
         ParsedReference,
     },
-    render_common::{AccessKind, PointerTypeAlias},
+    render_common::PointerTypeAlias
 };
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote, quote_spanned};

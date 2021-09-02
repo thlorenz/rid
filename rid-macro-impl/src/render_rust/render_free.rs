@@ -4,11 +4,12 @@ use quote::{format_ident, quote_spanned};
 use syn::Ident;
 
 use crate::{
+    accesses::AccessKind,
     parse::{
         rust_type::{Composite, Primitive, RustType, TypeKind, Value},
         ParsedFunction,
     },
-    render_common::{AccessKind, PointerTypeAlias},
+    render_common::PointerTypeAlias,
 };
 
 pub struct RenderedFree {

@@ -2,9 +2,9 @@ use std::collections::HashMap;
 
 use proc_macro2::{Span, TokenStream};
 
-use crate::attrs::TypeInfoMap;
+use crate::{attrs::TypeInfoMap, render_common::PointerTypeAlias};
 
-use super::{HashMapAccess, PointerTypeAlias, VecAccess};
+use super::{HashMapAccess, VecAccess};
 
 /// Distinguishes between accesses that are references to fields on structs or enums vs.
 /// instances created during a method call and returned to Dart without keeping a reference

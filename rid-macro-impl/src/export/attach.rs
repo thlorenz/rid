@@ -1,16 +1,14 @@
 use std::collections::HashMap;
 
 use crate::{
+    accesses::RenderableAccess,
     attrs::{self, FunctionConfig, ImplBlockConfig},
     common::{
         state::{get_state, ImplementationType},
         utils_module_tokens_if,
     },
     parse::{ParsedFunction, ParsedImplBlock},
-    render_common::{
-        render_vec_accesses, PointerTypeAlias, RenderFunctionExportConfig,
-        VecAccess,
-    },
+    render_common::{PointerTypeAlias, RenderFunctionExportConfig},
     render_dart,
     render_rust::{self, ffi_prelude, render_free, RenderedTypeAliasInfo},
 };
@@ -24,7 +22,6 @@ use super::{
 use crate::{attrs::parse_rid_attrs, common::abort};
 use quote::{format_ident, quote, quote_spanned};
 
-use crate::render_common::RenderableAccess;
 use proc_macro2::TokenStream;
 use render_dart::render_instance_method_extension;
 use syn::Ident;
@@ -41,7 +38,8 @@ pub fn rid_export_impl(
 
             let mut ptr_type_aliases_map =
                 HashMap::<String, TokenStream>::new();
-            let mut vec_accesses = HashMap::<String, VecAccess>::new();
+            let mut accesses =
+                HashMap::<String, Box<dyn RenderableAccess>>::new();
             let rust_fn_tokens = &parsed
                 .methods
                 .iter()
@@ -54,7 +52,7 @@ pub fn rid_export_impl(
                         Some(parsed.ty.rust_ident().clone()),
                         config.include_ffi,
                         &mut ptr_type_aliases_map,
-                        &mut vec_accesses,
+                        &mut accesses,
                     )
                 })
                 .collect::<Vec<TokenStream>>();
@@ -66,11 +64,11 @@ pub fn rid_export_impl(
             ));
 
             let ExtractedTokens {
-                vec_access_tokens,
+                access_tokens,
                 ptr_typedef_tokens,
                 utils_module,
             } = extract_tokens(
-                vec_accesses,
+                accesses,
                 &ptr_type_aliases_map,
                 parsed.type_infos(),
                 &config,
@@ -92,7 +90,7 @@ pub fn rid_export_impl(
                     #(#ptr_typedef_tokens)*
                     #dart_extension_tokens
                     #(#rust_fn_tokens)*
-                    #(#vec_access_tokens)*
+                    #access_tokens
                     #utils_module
                 }
             }
@@ -118,22 +116,23 @@ pub fn rid_export_impl(
 
             let mut ptr_type_aliases_map =
                 HashMap::<String, TokenStream>::new();
-            let mut vec_accesses = HashMap::<String, VecAccess>::new();
+            let mut accesses =
+                HashMap::<String, Box<dyn RenderableAccess>>::new();
 
             let rust_fn_tokens = process_function_export(
                 &parsed_fn,
                 owner_type_infos,
                 config.include_ffi,
                 &mut ptr_type_aliases_map,
-                &mut vec_accesses,
+                &mut accesses,
             );
 
             let ExtractedTokens {
-                vec_access_tokens,
+                access_tokens,
                 ptr_typedef_tokens,
                 utils_module,
             } = extract_tokens(
-                vec_accesses,
+                accesses,
                 &ptr_type_aliases_map,
                 parsed_fn.type_infos(),
                 &config,
@@ -148,7 +147,7 @@ pub fn rid_export_impl(
                     use super::*;
                     #(#ptr_typedef_tokens)*
                     #rust_fn_tokens
-                    #(#vec_access_tokens)*
+                    #access_tokens
                     #utils_module
                 }
             }

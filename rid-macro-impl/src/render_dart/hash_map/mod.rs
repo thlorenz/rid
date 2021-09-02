@@ -1,6 +1,6 @@
 use rid_common::{DART_COLLECTION, RID_FFI};
 
-use crate::{attrs::TypeInfoMap, render_common::HashMapAccess};
+use crate::{accesses::HashMapAccess, attrs::TypeInfoMap};
 
 const TEMPLATE_FIELD_ACCESS: &str =
     std::include_str!("./hash_map_field_access.dart");

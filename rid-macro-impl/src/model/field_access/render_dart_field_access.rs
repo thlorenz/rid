@@ -2,58 +2,18 @@ use proc_macro2::TokenStream;
 use syn::Ident;
 
 use crate::{
+    accesses::{AccessRender, RenderDartAccessConfig},
     attrs::TypeInfoMap,
     common::abort,
     parse::{dart_type::DartType, ParsedStruct, ParsedStructField},
-    render_common::AccessRender,
     render_dart::RenderDartTypeOpts,
 };
 use rid_common::{DART_FFI, FFI_GEN_BIND, RID_FFI};
 
-pub struct RenderDartFieldAccessConfig {
-    pub comment: String,
-    pub render: bool,
-    pub tokens: bool,
-    pub accesses: AccessRender,
-}
-
-impl Default for RenderDartFieldAccessConfig {
-    fn default() -> Self {
-        Self {
-            comment: "/// ".to_string(),
-            render: true,
-            tokens: true,
-            accesses: AccessRender::Default,
-        }
-    }
-}
-
-impl RenderDartFieldAccessConfig {
-    pub fn for_rust_tests() -> Self {
-        Self {
-            comment: "".to_string(),
-            render: false,
-            tokens: false,
-            accesses: AccessRender::Omit,
-        }
-    }
-}
-
-impl RenderDartFieldAccessConfig {
-    pub fn for_dart_tests(accesses: AccessRender) -> Self {
-        Self {
-            comment: "".to_string(),
-            render: true,
-            tokens: false,
-            accesses,
-        }
-    }
-}
-
 impl ParsedStruct {
     pub fn render_dart_fields_access_extension(
         &self,
-        render_config: &RenderDartFieldAccessConfig,
+        render_config: &RenderDartAccessConfig,
     ) -> (TokenStream, String) {
         let field_accesses = self.render_dart_fields_access(render_config);
         let s = format!(
@@ -80,7 +40,7 @@ impl ParsedStruct {
 
     fn render_dart_fields_access(
         &self,
-        render_config: &RenderDartFieldAccessConfig,
+        render_config: &RenderDartAccessConfig,
     ) -> String {
         self.fields
             .iter()
@@ -94,7 +54,7 @@ impl ParsedStruct {
     fn render_dart_field_access(
         &self,
         field: &ParsedStructField,
-        render_config: &RenderDartFieldAccessConfig,
+        render_config: &RenderDartAccessConfig,
     ) -> String {
         let dart_ty = &field.dart_type;
         let dart_return_ty = field.rust_type.render_dart_field_return_type();

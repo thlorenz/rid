@@ -5,14 +5,15 @@ use super::{
     ReceiverArg, RenderedReturnType,
 };
 use crate::{
+    accesses::{AccessKind, VecAccess},
     attrs::Category,
     parse::{
         rust_type::{Composite, Primitive, RustType, TypeKind, Value},
         ParsedFunction, ParsedReceiver, ParsedReference,
     },
     render_common::{
-        fn_ident_and_impl_ident_string, AccessKind, PointerTypeAlias,
-        RenderFunctionExportConfig, VecAccess,
+        fn_ident_and_impl_ident_string, PointerTypeAlias,
+        RenderFunctionExportConfig,
     },
     render_rust::{ffi_prelude, render_rust_arg, RenderedReceiverArgPass},
 };
