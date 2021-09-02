@@ -3,6 +3,7 @@ use proc_macro2::TokenStream;
 use quote::quote;
 
 use super::export_config::ExportConfig;
+use crate::render_rust::allow_prelude;
 
 // -----------------
 // Note these are just a few high level integration tests to see that all comes together.
@@ -27,7 +28,7 @@ fn render_export_full(input: TokenStream) -> TokenStream {
 // Struct impl methods
 // -----------------
 mod struct_impl_methods {
-    use crate::common::dump_tokens;
+    use crate::{common::dump_tokens, render_rust::allow_prelude};
 
     use super::*;
 
@@ -50,8 +51,9 @@ mod struct_impl_methods {
             }
         };
 
+        let allow = allow_prelude();
         let expected = quote! {
-            #[allow(non_snake_case)]
+            #allow
             mod __rid_MyStruct_impl_1 {
                 use super::*;
                 type PointerMut_Self = *mut Self;
@@ -81,8 +83,9 @@ mod struct_impl_methods {
             }
         };
 
+        let allow = allow_prelude();
         let expected = quote! {
-            #[allow(non_snake_case)]
+            #allow
             mod __rid_MyStruct_impl_1 {
                 use super::*;
                 fn rid_export_MyStruct_get_u8s() -> rid::RidVec<u8> {
@@ -99,7 +102,7 @@ mod struct_impl_methods {
     }
 }
 mod struct_impl_args_methods {
-    use crate::common::dump_tokens;
+    use crate::{common::dump_tokens, render_rust::allow_prelude};
 
     use super::*;
 
@@ -119,8 +122,9 @@ mod struct_impl_args_methods {
             }
         };
 
+        let allow = allow_prelude();
         let expected = quote! {
-            #[allow(non_snake_case)]
+            #allow
             mod __rid_MyStruct_impl_1 {
                 use super::*;
                 fn rid_export_MyStruct_get_keys(arg0: *const HashMap<u8, u8>) -> rid::RidVec<u8> {
@@ -152,8 +156,9 @@ mod functions_no_args {
             fn get_u8() -> u8 { 1 }
         };
 
+        let allow = allow_prelude();
         let expected = quote! {
-            #[allow(non_snake_case)]
+            #allow
             mod __rid_export_get_u8 {
                 use super::*;
                 fn rid_export_get_u8() -> u8 {
@@ -187,8 +192,9 @@ mod functions_with_args {
             }
         };
 
+        let allow = allow_prelude();
         let expected = quote! {
-            #[allow(non_snake_case)]
+            #allow
             mod __rid_export_get_keys {
                 use super::*;
                 fn rid_export_get_keys(arg0: *const HashMap<u8, u8>) -> rid::RidVec<u8> {

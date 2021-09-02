@@ -7,6 +7,7 @@ use crate::{
     attrs::TypeInfoMap,
     parse::{ParsedStruct, ParsedStructField},
     render_dart::RenderDartTypeOpts,
+    render_rust::allow_prelude,
 };
 
 /// Renders wrapper accessors for all fields on a given raw Pointer type, i.e. `RawStore`.
@@ -45,8 +46,9 @@ impl ParsedStruct {
 
         let mod_ident = format_ident!("{}_field_wrappers", self.ident);
         let fn_ident = format_ident!("_include_{}_field_wrappers", self.ident);
+        let allow = allow_prelude();
         quote_spanned! { self.ident.span() =>
-            #[allow(non_snake_case)]
+            #allow
             mod #mod_ident {
                 #field_wrapper_tokens
                 #[no_mangle]

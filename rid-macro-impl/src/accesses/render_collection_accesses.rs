@@ -6,7 +6,7 @@ use quote::{format_ident, quote, quote_spanned};
 use crate::{
     attrs::TypeInfoMap,
     common::state::{get_state, ImplementationType},
-    render_rust::ffi_prelude,
+    render_rust::{allow_prelude, ffi_prelude},
 };
 
 use super::{
@@ -210,7 +210,9 @@ fn aggregate_collection_accesses(
                     // We need to wrap this in these in a module in case the nested accesses
                     // result in rendering the same typedefs.
                     let mod_ident = format_ident!("mod_{}_access", x.key());
+                    let allow = allow_prelude();
                     let rust = quote_spanned! { x.span() =>
+                        #allow
                         mod #mod_ident {
                             use super::*;
                             #(#typedef_tokens)*

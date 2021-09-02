@@ -10,7 +10,9 @@ use crate::{
     parse::{ParsedFunction, ParsedImplBlock},
     render_common::{PointerTypeAlias, RenderFunctionExportConfig},
     render_dart,
-    render_rust::{self, ffi_prelude, render_free, RenderedTypeAliasInfo},
+    render_rust::{
+        allow_prelude, ffi_prelude, render_free, RenderedTypeAliasInfo,
+    },
 };
 
 use super::{
@@ -83,8 +85,9 @@ pub fn rid_export_impl(
                 TokenStream::new()
             };
 
+            let allow = allow_prelude();
             quote! {
-                #[allow(non_snake_case)]
+                #allow
                 mod #module_ident {
                     use super::*;
                     #(#ptr_typedef_tokens)*
@@ -141,8 +144,9 @@ pub fn rid_export_impl(
             let module_ident =
                 format_ident!("__rid_export_{}", parsed_fn.fn_ident);
 
+            let allow = allow_prelude();
             quote_spanned! { parsed_fn.fn_ident.span() =>
-                #[allow(non_snake_case)]
+                #allow
                 mod #module_ident {
                     use super::*;
                     #(#ptr_typedef_tokens)*

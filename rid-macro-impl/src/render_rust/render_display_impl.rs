@@ -12,6 +12,7 @@ use crate::{
         },
     },
     parse::rust_type::{Composite, RustType, TypeKind, Value},
+    render_rust::allow_prelude,
 };
 
 pub struct RenderedDisplayImpl {
@@ -90,9 +91,10 @@ impl RustType {
         // TODO: consider using type aliases over `*mut` types via `self.render_pointer_type()`
         let resolve_struct_ptr = resolve_ptr(struct_ident);
 
+        let allow = allow_prelude();
         let tokens = quote_spanned! { struct_ident.span() =>
             #[no_mangle]
-            #[allow(non_snake_case)]
+            #allow
             pub extern "C" fn #fn_display_method_ident(ptr: *mut #struct_ident) -> *const ::std::os::raw::c_char {
                 let instance = #resolve_struct_ptr;
                 let s = instance.to_string();
@@ -115,6 +117,7 @@ impl RustType {
         let fn_display_method_ident = self.get_fn_display_ident();
         let enum_ident = &self.rust_ident();
 
+        let allow = allow_prelude();
         let tokens = if is_primitive {
             // NOTE: assuming `repr(C)` for primitive enums
             let ResolvedEnumFromInt {
@@ -126,7 +129,7 @@ impl RustType {
 
             quote_spanned! { enum_ident.span() =>
                 #[no_mangle]
-                #[allow(non_snake_case)]
+                #allow
                 pub extern "C" fn #fn_display_method_ident(#arg_ident: #arg_type_ident) -> *const ::std::os::raw::c_char {
                     #resolve_enum_arg_tokens
                     let s = #instance_ident.to_string();
@@ -138,7 +141,7 @@ impl RustType {
             let resolve_enum_ptr = resolve_ptr(enum_ident);
             quote_spanned! { enum_ident.span() =>
                 #[no_mangle]
-                #[allow(non_snake_case)]
+                #allow
                 pub extern "C" fn #fn_display_method_ident(ptr: *mut #enum_ident) -> *const ::std::os::raw::c_char {
                     let instance = #resolve_enum_ptr;
                     let s = instance.to_string();
