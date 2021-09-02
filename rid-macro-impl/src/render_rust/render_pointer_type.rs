@@ -5,7 +5,7 @@ use crate::{
         rust_type::{Composite, Primitive, RustType, TypeKind, Value},
         ParsedReference,
     },
-    render_common::{AccessKind, PointerTypeAlias},
+    render_common::PointerTypeAlias,
 };
 use quote::{format_ident, quote, quote_spanned};
 

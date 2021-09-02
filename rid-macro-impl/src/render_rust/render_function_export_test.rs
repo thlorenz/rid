@@ -4,13 +4,11 @@ use proc_macro2::TokenStream;
 use quote::quote;
 
 use crate::{
+    accesses::{RenderableAccess, VecAccess},
     attrs::{self, FunctionConfig, TypeInfo, TypeInfoMap},
     common::dump_tokens,
     parse::ParsedFunction,
-    render_common::{
-        PointerTypeAlias, RenderFunctionExportConfig, RenderableAccess,
-        VecAccess,
-    },
+    render_common::{PointerTypeAlias, RenderFunctionExportConfig},
 };
 
 use super::{

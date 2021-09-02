@@ -6,16 +6,94 @@ use quote::{format_ident, quote, quote_spanned};
 use crate::{
     attrs::TypeInfoMap,
     common::state::{get_state, ImplementationType},
-    render_common::{
-        AccessKind, AccessRender, HashMapAccess, RenderableAccess,
-        RenderedAccessRust, VecAccess,
-    },
+    render_rust::ffi_prelude,
 };
 
 use super::{
-    render_dart_field_access::RenderDartFieldAccessConfig,
-    render_rust_field_access::RenderRustFieldAccessConfig,
+    AccessRender, HashMapAccess, RenderableAccess, RenderedAccessRust,
+    VecAccess,
 };
+
+// -----------------
+// RenderRustAccessConfig
+// -----------------
+pub struct RenderRustAccessConfig {
+    pub accesses: AccessRender,
+    pub ffi_prelude_tokens: TokenStream,
+    pub render: bool,
+}
+
+impl Default for RenderRustAccessConfig {
+    fn default() -> Self {
+        Self {
+            ffi_prelude_tokens: ffi_prelude(),
+            render: true,
+            accesses: AccessRender::Default,
+        }
+    }
+}
+impl RenderRustAccessConfig {
+    pub fn for_rust_tests(accesses: AccessRender) -> Self {
+        Self {
+            ffi_prelude_tokens: TokenStream::new(),
+            render: true,
+            accesses,
+        }
+    }
+}
+
+impl RenderRustAccessConfig {
+    pub fn for_dart_tests(accesses: AccessRender) -> Self {
+        Self {
+            ffi_prelude_tokens: TokenStream::new(),
+            render: false,
+            accesses,
+        }
+    }
+}
+
+// -----------------
+// RenderRustAccessConfig
+// -----------------
+pub struct RenderDartAccessConfig {
+    pub accesses: AccessRender,
+    pub render: bool,
+    pub tokens: bool,
+    pub comment: String,
+}
+
+impl Default for RenderDartAccessConfig {
+    fn default() -> Self {
+        Self {
+            comment: "/// ".to_string(),
+            render: true,
+            tokens: true,
+            accesses: AccessRender::Default,
+        }
+    }
+}
+
+impl RenderDartAccessConfig {
+    pub fn for_rust_tests() -> Self {
+        Self {
+            comment: "".to_string(),
+            render: false,
+            tokens: false,
+            accesses: AccessRender::Omit,
+        }
+    }
+}
+
+impl RenderDartAccessConfig {
+    pub fn for_dart_tests(accesses: AccessRender) -> Self {
+        Self {
+            comment: "".to_string(),
+            render: true,
+            tokens: false,
+            accesses,
+        }
+    }
+}
 
 struct AggregatedRenderedAccesses {
     rust_tokens: Vec<TokenStream>,
@@ -25,8 +103,8 @@ struct AggregatedRenderedAccesses {
 pub fn render_collection_accesses(
     accesses: HashMap<String, Box<dyn RenderableAccess>>,
     type_infos: &TypeInfoMap,
-    rust_config: &RenderRustFieldAccessConfig,
-    dart_config: &RenderDartFieldAccessConfig,
+    rust_config: &RenderRustAccessConfig,
+    dart_config: &RenderDartAccessConfig,
 ) -> (TokenStream, String) {
     if accesses.is_empty() {
         return (TokenStream::new(), String::new());
@@ -85,19 +163,16 @@ pub fn render_collection_accesses(
 fn aggregate_collection_accesses(
     accesses: HashMap<String, Box<dyn RenderableAccess>>,
     type_infos: &TypeInfoMap,
-    rust_config: &RenderRustFieldAccessConfig,
-    dart_config: &RenderDartFieldAccessConfig,
+    rust_config: &RenderRustAccessConfig,
+    dart_config: &RenderDartAccessConfig,
 ) -> AggregatedRenderedAccesses {
-    let mut all_nested_accesses: HashMap<String, Box<dyn RenderableAccess>> =
-        HashMap::new();
-
     if accesses.is_empty() {
         AggregatedRenderedAccesses {
             rust_tokens: vec![],
             darts: vec![],
         }
     } else {
-        let mut aggregated = accesses.values().into_iter().fold(
+        let aggregated = accesses.values().into_iter().fold(
             AggregatedRenderedAccesses {
                 rust_tokens: vec![],
                 darts: vec![],

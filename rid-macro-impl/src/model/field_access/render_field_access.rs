@@ -4,29 +4,23 @@ use heck::SnakeCase;
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote, quote_spanned};
 
+use super::render_rust_field_access::RenderRustFieldAccessResult;
 use crate::{
+    accesses::{
+        render_collection_accesses, RenderDartAccessConfig,
+        RenderRustAccessConfig,
+    },
     attrs::TypeInfoMap,
     common::state::{get_state, ImplementationType},
     parse::ParsedStruct,
-    render_common::{
-        AccessRender, RenderableAccess, RenderedAccessRust, VecAccess,
-    },
     render_rust::ffi_prelude,
-};
-
-use super::{
-    render_collection_accesses::render_collection_accesses,
-    render_dart_field_access::RenderDartFieldAccessConfig,
-    render_rust_field_access::{
-        RenderRustFieldAccessConfig, RenderRustFieldAccessResult,
-    },
 };
 
 impl ParsedStruct {
     pub fn render_field_access(
         &self,
-        rust_config: &RenderRustFieldAccessConfig,
-        dart_config: &RenderDartFieldAccessConfig,
+        rust_config: &RenderRustAccessConfig,
+        dart_config: &RenderDartAccessConfig,
     ) -> (TokenStream, String) {
         let RenderRustFieldAccessResult {
             tokens: rust_tokens,

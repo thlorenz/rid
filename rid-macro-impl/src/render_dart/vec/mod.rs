@@ -4,9 +4,9 @@ use rid_common::{
 };
 
 use crate::{
+    accesses::{RenderableAccess, VecAccess},
     attrs::TypeInfoMap,
     parse::{dart_type::DartType, rust_type::RustType},
-    render_common::{AccessKind, RenderableAccess, VecAccess},
 };
 
 use super::RenderDartTypeOpts;

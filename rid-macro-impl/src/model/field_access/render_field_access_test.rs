@@ -1,12 +1,8 @@
 use crate::{
+    accesses::{AccessRender, RenderDartAccessConfig, RenderRustAccessConfig},
     attrs::StructConfig,
     common::state::get_state,
-    model::field_access::{
-        render_dart_field_access::RenderDartFieldAccessConfig,
-        render_rust_field_access::RenderRustFieldAccessConfig,
-    },
     parse::ParsedStruct,
-    render_common::AccessRender,
     rid_export_impl,
 };
 use proc_macro2::TokenStream;
@@ -26,10 +22,10 @@ fn render_rust_field_access(input: TokenStream) -> TokenStream {
             );
             parsed_struct
                 .render_field_access(
-                    &RenderRustFieldAccessConfig::for_rust_tests(
+                    &RenderRustAccessConfig::for_rust_tests(
                         AccessRender::Force,
                     ),
-                    &RenderDartFieldAccessConfig::for_rust_tests(),
+                    &RenderDartAccessConfig::for_rust_tests(),
                 )
                 .0
         }
@@ -50,15 +46,11 @@ fn render_dart_field_access(input: TokenStream) -> String {
             );
             parsed_struct
                 .render_field_access(
-                    &RenderRustFieldAccessConfig::for_dart_tests(
-                        AccessRender::Omit,
-                    ),
+                    &RenderRustAccessConfig::for_dart_tests(AccessRender::Omit),
                     // NOTE: we test the validity of generated dart code via integration tests
                     // instead of snapshots or similar which are prone to break all the time for
                     // the wrong reasons.
-                    &RenderDartFieldAccessConfig::for_dart_tests(
-                        AccessRender::Omit,
-                    ),
+                    &RenderDartAccessConfig::for_dart_tests(AccessRender::Omit),
                 )
                 .1
         }

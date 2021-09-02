@@ -4,16 +4,14 @@ use proc_macro2::TokenStream;
 use syn::Ident;
 
 use crate::{
+    accesses::{render_collection_accesses, RenderableAccess},
     attrs::TypeInfoMap,
     common::{
         state::{get_state, ImplementationType},
         utils_module_tokens_if,
     },
     parse::{rust_type::RustType, ParsedFunction},
-    render_common::{
-        render_vec_accesses, PointerTypeAlias, RenderFunctionExportConfig,
-        RenderableAccess, VecAccess,
-    },
+    render_common::{PointerTypeAlias, RenderFunctionExportConfig},
     render_dart::render_instance_method_extension,
     render_rust::{self, ffi_prelude, RenderedTypeAliasInfo},
 };
@@ -25,7 +23,7 @@ pub fn process_function_export(
     impl_ident: Option<Ident>,
     include_ffi: bool,
     ptr_type_aliases_map: &mut HashMap<String, TokenStream>,
-    vec_accesses: &mut HashMap<String, VecAccess>,
+    accesses: &mut HashMap<String, Box<dyn RenderableAccess>>,
 ) -> TokenStream {
     {
         let render_rust::RenderedFunctionExport {
@@ -58,20 +56,20 @@ pub fn process_function_export(
                 panic!("Rid removed free implementation for Rust and Dart since it wasn't complete nor used");
             }
         }
-        vec_access.map(|x| vec_accesses.insert(x.key(), x));
+        vec_access.map(|x| accesses.insert(x.key(), Box::new(x)));
 
         tokens
     }
 }
 
 pub struct ExtractedTokens<'a> {
-    pub vec_access_tokens: Vec<TokenStream>,
+    pub access_tokens: TokenStream,
     pub ptr_typedef_tokens: Vec<&'a TokenStream>,
     pub utils_module: TokenStream,
 }
 
 pub fn extract_tokens<'a>(
-    collection_accesses: HashMap<String, VecAccess>,
+    accesses: HashMap<String, Box<dyn RenderableAccess>>,
     ptr_type_aliases_map: &'a HashMap<String, TokenStream>,
     type_infos: &TypeInfoMap,
     config: &ExportConfig,
@@ -79,16 +77,16 @@ pub fn extract_tokens<'a>(
     // -----------------
     // Collection Accesses
     // -----------------
-    // TODO(thlorenz): Generalize to all collections via RenderableAccess
-    // see src/model/field_access/render_collection_accesses.rs
-    let collection_access_tokens = if config.render_collection_access {
-        let needed_accesses = get_state().need_implemtation(
-            &ImplementationType::CollectionAccess,
-            collection_accesses,
-        );
-        render_vec_accesses(&needed_accesses, type_infos, "///")
+    let access_tokens = if config.render_collection_access {
+        render_collection_accesses(
+            accesses,
+            type_infos,
+            &Default::default(),
+            &Default::default(),
+        )
+        .0
     } else {
-        vec![]
+        TokenStream::new()
     };
 
     // -----------------
@@ -103,7 +101,7 @@ pub fn extract_tokens<'a>(
     let utils_module = utils_module_tokens_if(config.render_utils_module);
 
     ExtractedTokens {
-        vec_access_tokens: collection_access_tokens,
+        access_tokens,
         ptr_typedef_tokens,
         utils_module,
     }
