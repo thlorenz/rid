@@ -70,12 +70,6 @@ impl HashMapAccess {
         // -----------------
         // HashMap::keys
         // -----------------
-        let type_alias = PointerTypeAlias::for_const_pointer(
-            &key_ty.to_string(),
-            &key_ty.to_token_stream(),
-            false,
-        );
-        let key_ty_alias = &type_alias.alias;
         let fn_keys_ident = &self.fn_keys_ident;
 
         let keys_impl = quote_spanned! { fn_keys_ident.span() =>
@@ -91,14 +85,9 @@ impl HashMapAccess {
             #contains_key_impl
             #keys_impl
         };
-        let type_aliases = {
-            let mut map = HashMap::new();
-            map.insert(type_alias.alias.to_string(), type_alias);
-            map
-        };
         RenderedAccessRust {
             tokens,
-            type_aliases,
+            type_aliases: HashMap::new(),
         }
     }
 

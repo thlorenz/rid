@@ -4,10 +4,18 @@ use rid::RidStore;
 
 #[rid::store]
 pub struct Store {
+    // -----------------
+    // Primitives key/val same type
+    // -----------------
     u8s: HashMap<u8, u8>,
     u32s: HashMap<u32, u32>,
     i8s: HashMap<i8, i8>,
     i64s: HashMap<i64, i64>,
+    // -----------------
+    // Primitives key/val different types
+    // -----------------
+    u8_i8s: HashMap<u8, i8>,
+    i64_u32s: HashMap<i64, u32>,
 }
 
 impl RidStore<Msg> for Store {
@@ -31,11 +39,24 @@ impl RidStore<Msg> for Store {
         i64s.insert(-11, -111);
         i64s.insert(-22, -222);
         i64s.insert(-33, -333);
+
+        let mut u8_i8s = HashMap::new();
+        u8_i8s.insert(1, -11);
+        u8_i8s.insert(2, -22);
+        u8_i8s.insert(3, -33);
+
+        let mut i64_u32s = HashMap::new();
+        i64_u32s.insert(-1_000_000, 1);
+        i64_u32s.insert(-2_000_000_000, 2);
+        i64_u32s.insert(-3_000_000_000_000, 3);
+
         Self {
             u8s,
             u32s,
             i8s,
             i64s,
+            u8_i8s,
+            i64_u32s,
         }
     }
 

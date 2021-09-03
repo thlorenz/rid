@@ -88,4 +88,41 @@ void main() {
     expect(i64s[-33], -333, reason: 'i64s get(-33)');
     expect(i64s[-55], null, reason: 'i64s get-(55) -> null');
   });
+
+  // -----------------
+  // Primitives key/val different types
+  // -----------------
+  test('field_access: HashMap<u8, i8>', () {
+    final store = Store.instance;
+    final u8_i8s = store.u8I8s;
+
+    expect(u8_i8s.length, 3, reason: 'u8_i8s len');
+    expect(u8_i8s.containsKey(1), true, reason: 'u8_i8s containsKey 1 -> true');
+    expect(u8_i8s.containsKey(2), true, reason: 'u8_i8s containsKey 2 -> true');
+    expect(u8_i8s.containsKey(5), false,
+        reason: 'u8_i8s containsKey 5 -> false');
+
+    expect(u8_i8s[1], -11, reason: 'u8_i8s get(1)');
+    expect(u8_i8s[3], -33, reason: 'u8_i8s get(3)');
+    expect(u8_i8s[5], null, reason: 'u8_i8s get(5) -> null');
+  });
+
+  test('field_access: HashMap<i64, u32>', () {
+    final store = Store.instance;
+    final i64_u32s = store.i64U32s;
+
+    expect(i64_u32s.length, 3, reason: 'i64_u32s len');
+    expect(i64_u32s.containsKey(-1E6), true,
+        reason: 'i64_u32s containsKey -1E6-> true');
+    expect(i64_u32s.containsKey(-2E9), true,
+        reason: 'i64_u32s containsKey -2E9 -> true');
+    expect(i64_u32s.containsKey(-3E12), true,
+        reason: 'i64_u32s containsKey -3E12 -> true');
+    expect(i64_u32s.containsKey(5), false,
+        reason: 'i64_u32s containsKey 5 -> false');
+
+    expect(i64_u32s[-1E6], 1, reason: 'i64_u32s get(-1E6)');
+    expect(i64_u32s[-3E12], 3, reason: 'i64_u32s get(-3E12)');
+    expect(i64_u32s[5], null, reason: 'i64_u32s get(5) -> null');
+  });
 }
