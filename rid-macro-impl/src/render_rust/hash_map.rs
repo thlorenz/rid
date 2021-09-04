@@ -19,8 +19,23 @@ impl HashMapAccess {
 
         let resolve_hash_map = resolve_hash_map_ptr(&arg, &key_ty, &val_ty);
 
-        // TODO(thlorenz): need #[rid::structs]/#[rid::enums] via type_infos that need to be
-        // provided
+        // -----------------
+        // Determine #[rid::structs] and #[rid::enums]
+        // -----------------
+        let structs_attr =
+            match (self.key_type.is_struct(), self.val_type.is_struct()) {
+                (true, true) => quote! { #[rid::structs(#key_ty, #val_ty)] },
+                (true, false) => quote! { #[rid::structs(#key_ty)] },
+                (false, true) => quote! { #[rid::structs(#val_ty)] },
+                (false, false) => TokenStream::new(),
+            };
+        let enums_atrr =
+            match (self.key_type.is_enum(), self.val_type.is_enum()) {
+                (true, true) => quote! { #[rid::enums(#key_ty, #val_ty)] },
+                (true, false) => quote! { #[rid::enums(#key_ty)] },
+                (false, true) => quote! { #[rid::enums(#val_ty)] },
+                (false, false) => TokenStream::new(),
+            };
 
         // -----------------
         // HashMap::len()
@@ -28,6 +43,8 @@ impl HashMapAccess {
         let fn_len_ident = &self.fn_len_ident;
         let len_impl = quote_spanned! { fn_len_ident.span() =>
             #[rid::export]
+            #structs_attr
+            #enums_atrr
             fn #fn_len_ident(map: &HashMap<#key_ty, #val_ty>) -> usize {
                 map.len()
             }
@@ -45,6 +62,8 @@ impl HashMapAccess {
 
         let get_impl = quote_spanned! { fn_get_ident.span() =>
             #[rid::export]
+            #structs_attr
+            #enums_atrr
             fn #fn_get_ident(map: &HashMap<#key_ty, #val_ty>, key: #key_ty) -> Option<&#val_ty>  {
                 map.get(&key)
             }
@@ -57,6 +76,8 @@ impl HashMapAccess {
 
         let contains_key_impl = quote_spanned! { fn_contains_key_ident.span() =>
             #[rid::export]
+            #structs_attr
+            #enums_atrr
             fn #fn_contains_key_ident(map: &HashMap<#key_ty, #val_ty>, key: #key_ty) -> bool {
                 map.contains_key(&key)
             }
@@ -69,6 +90,8 @@ impl HashMapAccess {
 
         let keys_impl = quote_spanned! { fn_keys_ident.span() =>
             #[rid::export]
+            #structs_attr
+            #enums_atrr
             fn #fn_keys_ident(map: &HashMap<#key_ty, #val_ty>) -> Vec<&#key_ty> {
                 map.keys().collect()
             }
