@@ -7,7 +7,7 @@ use syn::Ident;
 
 use crate::{
     accesses::{
-        collection_access_tokens, AccessKind, CollectionAccessTokens,
+        collection_item_access_tokens, AccessKind, CollectionItemAccessTokens,
         RenderedAccessRust, VecAccess,
     },
     common::{abort, tokens::resolve_vec_ptr},
@@ -193,11 +193,15 @@ fn render_vec_access_item(
         ..
     } = render_return_type(outer_type, access_kind);
 
-    let CollectionAccessTokens {
+    let CollectionItemAccessTokens {
         item_return_type,
         into_return_type,
         type_alias,
-    } = collection_access_tokens(format_ident!("ptr"), item_type, access_kind);
+    } = collection_item_access_tokens(
+        format_ident!("ptr"),
+        item_type,
+        access_kind,
+    );
 
     let access_fn = quote_spanned! { fn_access_ident.span() =>
         fn #fn_access_ident(vec: #vec_arg_type, idx: usize) -> #item_return_type {

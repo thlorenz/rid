@@ -10,7 +10,7 @@ use crate::{
 
 use super::AccessKind;
 
-pub struct CollectionAccessTokens {
+pub struct CollectionItemAccessTokens {
     /// The tokens for the type that should be returned by the get item wrapper method
     pub item_return_type: TokenStream,
 
@@ -23,11 +23,11 @@ pub struct CollectionAccessTokens {
 
 /// Helper function to figure out the return type and into return type tokens for
 /// a specific collection type. Used for `Vec` get by index and `HashMap` get by key.
-pub fn collection_access_tokens(
+pub fn collection_item_access_tokens(
     ptr_ident: Ident,
     item_type: &RustType,
     access_kind: &AccessKind,
-) -> CollectionAccessTokens {
+) -> CollectionItemAccessTokens {
     // CString and str aren't FFI safe so we send the item content as a *char.
     // For consistency we do the same for Strings.
     let (item_return_type, into_return_type, type_alias) = if item_type
@@ -74,7 +74,7 @@ pub fn collection_access_tokens(
         } = render_return_type(&item_type, access_kind);
         (tokens, quote! { #ptr_ident }, type_alias)
     };
-    CollectionAccessTokens {
+    CollectionItemAccessTokens {
         item_return_type,
         into_return_type,
         type_alias,
