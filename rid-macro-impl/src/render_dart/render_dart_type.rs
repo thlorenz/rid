@@ -106,7 +106,7 @@ impl DartType {
         }
     }
 
-    pub fn render_resolved_ffi_arg(&self, slot: usize) -> String {
+    pub fn render_resolved_ffi_var(&self, var: &str) -> String {
         use DartType::*;
         match self {
             // -----------------
@@ -114,48 +114,50 @@ impl DartType {
             // -----------------
             // TODO(thlorenz): All the below also would resolve to a different type when nullable
             Int32(nullable) | Int64(nullable) if *nullable => {
-                format!("arg{}", slot)
+                format!("{}", var)
             }
-            Int32(_) | Int64(_) => format!("arg{}", slot),
+            Int32(_) | Int64(_) => format!("{var}", var = var),
             Bool(nullable) if *nullable => {
-                format!(
-                    "arg{slot} == null ? 0 : arg{slot} ? 1 : 0",
-                    slot = slot
-                )
+                format!("{var} == null ? 0 : {var} ? 1 : 0", var = var)
             }
-            Bool(_) => format!("arg{} ? 1 : 0", slot),
+            Bool(_) => format!("{var} ? 1 : 0", var = var),
 
             // -----------------
             // Strings
             // -----------------
             // TODO(thlorenz): I doubt his is correct
             String(nullable) if *nullable => format!(
-                "arg{slot}?.{toNativeInt8}()",
-                slot = slot,
+                "{var}?.{toNativeInt8}()",
+                var = var,
                 toNativeInt8 = STRING_TO_NATIVE_INT8
             ),
             String(_) => format!(
-                "arg{slot}.{toNativeInt8}()",
-                slot = slot,
+                "{var}.{toNativeInt8}()",
+                var = var,
                 toNativeInt8 = STRING_TO_NATIVE_INT8
             ),
 
             // -----------------
             // Custom
             // -----------------
-            Custom(_, _, _) => format!("arg{}", slot),
+            Custom(_, _, _) => format!("{var}", var = var),
 
             // -----------------
             // Collection Types
             // -----------------
-            Vec(_, _) => format!("arg{}", slot),
-            HashMap(_, _, _) => format!("arg{}", slot),
+            Vec(_, _) => format!("{var}", var = var),
+            HashMap(_, _, _) => format!("{var}", var = var),
 
             // -----------------
             // Invalid
             // -----------------
-            Unit => todo!("render_resolved_ffi_arg"),
+            Unit => todo!("render_resolved_ffi_var"),
         }
+    }
+
+    pub fn render_resolved_ffi_arg(&self, slot: usize) -> String {
+        let arg_name = format!("arg{}", slot);
+        self.render_resolved_ffi_var(&arg_name)
     }
 
     pub fn render_to_dart_for_snippet(&self, snip: &str) -> String {
