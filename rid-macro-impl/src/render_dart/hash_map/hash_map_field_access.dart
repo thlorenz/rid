@@ -2,7 +2,7 @@
 ///   int get length => {rid_ffi}.{fn_len_ident}(this);
 ///
 ///   bool contains({key_type} key) =>
-///       {rid_ffi}.{fn_contains_key_ident}(this, key) != 0;
+///       {rid_ffi}.rid_export_{fn_contains_key_ident}(this, key) != 0;
 ///
 ///   {val_return_type}? get({key_type} key) {
 ///     final ptr = {rid_ffi}.{fn_get_ident}(this, key);

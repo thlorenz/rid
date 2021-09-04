@@ -54,16 +54,11 @@ impl HashMapAccess {
         // HashMap::contains_key(&key)
         // -----------------
         let fn_contains_key_ident = &self.fn_contains_key_ident;
-        // TODO(thlorenz): HashMap consider non-primitive key types
+
         let contains_key_impl = quote_spanned! { fn_contains_key_ident.span() =>
-            #ffi_prelude
-            fn #fn_contains_key_ident(#arg: *const HashMap<#key_ty, #val_ty>, key: #key_ty) -> u8  {
-                #resolve_hash_map
-                if #arg.contains_key(&key) {
-                    1
-                } else {
-                    0
-                }
+            #[rid::export]
+            fn #fn_contains_key_ident(map: &HashMap<#key_ty, #val_ty>, key: #key_ty) -> bool {
+                map.contains_key(&key)
             }
         };
 
