@@ -40,13 +40,13 @@ impl HashMapAccess {
         let fn_get_ident_str_tokens: TokenStream =
             format!("\"{}\"", fn_get_ident).parse().unwrap();
 
-        // TODO(thlorenz): HashMap consider non-primitive key and/or val types
+        // TODO(thlorenz): special case for String val types
+        // see: ./accesses/collection_item_access_tokens.rs
+
         let get_impl = quote_spanned! { fn_get_ident.span() =>
-            #ffi_prelude
-            fn #fn_get_ident<'a>(#arg: *const HashMap<#key_ty, #val_ty>, key: #key_ty) -> Option<&'a #val_ty>  {
-                #resolve_hash_map
-                let item = #arg.get(&key);
-                item
+            #[rid::export]
+            fn #fn_get_ident(map: &HashMap<#key_ty, #val_ty>, key: #key_ty) -> Option<&#val_ty>  {
+                map.get(&key)
             }
         };
 
