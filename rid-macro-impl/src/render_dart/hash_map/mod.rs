@@ -14,6 +14,9 @@ impl HashMapAccess {
         let pointer_hash_map_type =
             self.hash_map_type.render_dart_field_return_type();
         let key_type = self.key_type.render_dart_field_return_type();
+        let key_ffi_arg = self
+            .key_type
+            .render_dart_resolved_ffi_var(type_infos, "key");
         let val_return_type = self.val_type.render_dart_field_return_type();
         let val_type = self.val_type.render_dart_field_return_type();
 
@@ -29,6 +32,7 @@ impl HashMapAccess {
             .replace("{hash_map_type}", &hash_map_type)
             .replace("{pointer_hash_map_type}", &pointer_hash_map_type)
             .replace("{key_type}", &key_type)
+            .replace("{key_ffi_arg}", &key_ffi_arg)
             .replace("{val_type}", &val_type)
             .replace("{val_return_type}", &val_return_type)
             .replace("{fn_len_ident}", &self.fn_len_ident.to_string())

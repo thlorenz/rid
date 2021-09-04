@@ -106,7 +106,7 @@ impl DartType {
         }
     }
 
-    pub fn render_resolved_ffi_var(&self, var: &str) -> String {
+    fn render_resolved_ffi_var(&self, var: &str) -> String {
         use DartType::*;
         match self {
             // -----------------
@@ -319,5 +319,16 @@ impl RustType {
         snip: &str,
     ) -> String {
         DartType::from(&self, type_infos).render_to_dart_for_snippet(snip)
+    }
+
+    /// Renders the provided variable which is assumed to have a plain Dart type including
+    /// conversion to FFI Dart type, i.e. `var.toNative()` for [Strings].
+    /// For all other cases it just renders the name of the `var`.
+    pub fn render_dart_resolved_ffi_var(
+        &self,
+        type_infos: &TypeInfoMap,
+        var: &str,
+    ) -> String {
+        DartType::from(&self, type_infos).render_resolved_ffi_var(var)
     }
 }
