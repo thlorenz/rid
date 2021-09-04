@@ -1,5 +1,5 @@
 /// extension Rid_HashMap_ExtOn{hash_map_type} on {pointer_hash_map_type} {
-///   int get length => {rid_ffi}.{fn_len_ident}(this);
+///   int get length => {rid_ffi}.rid_export_{fn_len_ident}(this);
 ///
 ///   bool contains({key_type} key) =>
 ///       {rid_ffi}.rid_export_{fn_contains_key_ident}(this, key) != 0;

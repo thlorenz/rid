@@ -19,17 +19,17 @@ impl HashMapAccess {
 
         let resolve_hash_map = resolve_hash_map_ptr(&arg, &key_ty, &val_ty);
 
+        // TODO(thlorenz): need #[rid::structs]/#[rid::enums] via type_infos that need to be
+        // provided
+
         // -----------------
         // HashMap::len()
         // -----------------
-        // NOTE: HashMap::len() is cheap as it just retrieves underlying `table.items` fields
-        // @see: https://github.com/rust-lang/hashbrown/blob/2eaeebbe0fe5ed1627a7ff3e31d5ae084975a1f6/src/raw/mod.rs#L923-L925
         let fn_len_ident = &self.fn_len_ident;
         let len_impl = quote_spanned! { fn_len_ident.span() =>
-            #ffi_prelude
-            fn #fn_len_ident(#arg: *const HashMap<#key_ty, #val_ty>) -> usize {
-                #resolve_hash_map
-                #arg.len()
+            #[rid::export]
+            fn #fn_len_ident(map: &HashMap<#key_ty, #val_ty>) -> usize {
+                map.len()
             }
         };
 
