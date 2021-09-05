@@ -1,4 +1,6 @@
-use rid_build::{build, BuildConfig, BuildTarget, FlutterConfig, FlutterPlatform, Project};
+use rid_build::{
+    build, BuildConfig, BuildTarget, FlutterConfig, FlutterPlatform, Project,
+};
 use std::env;
 
 fn main() {
@@ -16,9 +18,14 @@ fn main() {
         project: Project::Flutter(FlutterConfig {
             plugin_name: "plugin".to_string(),
             platforms: vec![
+                // NOTE: Remove any of the below platforms that you don't support
+
+                // Mobile
                 FlutterPlatform::ios(),
-                FlutterPlatform::macos(),
                 FlutterPlatform::android(),
+                // Desktop
+                FlutterPlatform::macos(),
+                FlutterPlatform::linux(),
             ],
         }),
         lib_name,
