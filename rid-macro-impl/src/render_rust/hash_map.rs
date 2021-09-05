@@ -20,16 +20,33 @@ impl HashMapAccess {
         let resolve_hash_map = resolve_hash_map_ptr(&arg, &key_ty, &val_ty);
 
         // -----------------
+        // Determine #[rid::structs] and #[rid::enums]
+        // -----------------
+        let structs_attr =
+            match (self.key_type.is_struct(), self.val_type.is_struct()) {
+                (true, true) => quote! { #[rid::structs(#key_ty, #val_ty)] },
+                (true, false) => quote! { #[rid::structs(#key_ty)] },
+                (false, true) => quote! { #[rid::structs(#val_ty)] },
+                (false, false) => TokenStream::new(),
+            };
+        let enums_atrr =
+            match (self.key_type.is_enum(), self.val_type.is_enum()) {
+                (true, true) => quote! { #[rid::enums(#key_ty, #val_ty)] },
+                (true, false) => quote! { #[rid::enums(#key_ty)] },
+                (false, true) => quote! { #[rid::enums(#val_ty)] },
+                (false, false) => TokenStream::new(),
+            };
+
+        // -----------------
         // HashMap::len()
         // -----------------
-        // NOTE: HashMap::len() is cheap as it just retrieves underlying `table.items` fields
-        // @see: https://github.com/rust-lang/hashbrown/blob/2eaeebbe0fe5ed1627a7ff3e31d5ae084975a1f6/src/raw/mod.rs#L923-L925
         let fn_len_ident = &self.fn_len_ident;
         let len_impl = quote_spanned! { fn_len_ident.span() =>
-            #ffi_prelude
-            fn #fn_len_ident(#arg: *const HashMap<#key_ty, #val_ty>) -> usize {
-                #resolve_hash_map
-                #arg.len()
+            #[rid::export]
+            #structs_attr
+            #enums_atrr
+            fn #fn_len_ident(map: &HashMap<#key_ty, #val_ty>) -> usize {
+                map.len()
             }
         };
 
@@ -40,13 +57,15 @@ impl HashMapAccess {
         let fn_get_ident_str_tokens: TokenStream =
             format!("\"{}\"", fn_get_ident).parse().unwrap();
 
-        // TODO(thlorenz): HashMap consider non-primitive key and/or val types
+        // TODO(thlorenz): special case for String val types
+        // see: ./accesses/collection_item_access_tokens.rs
+
         let get_impl = quote_spanned! { fn_get_ident.span() =>
-            #ffi_prelude
-            fn #fn_get_ident<'a>(#arg: *const HashMap<#key_ty, #val_ty>, key: #key_ty) -> Option<&'a #val_ty>  {
-                #resolve_hash_map
-                let item = #arg.get(&key);
-                item
+            #[rid::export]
+            #structs_attr
+            #enums_atrr
+            fn #fn_get_ident(map: &HashMap<#key_ty, #val_ty>, key: #key_ty) -> Option<&#val_ty>  {
+                map.get(&key)
             }
         };
 
@@ -54,32 +73,25 @@ impl HashMapAccess {
         // HashMap::contains_key(&key)
         // -----------------
         let fn_contains_key_ident = &self.fn_contains_key_ident;
-        // TODO(thlorenz): HashMap consider non-primitive key types
+
         let contains_key_impl = quote_spanned! { fn_contains_key_ident.span() =>
-            #ffi_prelude
-            fn #fn_contains_key_ident(#arg: *const HashMap<#key_ty, #val_ty>, key: #key_ty) -> u8  {
-                #resolve_hash_map
-                if #arg.contains_key(&key) {
-                    1
-                } else {
-                    0
-                }
+            #[rid::export]
+            #structs_attr
+            #enums_atrr
+            fn #fn_contains_key_ident(map: &HashMap<#key_ty, #val_ty>, key: #key_ty) -> bool {
+                map.contains_key(&key)
             }
         };
 
         // -----------------
         // HashMap::keys
         // -----------------
-        let type_alias = PointerTypeAlias::for_const_pointer(
-            &key_ty.to_string(),
-            &key_ty.to_token_stream(),
-            false,
-        );
-        let key_ty_alias = &type_alias.alias;
         let fn_keys_ident = &self.fn_keys_ident;
 
         let keys_impl = quote_spanned! { fn_keys_ident.span() =>
             #[rid::export]
+            #structs_attr
+            #enums_atrr
             fn #fn_keys_ident(map: &HashMap<#key_ty, #val_ty>) -> Vec<&#key_ty> {
                 map.keys().collect()
             }
@@ -91,14 +103,9 @@ impl HashMapAccess {
             #contains_key_impl
             #keys_impl
         };
-        let type_aliases = {
-            let mut map = HashMap::new();
-            map.insert(type_alias.alias.to_string(), type_alias);
-            map
-        };
         RenderedAccessRust {
             tokens,
-            type_aliases,
+            type_aliases: HashMap::new(),
         }
     }
 

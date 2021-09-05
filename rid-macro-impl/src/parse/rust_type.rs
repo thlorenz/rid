@@ -640,70 +640,87 @@ fn ident_to_kind(
         PathArguments::AngleBracketed(AngleBracketedGenericArguments {
             args,
             ..
-        }) => {
-            // For now assuming one arg
-            match &args[0] {
-                GenericArgument::Type(ty) => {
+        }) => match args.len() {
+            // -----------------
+            // Single Type Parameter
+            // -----------------
+            1 => match &args[0] {
+                GenericArgument::Type(ty) => match ident_str.as_str() {
+                    "Vec" => {
+                        let inner = resolve_rust_ty(
+                            ty,
+                            type_infos,
+                            RustTypeContext::CollectionItem,
+                        )
+                        .map(|x| Box::new(x));
+                        TypeKind::Composite(Composite::Vec, inner, None)
+                    }
+                    "Option" => {
+                        let inner = resolve_rust_ty(
+                            ty,
+                            type_infos,
+                            RustTypeContext::OptionItem,
+                        )
+                        .map(|x| Box::new(x));
+                        TypeKind::Composite(Composite::Option, inner, None)
+                    }
+                    _ => {
+                        if let Some(type_info) = type_infos.get(&ident_str) {
+                            let inner = resolve_rust_ty(
+                                ty,
+                                type_infos,
+                                RustTypeContext::CustomItem,
+                            )
+                            .map(|x| Box::new(x));
+
+                            TypeKind::Composite(
+                                Composite::Custom(
+                                    type_info.clone(),
+                                    ident_str.clone(),
+                                ),
+                                inner,
+                                None,
+                            )
+                        } else {
+                            TypeKind::Unknown
+                        }
+                    }
+                },
+                _ => TypeKind::Unknown,
+            },
+            // -----------------
+            // Two Type Parameters
+            // -----------------
+            2 => match (&args[0], &args[1])  {
+                (GenericArgument::Type(ty1), GenericArgument::Type(ty2))
+                => {
                     match ident_str.as_str() {
-                        "Vec" => {
-                            let inner = resolve_rust_ty(
-                                ty,
-                                type_infos,
-                                RustTypeContext::CollectionItem,
-                            )
-                            .map(|x| Box::new(x));
-                            TypeKind::Composite(Composite::Vec, inner, None)
-                        }
-                        "Option" => {
-                            let inner = resolve_rust_ty(
-                                ty,
-                                type_infos,
-                                RustTypeContext::OptionItem,
-                            )
-                            .map(|x| Box::new(x));
-                            TypeKind::Composite(Composite::Option, inner, None)
-                        }
                         "HashMap" => {
-                            let inner = resolve_rust_ty(
-                                ty,
+                            let inner1 = resolve_rust_ty(
+                                ty1,
                                 type_infos,
                                 RustTypeContext::CollectionItem,
                             )
                             .map(|x| Box::new(x));
-                            // TODO(thlorenz): HashMap needs two inner types
+                            let inner2 = resolve_rust_ty(
+                                ty2,
+                                type_infos,
+                                RustTypeContext::CollectionItem,
+                            )
+                            .map(|x| Box::new(x));
                             TypeKind::Composite(
                                 Composite::HashMap,
-                                inner.clone(),
-                                inner,
+                                inner1,
+                                inner2,
                             )
                         }
-                        _ => {
-                            if let Some(type_info) = type_infos.get(&ident_str)
-                            {
-                                let inner = resolve_rust_ty(
-                                    ty,
-                                    type_infos,
-                                    RustTypeContext::CustomItem,
-                                )
-                                .map(|x| Box::new(x));
-
-                                TypeKind::Composite(
-                                    Composite::Custom(
-                                        type_info.clone(),
-                                        ident_str.clone(),
-                                    ),
-                                    inner,
-                                    None,
-                                )
-                            } else {
-                                TypeKind::Unknown
-                            }
-                        }
+                        _ => todo!("Not yet handling custom angle bracketed types with {} type parameters", args.len()),
                     }
                 }
                 _ => TypeKind::Unknown,
             }
-        }
+            _ => todo!("Not yet handling angle bracketed types with more {} type parameters", args.len())
+        },
         PathArguments::Parenthesized(args) => {
             todo!(
                 "rust_type::ident_to_kind PathArguments::Parenthesized {:#?}",
@@ -712,3 +729,34 @@ fn ident_to_kind(
         }
     }
 }
+/*
+ // -----------------
+ // Two Type Parameters
+ // -----------------
+(GenericArgument::Type(ty1), GenericArgument::Type(ty2))
+    if len == 2 =>
+{
+    match ident_str.as_str() {
+        "HashMap" => {
+            let inner1 = resolve_rust_ty(
+                ty1,
+                type_infos,
+                RustTypeContext::CollectionItem,
+            )
+            .map(|x| Box::new(x));
+            let inner2 = resolve_rust_ty(
+                ty2,
+                type_infos,
+                RustTypeContext::CollectionItem,
+            )
+            .map(|x| Box::new(x));
+            TypeKind::Composite(
+                Composite::HashMap,
+                inner1,
+                inner2,
+            )
+        }
+        _ => todo!("Not yet handling custom angle bracketed types with {} type parameters", len),
+    }
+}
+*/

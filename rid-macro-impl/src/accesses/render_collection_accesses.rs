@@ -131,7 +131,10 @@ pub fn render_collection_accesses(
     } else {
         "".to_string()
     };
-    let dart_tokens: TokenStream = if dart_config.render && dart_config.tokens {
+    let dart_tokens: TokenStream = if dart_config.render
+        && dart_config.tokens
+        && !rendered_dart.is_empty()
+    {
         let dart_tokens: TokenStream = rendered_dart.parse().unwrap();
         let fn_include_dart_ident =
             format_ident!("__include_dart_for_{}", first_key);
