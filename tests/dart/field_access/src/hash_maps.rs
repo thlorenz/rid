@@ -3,6 +3,7 @@ use std::collections::HashMap;
 use rid::RidStore;
 
 #[rid::store]
+#[rid::structs(Point)]
 pub struct Store {
     // -----------------
     // Primitives key/val same type
@@ -16,6 +17,18 @@ pub struct Store {
     // -----------------
     u8_i8s: HashMap<u8, i8>,
     i64_u32s: HashMap<i64, u32>,
+
+    // -----------------
+    // Strings
+    // -----------------
+    string_u8s: HashMap<String, u8>,
+    string_points: HashMap<String, Point>,
+}
+
+#[rid::model]
+pub struct Point {
+    x: i32,
+    y: i32,
 }
 
 impl RidStore<Msg> for Store {
@@ -50,6 +63,19 @@ impl RidStore<Msg> for Store {
         i64_u32s.insert(-2_000_000_000, 2);
         i64_u32s.insert(-3_000_000_000_000, 3);
 
+        let mut string_u8s = HashMap::new();
+        string_u8s.insert(String::from("key1"), 1);
+        string_u8s.insert(String::from("key2"), 2);
+        string_u8s.insert(String::from("key3"), 3);
+
+        let mut string_points = HashMap::new();
+        string_points.insert(String::from("upper left"), Point { x: 0, y: 0 });
+        string_points
+            .insert(String::from("upper right"), Point { x: 100, y: 0 });
+        string_points
+            .insert(String::from("lower left"), Point { x: 0, y: 100 });
+        string_points
+            .insert(String::from("lower right"), Point { x: 100, y: 1000 });
         Self {
             u8s,
             u32s,
@@ -57,6 +83,8 @@ impl RidStore<Msg> for Store {
             i64s,
             u8_i8s,
             i64_u32s,
+            string_u8s,
+            string_points,
         }
     }
 

@@ -125,4 +125,44 @@ void main() {
     expect(i64_u32s[-3E12], 3, reason: 'i64_u32s get(-3E12)');
     expect(i64_u32s[5], null, reason: 'i64_u32s get(5) -> null');
   });
+
+  // -----------------
+  // String keys
+  // -----------------
+  test('field_access: HashMap<String, u8>', () {
+    final store = Store.instance;
+    final string_u8s = store.stringU8s;
+
+    expect(string_u8s.length, 3, reason: 'string_u8s len');
+    expect(string_u8s.containsKey('key1'), true,
+        reason: 'string_u8s containsKey key1 -> true');
+    expect(string_u8s.containsKey('key2'), true,
+        reason: 'string_u8s containsKey key2 -> true');
+    expect(string_u8s.containsKey('key5'), false,
+        reason: 'string_u8s containsKey key5 -> false');
+
+    expect(string_u8s['key1'], 1, reason: 'string_u8s get(key1)');
+    expect(string_u8s['key3'], 3, reason: 'string_u8s get(key3)');
+    expect(string_u8s['key5'], null, reason: 'string_u8s get(key5) -> null');
+  });
+
+  test('field_access: HashMap<String, Point>', () {
+    final store = Store.instance;
+    final string_points = store.stringPoints;
+
+    expect(string_points.length, 4, reason: 'string_points len');
+    expect(string_points.containsKey('upper left'), true,
+        reason: 'string_points containsKey upper left -> true');
+    expect(string_points.containsKey('lower right'), true,
+        reason: 'string_points containsKey lower right -> true');
+    expect(string_points.containsKey('center'), false,
+        reason: 'string_points containsKey center -> false');
+
+    expect(string_points['upper left'].toString(), 'Point{x: 0, y: 0}',
+        reason: 'string_points get(upper left)');
+    expect(string_points['upper right'].toString(), 'Point{x: 100, y: 0}',
+        reason: 'string_points get(upper right)');
+    expect(string_points['center'], null,
+        reason: 'string_points get(center) -> null');
+  });
 }
