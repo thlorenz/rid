@@ -43,6 +43,12 @@ impl EnumConfig {
                         "cannot have rid::export attribute on enums"
                     );
                 }
+                RidAttr::Rid(attr_ident, _) => {
+                    abort!(
+                        attr_ident,
+                        "cannot have rid() config attributes on enums"
+                    );
+                }
                 RidAttr::DeriveDebug(_) => debug = true,
             }
         }

@@ -661,3 +661,52 @@ mod struct_field_access_single_hash_map_u8_u8 {
         // assert_eq!(tokens.to_string().trim(), expected.to_string().trim());
     }
 }
+
+mod struct_field_access_rid_skip {
+    use crate::common::dump_tokens;
+
+    use super::*;
+
+    #[test]
+    fn single_skipped_field() {
+        let input: TokenStream = quote! {
+            #[derive(rid::Config)]
+            struct MyStruct {
+               #[rid(skip)]
+               skip_me: SystemTime
+            }
+        };
+        let tokens = render_rust_field_access(input);
+        // Renders nothing since all fields are skiped
+        let expected = TokenStream::new();
+        assert_eq!(tokens.to_string().trim(), expected.to_string().trim());
+    }
+
+    #[test]
+    fn two_fields_one_skipped() {
+        let input: TokenStream = quote! {
+            #[derive(rid::Config)]
+            struct MyStruct {
+               #[rid(skip)]
+               skip_me: SystemTime,
+               but_not_me: u32
+            }
+        };
+        let expected = quote! {
+            mod __my_struct_field_access {
+                use super::*;
+                fn rid_mystruct_but_not_me(ptr: *mut MyStruct) -> u32 {
+                    let receiver = unsafe {
+                        assert!(!ptr.is_null());
+                        let ptr: *mut MyStruct = &mut *ptr;
+                        ptr.as_mut().expect("resolve_ptr.as_mut failed")
+                    };
+                    receiver.but_not_me
+                }
+            }
+        };
+
+        let tokens = render_rust_field_access(input);
+        assert_eq!(tokens.to_string().trim(), expected.to_string().trim());
+    }
+}

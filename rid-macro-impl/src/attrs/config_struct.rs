@@ -42,6 +42,12 @@ impl StructConfig {
                         "cannot have rid::export attribute on structs"
                     );
                 }
+                RidAttr::Rid(attr_ident, _) => {
+                    abort!(
+                        attr_ident,
+                        "cannot have config rid() attributes on structs only on its fields"
+                    );
+                }
                 RidAttr::DeriveDebug(_) => debug = true,
             }
         }
