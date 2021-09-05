@@ -44,18 +44,36 @@ perl -pi -w -e "s/<package>/$APP_NAME/;" $APP_ROOT/pubspec.yaml
 
 cp $TEMPLATE_ROOT/flutter/lib/main.dart $APP_ROOT/lib/main.dart
 
-echo .DS_Store   >> $APP_ROOT/.gitignore
-echo .dart_tool/ >> $APP_ROOT/.gitignore
-echo .packages   >> $APP_ROOT/.gitignore
-echo .pub/       >> $APP_ROOT/.gitignore
-echo build/      >> $APP_ROOT/.gitignore
+# gitignore
+cp $TEMPLATE_ROOT/gitignore $APP_ROOT/.gitignore
 
-# Build all Targets and have binding files copied and setup flutter plugin to hook things up
+# Build all Targets that are most likely supported on the host OS
+# and have binding files copied and setup flutter plugin to hook things up
 $APP_ROOT/sh/bindgen
 
-$APP_ROOT/sh/android
-$APP_ROOT/sh/ios
-$APP_ROOT/sh/macos
+if [[ "$OSTYPE" == "linux-gnu"* ]]; then
+  # Linux
+  $APP_ROOT/sh/linux
+elif [[ "$OSTYPE" == "darwin"* ]]; then
+  # Mac OSX
+  $APP_ROOT/sh/ios
+  $APP_ROOT/sh/macos
+fi
+
+# Android builds are supported as long as the cargo ndk and the supporting Android sdk are
+# installed
+if command -v cargo-ndk &> /dev/null
+then
+  $APP_ROOT/sh/android
+else
+  echo "Not initializing Android build since the cargo-ndk dependency was not found."
+  echo "Install it following instructions here:"
+  echo "    https://github.com/bbqsrc/cargo-ndk"
+  echo
+  echo "Install the Android NDK following one of the below instructions:"
+  echo "    https://developers.google.com/ar/develop/c/quickstart"
+  echo "    https://mozilla.github.io/firefox-browser-architecture/experiments/2017-09-21-rust-on-android.html"
+fi
 
 cd $APP_ROOT/plugin
 flutter clean && flutter create .
@@ -63,3 +81,5 @@ rm -rf plugin.dart example test CHANGELOG.md README.md .idea
 
 cd $APP_ROOT
 flutter pub get
+
+$APP_ROOT/sh/bindgen
