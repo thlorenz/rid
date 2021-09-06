@@ -22,6 +22,10 @@ impl ParsedStruct {
         rust_config: &RenderRustAccessConfig,
         dart_config: &RenderDartAccessConfig,
     ) -> (TokenStream, String) {
+        if self.fields.is_empty() {
+            return (TokenStream::new(), String::new());
+        }
+
         let RenderRustFieldAccessResult {
             tokens: rust_tokens,
             collection_accesses,

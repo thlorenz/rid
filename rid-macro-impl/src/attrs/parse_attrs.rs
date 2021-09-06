@@ -10,16 +10,37 @@ use syn::{
 
 use crate::common::abort;
 
+const RID_CONFIG_SKIP: &str = "skip";
+const RID_CONFIGS: &[&str; 1] = &[RID_CONFIG_SKIP];
+
 #[derive(Debug, PartialEq, Clone)]
 pub enum RidAttr {
-    // rid specific
+    // -----------------
+    // Rid Specific
+    // -----------------
     Structs(Ident, Vec<syn::Ident>),
     Enums(Ident, Vec<syn::Ident>),
     Message(Ident, syn::Ident),
     Export(Ident, Option<Ident>),
 
-    // derives
+    // Rid Config Attributes
+    Rid(Ident, Vec<syn::Ident>),
+
+    // -----------------
+    // Derives
+    // -----------------
     DeriveDebug(Ident),
+}
+
+impl RidAttr {
+    pub fn has_skip(&self) -> bool {
+        match self {
+            RidAttr::Rid(_, idents) => idents
+                .iter()
+                .any(|x| x.to_string().as_str() == RID_CONFIG_SKIP),
+            _ => false,
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -159,6 +180,19 @@ fn parse_segments(
                 } else {
                     None
                 }
+            }
+            "rid" => {
+                let idents = idents_from_nested(nested);
+                for ident in &idents {
+                    if !RID_CONFIGS.contains(&ident.to_string().as_str()) {
+                        abort!(
+                            ident,
+                            "Only rid({}) are valid",
+                            RID_CONFIGS.join(", ")
+                        );
+                    }
+                }
+                Some(RidAttr::Rid(first.clone(), idents))
             }
             _ => None,
         }

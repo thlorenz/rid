@@ -127,6 +127,15 @@ pub fn enums(_attrs: TokenStream, input: TokenStream) -> TokenStream {
 }
 
 // -----------------
+// #[derive(rid::Config)]
+// -----------------
+#[proc_macro_derive(Config, attributes(rid))]
+#[proc_macro_error]
+pub fn rid_attr(_input: TokenStream) -> TokenStream {
+    TokenStream::new()
+}
+
+// -----------------
 // #[derive(rid::Display)]
 // -----------------
 #[proc_macro_derive(Display)]
