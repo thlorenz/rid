@@ -54,6 +54,8 @@ impl<'a> BindingsGenerator<'a> {
             .with_no_includes()
             .with_include("stdint.h")
             .with_parse_deps(false)
+            // Prevent wrapping to not break our simple line by line header parser
+            .with_line_length(usize::MAX)
             .generate()?;
         Ok(built)
     }
