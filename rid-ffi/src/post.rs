@@ -60,7 +60,7 @@ pub extern "C" fn rid_init_isolate(port: i64) {
             // It is very likely that the old isolate is leaking, but this is acceptable to support
             // hot restart while debugging the application
             eprintln!(
-                "[rid] WARN: reinitializing isolate. OK when hot reloading."
+                "[rid] WARN: reinitializing post isolate. OK when hot reloading."
             );
         }
         RID_ISOLATE = Some(Isolate::new(port));

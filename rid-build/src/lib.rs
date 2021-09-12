@@ -24,6 +24,7 @@ pub use project::{FlutterConfig, FlutterPlatform, Project};
 use crate::{parsed_bindings::ParsedBindings, swift_injector::SwiftInjector};
 
 static ISOLATE_BINDING: &str = include_str!("../dart/_isolate_binding.dart");
+static MESSAGE_CHANNEL: &str = include_str!("../dart/_message_channel.dart");
 static REPLY_CHANNEL: &str = include_str!("../dart/_reply_channel.dart");
 
 pub struct BuildConfig<'a> {
@@ -47,7 +48,10 @@ pub struct BuildResult {
     /// Path to Dart that binds to Rust implementation Dart Isolate provided by Rid.
     isolate_binding_dart_path: String,
 
-    /// Path to Dart that provides ResponseChannel through which Rust posts messages to Dart.
+    /// Path to Dart that provides Message through which Rid communicates messages to Dart.
+    message_channel_dart_path: String,
+
+    /// Path to Dart that provides ResponseChannel through which user's Rust code posts messages to Dart.
     reply_channel_dart_path: String,
 
     /// Path at which the Dart/Flutter app expects the generated Dart code to be and from which the
@@ -128,6 +132,8 @@ fn generate(
     let rid_generated_api_path = project.path_to_rid_dart_api(project_root);
     let isolate_binding_dart_path =
         project.path_to_isolate_binding_dart(project_root);
+    let message_channel_dart_path =
+        project.path_to_message_channel_dart(project_root);
     let reply_channel_dart_path =
         project.path_to_reply_channel_dart(project_root);
 
@@ -135,6 +141,13 @@ fn generate(
     let ffigen_binding = &format!(
         "{}",
         ffigen_generated_path.file_name().unwrap().to_string_lossy()
+    );
+    let message_channel = &format!(
+        "{}",
+        message_channel_dart_path
+            .file_name()
+            .unwrap()
+            .to_string_lossy()
     );
     let reply_channel = &format!(
         "{}",
@@ -158,6 +171,7 @@ fn generate(
         lib_name,
         target,
         ffigen_binding,
+        message_channel,
         reply_channel,
         path_to_target,
         code_sections: &parsed_bindings,
@@ -183,6 +197,10 @@ fn generate(
             "{}",
             isolate_binding_dart_path.display()
         ),
+        message_channel_dart_path: format!(
+            "{}",
+            message_channel_dart_path.display()
+        ),
         reply_channel_dart_path: format!(
             "{}",
             reply_channel_dart_path.display()
@@ -201,6 +219,7 @@ pub fn build(build_config: &BuildConfig) -> Result<BuildResult> {
         generated_dart,
         generated_dart_path,
         isolate_binding_dart_path,
+        message_channel_dart_path,
         reply_channel_dart_path,
         parsed_bindings,
         ..
@@ -209,6 +228,7 @@ pub fn build(build_config: &BuildConfig) -> Result<BuildResult> {
     // NOTE: the directory to hold the file is recursively created if it doesn't exist yet
     fs::write(generated_dart_path, generated_dart)?;
     fs::write(isolate_binding_dart_path, ISOLATE_BINDING)?;
+    fs::write(message_channel_dart_path, MESSAGE_CHANNEL)?;
     fs::write(reply_channel_dart_path, REPLY_CHANNEL)?;
 
     let host_props = HostProps::new();

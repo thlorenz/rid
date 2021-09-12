@@ -1,7 +1,9 @@
+mod message;
 mod post;
 mod resolvers;
 mod vec;
 
+pub use message::_post_message;
 pub use post::{_encode_with_id, _encode_without_id, post};
 pub use resolvers::*;
 pub use vec::*;

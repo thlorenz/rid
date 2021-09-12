@@ -98,6 +98,15 @@ impl Project {
             .to_path_buf()
     }
 
+    pub(crate) fn path_to_message_channel_dart(
+        &self,
+        project_root: &Path,
+    ) -> PathBuf {
+        self.path_to_generated_dir(project_root)
+            .join("_message_channel.dart")
+            .to_path_buf()
+    }
+
     pub(crate) fn paths_to_generated_c_bindings(
         &self,
         project_root: &Path,
