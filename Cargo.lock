@@ -4,9 +4,9 @@ version = 3
 
 [[package]]
 name = "allo-isolate"
-version = "0.1.7"
+version = "0.1.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ff09da612ca86c794c3c8f70613a3e6652b5f1313b938937b32cae80df28fdb1"
+checksum = "bc2dd9f3ef4b4bab19ace228cdeffc1748d72f3dbcff9a05b2d2a7b1b5341740"
 
 [[package]]
 name = "ansi_term"
