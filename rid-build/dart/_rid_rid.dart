@@ -11,7 +11,7 @@ class Rid {
   Rid._(dart_ffi.DynamicLibrary dl, bool isDebugMode)
       : _messageChannel = RidMsgChannel.instance(dl, isDebugMode);
 
-  get messageChannel => _messageChannel;
+  RidMsgChannel get messageChannel => _messageChannel;
 }
 
 final rid = Rid._(_dl, _isDebugMode);
