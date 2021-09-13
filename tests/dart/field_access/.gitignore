@@ -2,3 +2,5 @@
 .packages
 lib/generated/
 target/
+Cargo.lock
+pubspec.lock
