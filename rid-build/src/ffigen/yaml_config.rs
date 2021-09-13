@@ -16,7 +16,6 @@ const IGNORE_FOR_FILE: [&str; 5] = [
 pub struct YamlConfig {
     llvm_paths: Vec<&'static str>,
     output: String,
-    preamble: String,
     structs_to_prefix_raw: Vec<String>,
     header_entry_point: String,
 }
@@ -35,8 +34,10 @@ impl YamlConfig {
         );
         Self {
             llvm_paths: host_props.llvm_paths.clone(),
-            output: p.path_to_generated_ffigen(project_root).to_string_lossy().to_string(),
-            preamble: "// ignore_for_file: non_constant_identifier_names, unused_import, unused_field, unused_element, camel_case_types".to_string(),
+            output: p
+                .path_to_generated_ffigen(project_root)
+                .to_string_lossy()
+                .to_string(),
             structs_to_prefix_raw: structs_to_prefix_raw.into(),
             header_entry_point: c_bindings[0].to_string_lossy().to_string(),
         }
