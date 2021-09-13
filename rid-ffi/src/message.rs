@@ -46,8 +46,7 @@ impl MsgIsolate {
     }
 }
 
-#[no_mangle]
-pub extern "C" fn rid_init_msg_isolate(port: i64) {
+pub fn _init_msg_isolate(port: i64) {
     unsafe {
         if RID_MSG_ISOLATE.is_some() {
             // It is very likely that the old isolate is leaking, but this is acceptable to support

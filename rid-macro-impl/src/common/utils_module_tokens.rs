@@ -20,11 +20,15 @@ pub fn utils_module_tokens() -> TokenStream {
         let cstring_struct_declaration = cstring_struct_declaration();
         let str_struct_declaration = str_struct_declaration();
         let cstring_free = cstring_free();
+        let init_msg_isolate = init_msg_isolate();
+        let init_reply_isolate = init_reply_isolate();
         quote! {
             mod __rid_utils_module {
                 #str_struct_declaration
                 #cstring_struct_declaration
                 #cstring_free
+                #init_msg_isolate
+                #init_reply_isolate
             }
         }
     } else {
@@ -65,5 +69,26 @@ fn str_struct_declaration() -> TokenStream {
     quote! {
         #[no_mangle]
         pub struct str {}
+    }
+}
+
+// -----------------
+// Isolates
+// -----------------
+fn init_msg_isolate() -> TokenStream {
+    quote! {
+        #[no_mangle]
+        pub extern "C" fn rid_init_msg_isolate(port: i64) {
+            rid::_init_msg_isolate(port)
+        }
+    }
+}
+
+fn init_reply_isolate() -> TokenStream {
+    quote! {
+        #[no_mangle]
+        pub extern "C" fn rid_init_reply_isolate(port: i64) {
+            rid::_init_reply_isolate(port)
+        }
     }
 }

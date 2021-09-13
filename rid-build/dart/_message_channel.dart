@@ -4,7 +4,7 @@ import 'dart:isolate';
 
 import '_isolate_binding.dart' show initIsolate;
 
-const String MSG_SEPARATOR = '^';
+const String _MSG_SEPARATOR = '^';
 
 enum RidMsgType { Severe, Error, LogWarn, LogInfo, LogDebug }
 
@@ -83,12 +83,12 @@ class RidMsgChannel {
   }
 
   RidMsg _decode(String data) {
-    int sepIdx = data.indexOf(MSG_SEPARATOR);
+    int sepIdx = data.indexOf(_MSG_SEPARATOR);
     final type = data.substring(0, sepIdx);
     final msgType = _ridMsgTypeFromString(type);
 
     final msg = data.substring(sepIdx + 1);
-    sepIdx = msg.indexOf(MSG_SEPARATOR);
+    sepIdx = msg.indexOf(_MSG_SEPARATOR);
     if (sepIdx < 0) {
       // No details
       return RidMsg._(msgType, msg, null);
