@@ -3,8 +3,7 @@ import 'package:test/test.dart';
 import '../lib/generated/rid_api.dart';
 
 void main() {
-  RID_DEBUG_LOCK = null;
-  RID_DEBUG_REPLY = null;
+  rid.debugLock = null;
 
   // -----------------
   // Primitives key/val same type

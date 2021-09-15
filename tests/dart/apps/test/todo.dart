@@ -3,8 +3,8 @@ import 'package:tests_apps/generated/rid_api.dart';
 
 void main() {
   test('field_access: enums', () async {
-    RID_DEBUG_LOCK = null;
-    RID_DEBUG_REPLY = null;
+    rid.debugLock = null;
+    rid.debugReply = null;
 
     final store = Store.instance;
     await store.msgAddTodo("Hello");
