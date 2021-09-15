@@ -55,7 +55,7 @@ pub fn render_store_module(store_ident: &syn::Ident) -> TokenStream {
 /// ```dart
 /// int _locks = 0;
 ///
-/// void Function(bool, int, {{String? request}})? {RID_DEBUG_LOCK} = (bool locking, int locks, {{String? request}}) {{
+/// void Function(bool, int, {{String? request}})? _RID_DEBUG_LOCK = (bool locking, int locks, {{String? request}}) {{
 ///   if (locking) {{
 ///     if (locks == 1) print('🔐 {{');
 ///     if (request != null) print(' $request');
@@ -63,6 +63,12 @@ pub fn render_store_module(store_ident: &syn::Ident) -> TokenStream {
 ///     if (locks == 0) print('}} 🔓');
 ///   }}
 /// }};
+///
+/// extension DebugLockConfig on Rid {{
+///   void Function(bool, int, {{String? request}})? get debugLock => _RID_DEBUG_LOCK;
+///   void set debugLock(void Function(bool, int, {{String? request}})? val) =>
+///       _RID_DEBUG_LOCK = val;
+/// }}
 ///
 /// void ridStoreLock({{String? request}}) {{
 ///   if (_locks == 0) {rid_ffi}.rid_store_lock();

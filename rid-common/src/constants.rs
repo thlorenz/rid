@@ -29,7 +29,7 @@ pub const STRING_REF_ACCESS: &str = "rid_access_string_ref";
 pub const UTILS_MODULE: &str = "__rid_utils_module";
 
 /// Function set to debug rid store locking
-pub const RID_DEBUG_LOCK: &str = "RID_DEBUG_LOCK";
+pub const RID_DEBUG_LOCK: &str = "rid.debugLock";
 
 /// Function set to debug posted replies
 pub const RID_DEBUG_REPLY: &str = "rid.debugReply";
