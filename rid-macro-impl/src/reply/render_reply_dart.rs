@@ -1,4 +1,5 @@
 use proc_macro2::TokenStream;
+use rid_common::RID_DEBUG_REPLY;
 use syn::{punctuated::Punctuated, ItemEnum, Token, Variant};
 
 use crate::{
@@ -42,7 +43,7 @@ pub fn render_reply_dart(
 {comment}   }}
 {comment} }}
 {comment} 
-{comment} void Function({PostedReply})? RID_DEBUG_REPLY = (PostedReply reply) {{
+{comment} void Function({PostedReply})? {RID_DEBUG_REPLY} = (PostedReply reply) {{
 {comment}   print('$reply');
 {comment} }};
 {comment}
@@ -62,6 +63,7 @@ pub fn render_reply_dart(
 {comment} ```
     "###,
         PostedReply = posted_reply_type,
+        RID_DEBUG_REPLY = RID_DEBUG_REPLY,
         comment = comment,
         enum = dart_enum_name,
         class_name = class_name,
