@@ -4,7 +4,7 @@ import 'dart:async';
 import 'log.dart';
 
 messages() async {
-  RID_DEBUG_REPLY = (reply) => log.d('$reply');
+  rid.debugReply = (reply) => log.d('$reply');
 
   final store = Store.instance;
   await store.msgAddTodo("Hello");

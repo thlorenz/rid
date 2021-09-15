@@ -29,13 +29,19 @@ pub const STRING_REF_ACCESS: &str = "rid_access_string_ref";
 pub const UTILS_MODULE: &str = "__rid_utils_module";
 
 /// Function set to debug rid store locking
-pub const RID_DEBUG_LOCK: &str = "RID_DEBUG_LOCK";
+pub const RID_DEBUG_LOCK: &str = "rid.debugLock";
 
 /// Function set to debug posted replies
-pub const RID_DEBUG_REPLY: &str = "RID_DEBUG_REPLY";
+pub const RID_DEBUG_REPLY: &str = "rid.debugReply";
 
-/// Duration set to specify default message timeout
-pub const RID_MSG_TIMEOUT: &str = "RID_MSG_TIMEOUT";
+/// Duration set to specify default reply timeout
+pub const RID_MSG_TIMEOUT: &str = "rid.replyTimeout";
+
+/// Access to reply channel user facing API
+pub const RID_REPLY_CHANNEL: &str = "rid.replyChannel";
+
+/// Access to internal reply channel API
+pub const _RID_REPLY_CHANNEL: &str = "_replyChannel";
 
 /// Dart method name to create the Rust store
 pub const RID_CREATE_STORE: &str = "_createStore";

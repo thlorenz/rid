@@ -3,6 +3,7 @@ import 'package:test/test.dart';
 import '../lib/generated/rid_api.dart';
 
 void main() {
+  rid.debugLock = null;
   final store = Store.instance;
 
   test('export: Vec<&Todo>', () {

@@ -4,6 +4,7 @@ import '../lib/generated/rid_api.dart';
 
 void main() {
   final store = Store.instance;
+  rid.debugLock = null;
 
   test('field_access: Vec<struct>', () {
     expect(store.raw.todos.length, 2, reason: 'raw todos len');

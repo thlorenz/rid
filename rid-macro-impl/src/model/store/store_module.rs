@@ -10,7 +10,7 @@ use crate::{
 };
 use rid_common::{
     DART_FFI, FFI_GEN_BIND, RID_CREATE_STORE, RID_DEBUG_LOCK, RID_DEBUG_REPLY,
-    RID_FFI, RID_MSG_TIMEOUT,
+    RID_FFI, RID_MSG_TIMEOUT, _RID_REPLY_CHANNEL,
 };
 pub fn render_store_module(store_ident: &syn::Ident) -> TokenStream {
     if &store_ident.to_string() != "Store" {
@@ -38,11 +38,12 @@ pub fn render_store_module(store_ident: &syn::Ident) -> TokenStream {
 ///   /// Disposes the store and closes the Rust reply channel in order to allow the app
 ///   /// to exit properly. This needs to be called when exiting a Dart application.
 ///   Future<void> dispose() {{
-///     return replyChannel.dispose();
+///     return {_RID_REPLY_CHANNEL}.dispose();
 ///   }}
 /// }}
 /// ```
     "###,
+        _RID_REPLY_CHANNEL = _RID_REPLY_CHANNEL,
         dart_ffi = DART_FFI,
         ffigen_bind = FFI_GEN_BIND,
         RawStore = raw_store_ident
@@ -55,7 +56,7 @@ pub fn render_store_module(store_ident: &syn::Ident) -> TokenStream {
 /// ```dart
 /// int _locks = 0;
 ///
-/// void Function(bool, int, {{String? request}})? RID_DEBUG_LOCK = (bool locking, int locks, {{String? request}}) {{
+/// void Function(bool, int, {{String? request}})? _RID_DEBUG_LOCK = (bool locking, int locks, {{String? request}}) {{
 ///   if (locking) {{
 ///     if (locks == 1) print('🔐 {{');
 ///     if (request != null) print(' $request');
@@ -64,19 +65,26 @@ pub fn render_store_module(store_ident: &syn::Ident) -> TokenStream {
 ///   }}
 /// }};
 ///
+/// extension DebugLockConfig on Rid {{
+///   void Function(bool, int, {{String? request}})? get debugLock => _RID_DEBUG_LOCK;
+///   void set debugLock(void Function(bool, int, {{String? request}})? val) =>
+///       _RID_DEBUG_LOCK = val;
+/// }}
+///
 /// void ridStoreLock({{String? request}}) {{
 ///   if (_locks == 0) {rid_ffi}.rid_store_lock();
 ///   _locks++;
-///   if (RID_DEBUG_LOCK != null) RID_DEBUG_LOCK!(true, _locks, request: request);
+///   if ({RID_DEBUG_LOCK} != null) {RID_DEBUG_LOCK}!(true, _locks, request: request);
 /// }}
 ///
 /// void ridStoreUnlock() {{
 ///   _locks--;
-///   if (RID_DEBUG_LOCK != null) RID_DEBUG_LOCK!(false, _locks);
+///   if ({RID_DEBUG_LOCK} != null) {RID_DEBUG_LOCK}!(false, _locks);
 ///   if (_locks == 0) {rid_ffi}.rid_store_unlock();
 /// }}
 /// ```
 "###,
+        RID_DEBUG_LOCK = RID_DEBUG_LOCK,
         rid_ffi = RID_FFI,
     )
     .parse()
@@ -86,9 +94,9 @@ pub fn render_store_module(store_ident: &syn::Ident) -> TokenStream {
         r###"
 /// ```dart
 /// void _initRid() {{
-///   print('Set {rid_debug_lock} to change if/how locking the rid store is logged');
-///   print('Set {rid_debug_reply} to change if/how posted replies are logged');
-///   print('Set {rid_msg_timeout} to change the default for if/when messages without reply time out');
+///   print('Set {RID_DEBUG_LOCK} to change if/how locking the rid store is logged');
+///   print('Set {RID_DEBUG_REPLY} to change if/how posted replies are logged');
+///   print('Set {RID_MSG_TIMEOUT} to change the default for if/when messages without reply time out');
 /// }}
 ///
 /// {dart_ffi}.Pointer<{ffigen_bind}.{RawStore}> {createStore}() {{
@@ -98,9 +106,9 @@ pub fn render_store_module(store_ident: &syn::Ident) -> TokenStream {
 /// ```
 "###, 
     RawStore = raw_store_ident,
-    rid_debug_lock = RID_DEBUG_LOCK,
-    rid_debug_reply = RID_DEBUG_REPLY,
-    rid_msg_timeout = RID_MSG_TIMEOUT,
+    RID_DEBUG_LOCK = RID_DEBUG_LOCK,
+    RID_DEBUG_REPLY = RID_DEBUG_REPLY,
+    RID_MSG_TIMEOUT = RID_MSG_TIMEOUT,
     createStore = RID_CREATE_STORE,
     rid_ffi = RID_FFI,
     ffigen_bind = FFI_GEN_BIND,

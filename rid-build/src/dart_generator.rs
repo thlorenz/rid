@@ -58,7 +58,7 @@ fn dart_ffi_reexports() -> String {
 
 fn message_channel_reexports(message_channel: &str) -> String {
     format!(
-        "export '{message_channel}' show RidMsgChannel, RidMsg, RidMsgType;\n",
+        "export '{message_channel}' show RidMessageChannel, RidMessage, RidMessageType;\n",
         message_channel = message_channel
     )
 }
