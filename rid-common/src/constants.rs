@@ -35,7 +35,7 @@ pub const RID_DEBUG_LOCK: &str = "rid.debugLock";
 pub const RID_DEBUG_REPLY: &str = "rid.debugReply";
 
 /// Duration set to specify default message timeout
-pub const RID_MSG_TIMEOUT: &str = "RID_MSG_TIMEOUT";
+pub const RID_MSG_TIMEOUT: &str = "rid.msgTimeout";
 
 /// Dart method name to create the Rust store
 pub const RID_CREATE_STORE: &str = "_createStore";

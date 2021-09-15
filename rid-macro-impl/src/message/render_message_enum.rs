@@ -229,8 +229,6 @@ impl ParsedMessageEnum {
         } else {
             format!(
                 r###"{comment}
-{comment} final Duration? RID_MSG_TIMEOUT = const Duration(milliseconds: 200);
-{comment} 
 {comment} Future<{class_name}> _replyWithTimeout(
 {comment}   Future<{class_name}> reply,
 {comment}   String msgCall,
