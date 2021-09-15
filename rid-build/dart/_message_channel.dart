@@ -40,7 +40,7 @@ class RidMessage {
   @override
   String toString() {
     final detailsString = details == null ? '' : ', details: "$details"';
-    return 'RidMsg{ type: $type, message: "$message"$detailsString }';
+    return 'RidMessage{ type: $type, message: "$message"$detailsString }';
   }
 
   @override
