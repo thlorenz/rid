@@ -34,8 +34,8 @@ pub const RID_DEBUG_LOCK: &str = "rid.debugLock";
 /// Function set to debug posted replies
 pub const RID_DEBUG_REPLY: &str = "rid.debugReply";
 
-/// Duration set to specify default message timeout
-pub const RID_MSG_TIMEOUT: &str = "rid.msgTimeout";
+/// Duration set to specify default reply timeout
+pub const RID_MSG_TIMEOUT: &str = "rid.replyTimeout";
 
 /// Access to reply channel user facing API
 pub const RID_REPLY_CHANNEL: &str = "rid.replyChannel";

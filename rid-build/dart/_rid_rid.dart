@@ -8,11 +8,11 @@ final dart_ffi.DynamicLibrary _dl = _open();
 //
 class Rid {
   final RidMessageChannelInternal _messageChannel;
-  Duration? msgTimeout;
+  Duration? replyTimeout;
 
   Rid._(dart_ffi.DynamicLibrary dl, bool isDebugMode)
       : _messageChannel = RidMessageChannelInternal.instance(dl, isDebugMode),
-        msgTimeout = const Duration(milliseconds: 200);
+        replyTimeout = const Duration(milliseconds: 200);
 
   RidMessageChannel get messageChannel => _messageChannel;
 }
