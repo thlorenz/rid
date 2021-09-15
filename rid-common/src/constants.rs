@@ -37,6 +37,12 @@ pub const RID_DEBUG_REPLY: &str = "rid.debugReply";
 /// Duration set to specify default message timeout
 pub const RID_MSG_TIMEOUT: &str = "rid.msgTimeout";
 
+/// Access to reply channel user facing API
+pub const RID_REPLY_CHANNEL: &str = "rid.replyChannel";
+
+/// Access to internal reply channel API
+pub const _RID_REPLY_CHANNEL: &str = "_replyChannel";
+
 /// Dart method name to create the Rust store
 pub const RID_CREATE_STORE: &str = "_createStore";
 

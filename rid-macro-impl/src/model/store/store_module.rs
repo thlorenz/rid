@@ -10,7 +10,7 @@ use crate::{
 };
 use rid_common::{
     DART_FFI, FFI_GEN_BIND, RID_CREATE_STORE, RID_DEBUG_LOCK, RID_DEBUG_REPLY,
-    RID_FFI, RID_MSG_TIMEOUT,
+    RID_FFI, RID_MSG_TIMEOUT, _RID_REPLY_CHANNEL,
 };
 pub fn render_store_module(store_ident: &syn::Ident) -> TokenStream {
     if &store_ident.to_string() != "Store" {
@@ -38,11 +38,12 @@ pub fn render_store_module(store_ident: &syn::Ident) -> TokenStream {
 ///   /// Disposes the store and closes the Rust reply channel in order to allow the app
 ///   /// to exit properly. This needs to be called when exiting a Dart application.
 ///   Future<void> dispose() {{
-///     return replyChannel.dispose();
+///     return {_RID_REPLY_CHANNEL}.dispose();
 ///   }}
 /// }}
 /// ```
     "###,
+        _RID_REPLY_CHANNEL = _RID_REPLY_CHANNEL,
         dart_ffi = DART_FFI,
         ffigen_bind = FFI_GEN_BIND,
         RawStore = raw_store_ident

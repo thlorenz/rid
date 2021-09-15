@@ -1,5 +1,5 @@
 use proc_macro2::TokenStream;
-use rid_common::RID_DEBUG_REPLY;
+use rid_common::{RID_DEBUG_REPLY, _RID_REPLY_CHANNEL};
 use syn::{punctuated::Punctuated, ItemEnum, Token, Variant};
 
 use crate::{
@@ -65,10 +65,15 @@ pub fn render_reply_dart(
 {comment}   return {class_name}._(type, reqId, data);
 {comment} }}
 {comment} 
-{comment} final ReplyChannel<{class_name}> replyChannel = ReplyChannel.instance(_dl, decode, _isDebugMode);
+{comment} final ReplyChannelInternal<{class_name}> _replyChannel = ReplyChannelInternal.instance(_dl, decode, _isDebugMode);
+{comment}
+{comment} extension ExposeReplyChannel on Rid {{
+{comment}   ReplyChannel<{PostedReply}> get replyChannel => {_RID_REPLY_CHANNEL};
+{comment} }}
 {comment} ```
     "###,
         PostedReply = posted_reply_type,
+        _RID_REPLY_CHANNEL = _RID_REPLY_CHANNEL,
         comment = comment,
         enum = dart_enum_name,
         class_name = class_name,
