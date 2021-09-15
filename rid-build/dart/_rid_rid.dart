@@ -7,14 +7,14 @@ final dart_ffi.DynamicLibrary _dl = _open();
 // Expose a rid instance which initializes and provides access to various features facilitating Dart/Rust interaction
 //
 class Rid {
-  final RidMsgChannel _messageChannel;
+  final RidMessageChannelInternal _messageChannel;
   Duration? msgTimeout;
 
   Rid._(dart_ffi.DynamicLibrary dl, bool isDebugMode)
-      : _messageChannel = RidMsgChannel.instance(dl, isDebugMode),
+      : _messageChannel = RidMessageChannelInternal.instance(dl, isDebugMode),
         msgTimeout = const Duration(milliseconds: 200);
 
-  RidMsgChannel get messageChannel => _messageChannel;
+  RidMessageChannel get messageChannel => _messageChannel;
 }
 
 final rid = Rid._(_dl, _isDebugMode);
