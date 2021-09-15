@@ -65,10 +65,10 @@ pub fn render_reply_dart(
 {comment}   return {class_name}._(type, reqId, data);
 {comment} }}
 {comment} 
-{comment} final ReplyChannelInternal<{class_name}> _replyChannel = ReplyChannelInternal.instance(_dl, decode, _isDebugMode);
+{comment} final RidReplyChannelInternal<{class_name}> _replyChannel = RidReplyChannelInternal.instance(_dl, decode, _isDebugMode);
 {comment}
-{comment} extension ExposeReplyChannel on Rid {{
-{comment}   ReplyChannel<{PostedReply}> get replyChannel => {_RID_REPLY_CHANNEL};
+{comment} extension ExposeRidReplyChannel on Rid {{
+{comment}   RidReplyChannel<{PostedReply}> get replyChannel => {_RID_REPLY_CHANNEL};
 {comment} }}
 {comment} ```
     "###,

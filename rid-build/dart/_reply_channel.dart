@@ -12,13 +12,13 @@ abstract class IReply {
 
 typedef Decode<TReply> = TReply Function(int packedBase, String? data);
 
-abstract class ReplyChannel<TReply extends IReply> {
+abstract class RidReplyChannel<TReply extends IReply> {
   Stream<TReply> get stream;
 }
 
 // TODO: error handling (could be part of Post data)
-class ReplyChannelInternal<TReply extends IReply>
-    implements ReplyChannel<TReply> {
+class RidReplyChannelInternal<TReply extends IReply>
+    implements RidReplyChannel<TReply> {
   final _zone = Zone.current;
   final StreamController<TReply> _sink;
   final Decode<TReply> _decode;
@@ -27,7 +27,7 @@ class ReplyChannelInternal<TReply extends IReply>
   late final _zonedAdd;
   int _lastReqId = 0;
 
-  ReplyChannelInternal._(this._dl, this._decode, bool isDebugMode)
+  RidReplyChannelInternal._(this._dl, this._decode, bool isDebugMode)
       : _sink = StreamController.broadcast() {
     _receivePort = RawReceivePort(_onReceivedReply, 'rid::reply_channel::port');
     initIsolate(this._dl, 'rid_init_reply_isolate',
@@ -82,7 +82,7 @@ class ReplyChannelInternal<TReply extends IReply>
   }
 
   static bool _initialized = false;
-  static ReplyChannelInternal<TReply> instance<TReply extends IReply>(
+  static RidReplyChannelInternal<TReply> instance<TReply extends IReply>(
     DynamicLibrary dl,
     Decode<TReply> decode,
     bool isDebugMode,
@@ -92,6 +92,6 @@ class ReplyChannelInternal<TReply extends IReply>
           "The reply channel can only be initialized once unless running in debug mode");
     }
     _initialized = true;
-    return ReplyChannelInternal<TReply>._(dl, decode, isDebugMode);
+    return RidReplyChannelInternal<TReply>._(dl, decode, isDebugMode);
   }
 }
