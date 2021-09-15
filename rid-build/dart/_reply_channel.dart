@@ -25,7 +25,8 @@ class ReplyChannel<TReply extends IReply> {
   ReplyChannel._(this._dl, this._decode, bool isDebugMode)
       : _sink = StreamController.broadcast() {
     _receivePort = RawReceivePort(_onReceivedReply, 'rid::reply_channel::port');
-    initIsolate(this._dl, _receivePort.sendPort.nativePort, isDebugMode);
+    initIsolate(this._dl, 'rid_init_reply_isolate',
+        _receivePort.sendPort.nativePort, isDebugMode);
     _zonedAdd = _zone.registerUnaryCallback(_add);
   }
 
