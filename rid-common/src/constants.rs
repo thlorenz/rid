@@ -32,7 +32,7 @@ pub const UTILS_MODULE: &str = "__rid_utils_module";
 pub const RID_DEBUG_LOCK: &str = "RID_DEBUG_LOCK";
 
 /// Function set to debug posted replies
-pub const RID_DEBUG_REPLY: &str = "RID_DEBUG_REPLY";
+pub const RID_DEBUG_REPLY: &str = "rid.debugReply";
 
 /// Duration set to specify default message timeout
 pub const RID_MSG_TIMEOUT: &str = "RID_MSG_TIMEOUT";

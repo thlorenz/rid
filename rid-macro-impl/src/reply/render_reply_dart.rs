@@ -43,9 +43,15 @@ pub fn render_reply_dart(
 {comment}   }}
 {comment} }}
 {comment} 
-{comment} void Function({PostedReply})? {RID_DEBUG_REPLY} = (PostedReply reply) {{
+{comment} void Function({PostedReply})? _RID_DEBUG_REPLY = ({PostedReply} reply) {{
 {comment}   print('$reply');
 {comment} }};
+{comment}
+{comment}
+{comment} extension PostedReplyConfig on Rid {{
+{comment}   void Function({PostedReply})? get debugReply => _RID_DEBUG_REPLY;
+{comment}   void set debugReply(void Function({PostedReply})? val) => _RID_DEBUG_REPLY = val;
+{comment} }}
 {comment}
 {comment} const int _TYPE_MASK= 0x000000000000ffff;
 {comment} const int _I64_MIN = -9223372036854775808;
@@ -63,7 +69,6 @@ pub fn render_reply_dart(
 {comment} ```
     "###,
         PostedReply = posted_reply_type,
-        RID_DEBUG_REPLY = RID_DEBUG_REPLY,
         comment = comment,
         enum = dart_enum_name,
         class_name = class_name,
