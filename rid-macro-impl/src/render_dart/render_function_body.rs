@@ -35,7 +35,7 @@ impl RustType {
         };
         let params = args
             .iter()
-            .map(DartArg::render_parameter)
+            .map(DartArg::render_raw_parameter)
             .collect::<Vec<String>>()
             .join(", ");
 

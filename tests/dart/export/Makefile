@@ -3,6 +3,7 @@ test-all:
 	$(MAKE) test TEST=strings
 	$(MAKE) test TEST=enums
 	$(MAKE) test TEST=vecs
+	$(MAKE) test TEST=args_strings
 # 	$(MAKE) test TEST=structs
 
 test: ./.dart_tool/
