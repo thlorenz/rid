@@ -29,6 +29,10 @@ name = "vecs"
 crate-type = ["cdylib"]
 path = "src/vecs.rs"
 
+[[example]]
+name = "args_strings"
+crate-type = ["cdylib"]
+path = "src/args_strings.rs"
 
 [dependencies]
 rid = { path = "../../../" }
