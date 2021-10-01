@@ -6,7 +6,15 @@ import '_isolate_binding.dart' show initIsolate;
 
 const String _MSG_SEPARATOR = '^';
 
-enum RidMessageType { Severe, Error, LogWarn, LogInfo, LogDebug }
+enum RidMessageType {
+  Severe,
+  Error,
+  LogWarn,
+  LogInfo,
+  LogDebug,
+  MsgInfo,
+  MsgWarn
+}
 
 RidMessageType _ridMsgTypeFromString(String s) {
   switch (s.toLowerCase()) {
@@ -20,6 +28,10 @@ RidMessageType _ridMsgTypeFromString(String s) {
       return RidMessageType.LogInfo;
     case "log_debug":
       return RidMessageType.LogDebug;
+    case "msg_warn":
+      return RidMessageType.MsgWarn;
+    case "msg_info":
+      return RidMessageType.MsgInfo;
     default:
       throw ArgumentError.value(s);
   }
