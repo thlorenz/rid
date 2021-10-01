@@ -135,3 +135,30 @@ macro_rules! severe {
         rid::_post_message(format!("err_severe^{:?}^{:?}", $msg, $details));
     }};
 }
+
+// -----------------
+// User Messages
+// -----------------
+#[macro_export]
+macro_rules! msg_warn {
+    ($($arg:tt)*) => {{
+        let res = format!($($arg)*);
+
+        #[cfg(test)]
+        eprintln!("MSGW: {}", res);
+        #[cfg(not(test))]
+        rid::_post_message(format!("msg_warn^{}", res));
+    }}
+}
+
+#[macro_export]
+macro_rules! msg_info {
+    ($($arg:tt)*) => {{
+        let res = format!($($arg)*);
+
+        #[cfg(test)]
+        eprintln!("MSGI: {}", res);
+        #[cfg(not(test))]
+        rid::_post_message(format!("msg_info^{}", res));
+    }}
+}
