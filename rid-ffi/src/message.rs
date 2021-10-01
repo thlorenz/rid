@@ -70,12 +70,11 @@ pub fn _post_message(msg: impl ::allo_isolate::IntoDart) {
 macro_rules! log_warn {
     ($($arg:tt)*) => {{
         let res = format!($($arg)*);
-        let res = format!("log_warn^{}", res);
 
         #[cfg(test)]
-        eprintln!("{}", res);
+        eprintln!("WARN: {}", res);
         #[cfg(not(test))]
-        rid::_post_message(res);
+        rid::_post_message(format!("log_warn^{}", res));
     }}
 }
 
@@ -83,12 +82,11 @@ macro_rules! log_warn {
 macro_rules! log_info {
     ($($arg:tt)*) => {{
         let res = format!($($arg)*);
-        let res = format!("log_info^{}", res);
 
         #[cfg(test)]
-        eprintln!("{}", res);
+        eprintln!("INFO: {}", res);
         #[cfg(not(test))]
-        rid::_post_message(res);
+        rid::_post_message(format!("log_info^{}", res));
     }}
 }
 
@@ -96,12 +94,11 @@ macro_rules! log_info {
 macro_rules! log_debug {
     ($($arg:tt)*) => {{
         let res = format!($($arg)*);
-        let res = format!("log_debug^{}", res);
 
         #[cfg(test)]
-        eprintln!("{}", res);
+        eprintln!("DEBG: {}", res);
         #[cfg(not(test))]
-        rid::_post_message(res);
+        rid::_post_message(format!("log_debug^{}", res));
     }}
 }
 // -----------------
@@ -110,39 +107,31 @@ macro_rules! log_debug {
 #[macro_export]
 macro_rules! error {
     ($msg:expr) => {{
-        let msg_res = format!("err_error^{:?}", $msg);
-
         #[cfg(test)]
-        eprintln!("{}", msg_res);
+        eprintln!("ERR:  {:?}", $msg);
         #[cfg(not(test))]
-        rid::_post_message(msg_res);
+        rid::_post_message(format!("err_error^{:?}", $msg));
     }};
     ($msg:expr, $details:expr) => {{
-        let msg_res = format!("err_error^{:?}^{:?}", $msg, $details);
-
         #[cfg(test)]
-        eprintln!("{}", msg_res);
+        eprintln!("ERR:  {:?} {:?}", $msg, $details);
         #[cfg(not(test))]
-        rid::_post_message(msg_res);
+        rid::_post_message(format!("err_error^{:?}^{:?}", $msg, $details));
     }};
 }
 
 #[macro_export]
 macro_rules! severe {
     ($msg:expr) => {{
-        let msg_res = format!("err_severe^{:?}", $msg);
-
         #[cfg(test)]
-        eprintln!("{}", msg_res);
+        eprintln!("ERR!: {:?}", $msg);
         #[cfg(not(test))]
-        rid::_post_message(msg_res);
+        rid::_post_message(format!("err_severe^{:?}", $msg));
     }};
     ($msg:expr, $details:expr) => {{
-        let msg_res = format!("err_severe^{:?}^{:?}", $msg, $details);
-
         #[cfg(test)]
-        eprintln!("{}", msg_res);
+        eprintln!("ERR!: {:?} {:?}", $msg, $details);
         #[cfg(not(test))]
-        rid::_post_message(msg_res);
+        rid::_post_message(format!("err_severe^{:?}^{:?}", $msg, $details));
     }};
 }
