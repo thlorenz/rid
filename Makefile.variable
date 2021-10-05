@@ -19,3 +19,9 @@ else
 		endif
 	endif
 endif
+
+# Prefix for setting environment variables on Windows.
+# Usage: $(SET_PREFIX) VAR=value
+ifeq ($(OS),Windows_NT)
+	SET_PREFIX := set
+endif
