@@ -1,4 +1,6 @@
-test-all: 
+include ../../../Makefile.variable
+
+test-all:
 	$(MAKE) test TEST=strings
 	$(MAKE) test TEST=primitives
 	$(MAKE) test TEST=structs
@@ -15,6 +17,6 @@ expand:
 	@cargo expand --example $(TEST) 
 
 ./.dart_tool/:
-	pub get
+	$(PUB_PREFIX) pub get
 
 .PHONY: test-all test expand

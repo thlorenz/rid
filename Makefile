@@ -1,4 +1,4 @@
-ROOT:=$(dir $(realpath $(firstword $(MAKEFILE_LIST))))
+include ./Makefile.variable
 
 test: test_rust test_integration
 

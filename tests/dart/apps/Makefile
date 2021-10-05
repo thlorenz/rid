@@ -1,3 +1,5 @@
+include ../../../Makefile.variable
+
 test-all: 
 	$(MAKE) test TEST=todo
 
@@ -10,6 +12,6 @@ expand:
 	cargo expand --example $(TEST)
 
 ./.dart_tool/:
-	pub get
+	$(PUB_PREFIX) pub get
 
 .PHONY: test-all test expand
