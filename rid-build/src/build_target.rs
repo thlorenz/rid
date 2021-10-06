@@ -15,7 +15,7 @@ impl BuildTarget {
                 vec!["--example".to_string(), example_name.to_string()]
             }
         };
-        let mut cmd = vec!["rustc".to_string(), "+nightly".to_string()];
+        let mut cmd = vec!["+nightly".to_string(), "rustc".to_string()];
         cmd.append(&mut target);
         cmd.append(&mut vec![
             "--".to_string(),
