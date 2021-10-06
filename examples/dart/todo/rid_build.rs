@@ -15,9 +15,9 @@ fn main() {
     let crate_name = &env::var("CARGO_PKG_NAME")
         .expect("Missing CARGO_PKG_NAME, please run this via 'cargo run'");
     let lib_name = &if cfg!(target_os = "windows") {
-        format!("{}", &test)
+        format!("{}", &crate_name)
     } else {
-        format!("lib{}", &test)
+        format!("lib{}", &crate_name)
     };
 
     /*
