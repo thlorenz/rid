@@ -11,7 +11,11 @@ fn main() {
 
     let crate_name = &env::var("CARGO_PKG_NAME")
         .expect("Missing CARGO_PKG_NAME, please run this via 'cargo run'");
-    let lib_name = &format!("lib{}", &test);
+    let lib_name = &if cfg!(target_os = "windows") {
+        format!("{}", &test)
+    } else {
+        format!("lib{}", &test)
+    };
 
     let build_config = BuildConfig {
         target: BuildTarget::DebugExample(test),
