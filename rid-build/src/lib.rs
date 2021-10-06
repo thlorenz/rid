@@ -157,7 +157,7 @@ fn generate(
             .to_string_lossy()
     );
     let path_to_target =
-        &format!("{}", project.path_to_target(target_crate_root).display());
+        &format!("{}", project.path_to_target(target_crate_root).display()).escape_default().to_string();
 
     // Extract Dart and Swift code from bindings.h
     let parsed_bindings = ParsedBindings::new(&bindings_h_content);

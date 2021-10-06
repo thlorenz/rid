@@ -219,6 +219,8 @@ import '{reply_channel}';
     return {dart_ffi}.DynamicLibrary.open('{path_to_target}/{sub}/{lib_name}.so');
   if (dart_io.Platform.isMacOS)
     return {dart_ffi}.DynamicLibrary.open('{path_to_target}/{sub}/{lib_name}.dylib');
+  if (dart_io.Platform.isWindows)
+    return {dart_ffi}.DynamicLibrary.open('{path_to_target}\\{sub}\\{lib_name}.dll');
   throw UnsupportedError(
       'Platform "${{dart_io.Platform.operatingSystem}}" is not supported.');
 }}
