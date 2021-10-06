@@ -9,13 +9,10 @@ test-all:
 	$(MAKE) test TEST=hash_maps
 
 test:
-	$(MAKE) ./.dart_tool/
+	$(PUB_PREFIX) pub get
 	cargo build --example $(TEST) && \
 	$(SET_PREFIX) TEST=$(TEST)&& cargo run rid_build && \
 	dart run test ./test/$(TEST).dart
-
-expand:
-	@cargo expand --example $(TEST) 
 
 ./.dart_tool/:
 	$(PUB_PREFIX) pub get
