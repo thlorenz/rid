@@ -1,0 +1,27 @@
+ROOT:=$(dir $(realpath $(lastword $(MAKEFILE_LIST))))
+
+# If pub isn't in the path but flutter is, set PUB_PREFIX to "flutter"
+ERR_PUB_NOT_FOUND := "Flutter not found in PATH. Please install Flutter and try again."
+ifeq ($(OS),Windows_NT)
+	TEST_FOR_PUB := where pub 2>NUL
+	TEST_FOR_FLUTTER := where flutter 2>NUL
+
+	# Prefix for setting environment variables on Windows.
+	# Usage: $(SET_PREFIX) VAR=value
+	SET_PREFIX := set
+else
+	TEST_FOR_PUB := which pub 2> /dev/null
+	TEST_FOR_FLUTTER := which flutter 2> /dev/null
+
+	SET_PREFIX := 
+endif
+
+ifeq (, $(shell $(TEST_FOR_PUB)))
+	ifeq (, $(shell $(TEST_FOR_FLUTTER)))
+		$(error $(ERR_PUB_NOT_FOUND))
+	else
+		PUB_PREFIX := flutter
+	endif
+else
+	PUB_PREFIX :=
+endif
