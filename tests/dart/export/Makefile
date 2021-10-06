@@ -8,7 +8,8 @@ test-all:
 	$(MAKE) test TEST=args_strings
 # 	$(MAKE) test TEST=structs
 
-test: ./.dart_tool/
+test:
+	$(MAKE) ./.dart_tool/
 	cargo build --example $(TEST) && \
 	$(SET_PREFIX) TEST=$(TEST)&& cargo run rid_build && \
 	dart run test ./test/$(TEST).dart
