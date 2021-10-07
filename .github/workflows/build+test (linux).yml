@@ -1,4 +1,4 @@
-name: Build+Test
+name: Build+Test (Linux)
 
 on:
   push:
@@ -10,7 +10,7 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  build_and_test:
+  build_and_test_linux:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
