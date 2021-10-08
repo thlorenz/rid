@@ -206,13 +206,13 @@ import '{reply_channel}';
     }
 
     fn dart_open_dl(&self) -> String {
+        let sub_target_folder = match self.target {
+            BuildTarget::Release => "release",
+            BuildTarget::Debug => "debug",
+            BuildTarget::DebugExample(_) => "debug/examples",
+        };
         match self.project {
             Project::Dart => {
-                let sub_target_folder = match self.target {
-                    BuildTarget::Release => "release",
-                    BuildTarget::Debug => "debug",
-                    BuildTarget::DebugExample(_) => "debug/examples",
-                };
                 format!(
                     r###"{dart_ffi}.DynamicLibrary _open() {{
   if (dart_io.Platform.isLinux)
@@ -238,12 +238,20 @@ import '{reply_channel}';
     return {dart_ffi}.DynamicLibrary.open('{lib_name}.so');
   if (dart_io.Platform.isMacOS || dart_io.Platform.isIOS)
     return {dart_ffi}.DynamicLibrary.executable();
+  if (dart_io.Platform.isLinux)
+    return {dart_ffi}.DynamicLibrary.open('{path_to_target}/{sub}/{lib_name}.so');
+  if (dart_io.Platform.isMacOS)
+    return {dart_ffi}.DynamicLibrary.open('{path_to_target}/{sub}/{lib_name}.dylib');
+  if (dart_io.Platform.isWindows)
+    return {dart_ffi}.DynamicLibrary.open('{path_to_target}\\{sub}\\{lib_name}.dll');
   throw UnsupportedError(
-      'Platform "${{dart_io.Platform.operatingSystem}}" is not supported.');
+    'Platform "${{dart_io.Platform.operatingSystem}}" is not supported.');
 }}
 "###,
                     dart_ffi = DART_FFI,
-                    lib_name = self.lib_name
+                    lib_name = self.lib_name,
+                    path_to_target = self.path_to_target,
+                    sub = sub_target_folder,
                 )
             }
         }

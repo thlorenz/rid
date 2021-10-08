@@ -18,7 +18,7 @@ cp $TEMPLATE_ROOT/rust/Cargo.toml $APP_ROOT/Cargo.toml
 perl -pi -w -e "s/<package>/$APP_NAME/;" $APP_ROOT/Cargo.toml
 
 # Plugin
-flutter create --platforms=android,ios,macos --template=plugin $APP_ROOT/plugin
+flutter create --platforms=android,ios,macos,linux,windows --template=plugin $APP_ROOT/plugin
 
 cd $APP_ROOT/plugin
 rm -rf example test CHANGELOG.md README.md .idea
@@ -34,7 +34,7 @@ flutter pub get
 # Flutter Project
 
 cd $APP_ROOT
-flutter create --platforms=android,ios,macos $APP_ROOT
+flutter create --platforms=android,ios,macos,linux,windows $APP_ROOT
 
 cp $TEMPLATE_ROOT/flutter/README.md $APP_ROOT/README.md
 perl -pi -w -e "s/<package>/$APP_NAME/;" $APP_ROOT/README.md

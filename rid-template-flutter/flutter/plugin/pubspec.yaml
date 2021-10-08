@@ -27,3 +27,7 @@ flutter:
         pluginClass: Plugin
       macos:
         pluginClass: Plugin
+      linux:
+        pluginClass: Plugin
+      windows:
+        pluginClass: Plugin
