@@ -18,16 +18,16 @@ jobs:
         os: [ubuntu-latest, windows-latest, macos-latest]
         include:
           - os: ubuntu-latest
-            RUST: [nightly]
-            DART_SDK: [2.14.0-115.0.dev] # ffigen depends on Dart v2.14+
+            RUST: nightly
+            DART_SDK: 2.14.0-115.0.dev # ffigen depends on Dart v2.14+
 
           - os: windows-latest
-            RUST: [nightly]
-            DART_SDK: [2.14.0-115.0.dev]
+            RUST: nightly
+            DART_SDK: 2.14.0-115.0.dev
 
           - os: macos-latest
-            RUST: [nightly]
-            DART_SDK: [2.14.0-115.0.dev]
+            RUST: nightly
+            DART_SDK: 2.14.0-115.0.dev
 
     steps:
       - uses: hecrj/setup-rust-action@v1
