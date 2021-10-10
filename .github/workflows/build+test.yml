@@ -37,6 +37,7 @@ jobs:
       # ffigen depends on an llvm
       - name: Install libclang-10-dev (Linux)
         run: sudo apt-get install libclang-10-dev
+        if: matrix.os == 'ubuntu-latest'
 
       # the Windows environment doesn't include make by default
       - name: Install GNU Make (Windows)
