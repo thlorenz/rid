@@ -1,0 +1,54 @@
+name: Build+Test
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build_and_test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        include:
+          - os: ubuntu-latest
+            RUST: [nightly]
+            DART_SDK: [2.14.0-115.0.dev] # ffigen depends on Dart v2.14+
+
+          - os: windows-latest
+            RUST: [nightly]
+            DART_SDK: [2.14.0-115.0.dev]
+
+          - os: macos-latest
+            RUST: [nightly]
+            DART_SDK: [2.14.0-115.0.dev]
+
+    steps:
+      - uses: hecrj/setup-rust-action@v1
+        with:
+          rust-version: ${{ matrix.RUST }}
+
+      # the Windows environment doesn't include make by default
+      - name: Install GNU Make
+        run: choco install make
+        if: matrix.os == 'windows-latest'
+
+      # the macOS environment doesn't include make by default
+      - name: Install GNU Make
+        run: brew install make
+        if: matrix.os == 'macos-latest'
+
+      - uses: dart-lang/setup-dart@v1.2
+        with:
+          sdk: ${{ matrix.DART_SDK }}
+
+      - uses: actions/checkout@master
+
+      - name: Build and Run Tests
+        run: make test
