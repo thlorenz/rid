@@ -44,9 +44,11 @@ pub fn run_ffigen(
         // bandaid fix, Dart is run under Powershell in Windows which works as
         // expected.
 
-        let mut cmd = Command::new(
-            if cfg!(target_os = "windows") {"powershell"} else {FFIGEN_RUNNER}
-        );
+        let mut cmd = Command::new(if cfg!(target_os = "windows") {
+            "powershell"
+        } else {
+            FFIGEN_RUNNER
+        });
 
         if cfg!(target_os = "windows") {
             cmd.args(&["-c", FFIGEN_RUNNER]);
