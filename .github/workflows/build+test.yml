@@ -2,36 +2,58 @@ name: Build+Test
 
 on:
   push:
-    branches: [ master ]
+    branches: [master]
   pull_request:
-    branches: [ master ]
+    branches: [master]
 
 env:
   CARGO_TERM_COLOR: always
 
 jobs:
   build_and_test:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        rust: [nightly]
-        dart_sdk: [2.14.0-115.0.dev] # ffigen depends on Dart v2.14+  
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        include:
+          - os: ubuntu-latest
+            RUST: nightly
+            DART_SDK: 2.14.0-115.0.dev # ffigen depends on Dart v2.14+
+
+          - os: windows-latest
+            RUST: nightly
+            DART_SDK: 2.14.0-115.0.dev
+
+          - os: macos-latest
+            RUST: nightly
+            DART_SDK: 2.14.0-115.0.dev
 
     steps:
-    - uses: hecrj/setup-rust-action@v1
-      with:
-        rust-version: ${{ matrix.rust }}
+      - uses: hecrj/setup-rust-action@v1
+        with:
+          rust-version: ${{ matrix.RUST }}
 
-    # ffigen depends on an llvm
-    - name: Install libclang-10-dev
-      run: sudo apt-get install libclang-10-dev
+      # ffigen depends on an llvm
+      - name: Install libclang-10-dev (Linux)
+        run: sudo apt-get install libclang-10-dev
+        if: matrix.os == 'ubuntu-latest'
 
-    - uses: dart-lang/setup-dart@v1.2
-      with:
-          sdk: ${{ matrix.dart_sdk }} 
+      # the Windows environment doesn't include make by default
+      - name: Install GNU Make (Windows)
+        run: choco install make
+        if: matrix.os == 'windows-latest'
 
-    - uses: actions/checkout@master
+      # the macOS environment doesn't include make by default
+      - name: Install GNU Make (macOS)
+        run: brew install make
+        if: matrix.os == 'macos-latest'
 
-    - name: Build and Run Tests
-      run: make test 
+      - uses: dart-lang/setup-dart@v1.2
+        with:
+          sdk: ${{ matrix.DART_SDK }}
+
+      - uses: actions/checkout@master
+
+      - name: Build and Run Tests
+        run: make test

@@ -34,6 +34,12 @@ impl FlutterPlatform {
             swift_plugin_file: None,
         }
     }
+    pub fn windows() -> Self {
+        Self {
+            binding_file: None,
+            swift_plugin_file: None,
+        }
+    }
 }
 
 #[derive(Debug)]

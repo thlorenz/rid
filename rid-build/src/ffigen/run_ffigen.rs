@@ -40,7 +40,20 @@ pub fn run_ffigen(
         .context("Failed to write ffigen yaml config")?;
 
     let output = {
-        let mut cmd = Command::new(FFIGEN_RUNNER);
+        // For some reason, Dart doesn't want to run directly on Windows. As a
+        // bandaid fix, Dart is run under Powershell in Windows which works as
+        // expected.
+
+        let mut cmd = Command::new(if cfg!(target_os = "windows") {
+            "powershell"
+        } else {
+            FFIGEN_RUNNER
+        });
+
+        if cfg!(target_os = "windows") {
+            cmd.args(&["-c", FFIGEN_RUNNER]);
+        }
+
         cmd.args(&["run", "ffigen"])
             .args(&[
                 "--config",
