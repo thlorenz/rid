@@ -1,4 +1,5 @@
 /target
+/rid-build/target
 /.idea
 /**/.idea
 tests/dart/**/src/wip.rs

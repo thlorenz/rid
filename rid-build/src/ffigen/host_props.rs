@@ -1,39 +1,46 @@
 use std::env;
 
-const LINUX_LLVM_PATHS: [&str; 6] = [
-    "/usr/lib/llvm-6.0/lib/libclang.so",
-    "/usr/lib/llvm-9/lib/libclang.so",
-    "/usr/lib/llvm-10/lib/libclang.so",
-    "/usr/lib/llvm-11/lib/libclang.so",
-    "/usr/lib/libclang.so",
-    "/usr/lib64/libclang.so",
-];
-
-const MACOS_LLVM_PATHS: [&str; 1] = ["/usr/local/opt/llvm/lib/"];
-const WINDOWS_LLVM_PATHS: [&str; 1] = [r#"C:\Program Files\LLVM\bin\"#];
-
 pub struct HostProps {
     // See https://github.com/dart-lang/ffigen/blob/6e10689c0e1a510f47d2e81540678771bf560250/lib/src/strings.dart#L158-L170
-    pub llvm_paths: Vec<&'static str>,
+    pub llvm_paths: Vec<String>,
 }
 
 impl HostProps {
     pub fn new() -> Self {
-        // NOTE: add more here once we find out about them
-        match env::consts::OS {
-            "linux" => Self {
-                llvm_paths: LINUX_LLVM_PATHS.to_vec(),
-            },
-            "macos" => Self {
-                llvm_paths: MACOS_LLVM_PATHS.to_vec(),
-            },
-            "windows" => Self {
-                llvm_paths: WINDOWS_LLVM_PATHS.to_vec(),
-            },
+        let linux_llvm_paths = [
+            "/usr/lib/llvm-6.0/lib/libclang.so".to_owned(),
+            "/usr/lib/llvm-9/lib/libclang.so".to_owned(),
+            "/usr/lib/llvm-10/lib/libclang.so".to_owned(),
+            "/usr/lib/llvm-11/lib/libclang.so".to_owned(),
+            "/usr/lib/libclang.so".to_owned(),
+            "/usr/lib64/libclang.so".to_owned(),
+            "/usr/lib/llvm-6.0/lib/libclang.so".to_owned()
+        ];
+
+        let macos_llvm_paths = ["/usr/local/opt/llvm/lib/".to_owned()];
+        let windows_llvm_paths = [r#"C:\Program Files\LLVM\bin\"#.to_owned()];
+
+        let mut custom_llvm_paths: Vec<String> = match env::var("LIBCLANG_PATH") {
+            Err(_) => vec![],
+            Ok(paths) => { 
+                let split_paths = paths.split(":");
+                split_paths.map(str::to_owned).collect()
+            }
+        };
+
+        let mut llvm_paths: Vec<String> = match env::consts::OS {
+            "linux" => linux_llvm_paths.to_vec(),
+            "macos" => macos_llvm_paths.to_vec(),
+            "windows" => windows_llvm_paths.to_vec(),
             "android" | "ios" | "freebsd" | "dragonfly" | "netbsd"
             | "openbsd" | "solaris" | _ => {
                 panic!("rid cli cannot run on {}", env::consts::OS)
             }
+        };
+
+        llvm_paths.append(&mut custom_llvm_paths);
+        Self {
+            llvm_paths: llvm_paths
         }
     }
 }
