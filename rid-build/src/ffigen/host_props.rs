@@ -17,7 +17,9 @@ impl HostProps {
             "/usr/lib/llvm-6.0/lib/libclang.so".to_owned()
         ];
 
-        let macos_llvm_paths = ["/usr/local/opt/llvm/lib/".to_owned()];
+        let macos_llvm_paths = [
+            "/usr/local/opt/llvm/lib/".to_owned(),
+            "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr".to_owned()];
         let windows_llvm_paths = [r#"C:\Program Files\LLVM\bin\"#.to_owned()];
 
         let mut custom_llvm_paths: Vec<String> = match env::var("LIBCLANG_PATH") {
