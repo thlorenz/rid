@@ -13,6 +13,7 @@ rid_ffi = { path = "../rid-ffi" }
 cbindgen = "0.20.0"
 getrandom = { version = "0.2", features = ["js"] }
 tempfile = "3.2.0"
+dirs = "4.0.0"
 
 anyhow = "1.0.38"
 simple_logger = "1.11.0"
