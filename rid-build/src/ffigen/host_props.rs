@@ -1,11 +1,6 @@
 use std::env;
 use dirs::home_dir;
 
-pub struct HostProps {
-    // See https://github.com/dart-lang/ffigen/blob/6e10689c0e1a510f47d2e81540678771bf560250/lib/src/strings.dart#L158-L170
-    pub llvm_paths: Vec<String>,
-}
-
 const LINUX_LLVM_PATHS: [&str; 7] = [
     "/usr/lib/llvm-6.0/lib/libclang.so",
     "/usr/lib/llvm-9/lib/libclang.so",
@@ -21,6 +16,11 @@ const MACOS_LLVM_PATHS: [&str; 2] = [
     "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr"];
 
 const WINDOWS_LLVM_PATHS: [&str; 1] = [r#"C:\Program Files\LLVM\bin\"#];
+
+pub struct HostProps {
+    // See https://github.com/dart-lang/ffigen/blob/6e10689c0e1a510f47d2e81540678771bf560250/lib/src/strings.dart#L158-L170
+    pub llvm_paths: Vec<String>,
+}
 
 impl HostProps {
     pub fn new() -> Self {
