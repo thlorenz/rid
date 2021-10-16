@@ -1,14 +1,15 @@
 use std::env;
 use dirs::home_dir;
 
-const LINUX_LLVM_PATHS: [&str; 7] = [
+const LINUX_LLVM_PATHS: [&str; 8] = [
     "/usr/lib/llvm-6.0/lib/libclang.so",
     "/usr/lib/llvm-9/lib/libclang.so",
     "/usr/lib/llvm-10/lib/libclang.so",
     "/usr/lib/llvm-11/lib/libclang.so",
+    "/usr/lib/llvm-12/lib/libclang.so",
+    "/usr/lib/llvm-13/lib/libclang.so",
     "/usr/lib/libclang.so",
-    "/usr/lib64/libclang.so",
-    "/usr/lib/llvm-6.0/lib/libclang.so"
+    "/usr/lib64/libclang.so"
 ];
 
 const MACOS_LLVM_PATHS: [&str; 2] = [
@@ -37,13 +38,17 @@ impl HostProps {
         match env::var("LIBCLANG_PATH") {
             Err(_) => {
                 match (env::consts::OS, home_dir()) {
+                    // adds a special case: $HOME/homebrew/opt/llvm
+                    // pretty common non-default location for homebrew,
+                    // esp when multiple copies of brew on system
+                    // (https://docs.brew.sh/Installation#multiple-installations)
                     ("macos", Some(mut path)) => {
                         path.push("homebrew/opt/llvm");
                         match path.into_os_string().into_string() {
-                            Err(_) => (),
                             Ok(path) => {
                                 llvm_paths.push(path.to_owned());
-                            }
+                            },
+                            Err(_) => ()
                         }
                     },
                     (_, _) => ()
