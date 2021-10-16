@@ -22,6 +22,8 @@ impl HostProps {
             "/usr/local/opt/llvm/lib/".to_owned(),
             "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr".to_owned()].to_vec();
 
+        let windows_llvm_paths = [r#"C:\Program Files\LLVM\bin\"#.to_owned()];
+
         match home_dir() {
             None => (),
             Some(mut path) => {
@@ -34,8 +36,6 @@ impl HostProps {
                 }
             }
         }
-
-        let windows_llvm_paths = [r#"C:\Program Files\LLVM\bin\"#.to_owned()];
 
         let llvm_paths: Vec<String> = match env::consts::OS {
             "linux" => linux_llvm_paths.to_vec(),
@@ -51,10 +51,9 @@ impl HostProps {
             Err(_) => Self {
                 llvm_paths: llvm_paths
             },
-            Ok(paths) => { 
-                let split_paths = paths.split(":");
+            Ok(path) => { 
                 Self {
-                    llvm_paths: split_paths.map(str::to_owned).collect()
+                    llvm_paths: vec![path]
                 }
             }
         }
