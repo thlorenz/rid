@@ -10,7 +10,7 @@ necessary crates to generate code from macro attributes.
 `rid-build` to pull it all together and `rid-template-flutter` is here for now to get started with an app quickly until I build a `rid`
 CLI tool which combines the two.
 
-Note that `rid-build` makes platform specific assumptions about paths from which it attempts finding the `libclang` dynamic library required for the FFI generation between Rust and Dart FFI on your system. As part of generating the FFI bindings (`./sh/bindgen` when building the examples in the `rid-examples` repository), you can pass the environment variable `LIBCLANG_PATH` to specify a custom path (or indeed a `:` separated list of paths) from where the Clang library is to be found (amongst the possibly many available on the system) to override (add to the list of paths).
+Note that `rid-build` makes platform specific assumptions about paths from which it attempts finding the `libclang` dynamic library required for the FFI generation between Rust and Dart FFI on your system. As part of generating the FFI bindings (`./sh/bindgen` when building the examples in the `rid-examples` repository), you can pass in the environment variable `LIBCLANG_PATH` to specify a custom path from where the Clang library is to be found (amongst the possibly many available on the system) to override the default search paths provided in `rid-build/src/host_props.rs`.
 
 _rid_ documentation will always live on the [main docs
 section](https://thlorenz.com/rid-site/docs/getting-started/introduction/).
