@@ -14,7 +14,7 @@ const IGNORE_FOR_FILE: [&str; 5] = [
 // See https://github.com/dart-lang/ffigen#configurations
 #[derive(Debug)]
 pub struct YamlConfig {
-    llvm_paths: Vec<&'static str>,
+    llvm_paths: Vec<String>,
     output: String,
     structs_to_prefix_raw: Vec<String>,
     header_entry_point: String,
