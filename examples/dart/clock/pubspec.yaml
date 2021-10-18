@@ -6,4 +6,4 @@ environment:
 
 dependencies: 
   ffi: ^1.0.0
-  ffigen: 4.0.0-dev.2
+  ffigen: ^4.1.0
