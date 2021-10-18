@@ -235,11 +235,9 @@ import '{reply_channel}';
                 format!(
                     r###"{dart_ffi}.DynamicLibrary _open() {{
   if (dart_io.Platform.isLinux || dart_io.Platform.isAndroid)
-    return {dart_ffi}.DynamicLibrary.open('{lib_name}.so');
+    return {dart_ffi}.DynamicLibrary.open('{path_to_target}/{sub}/{lib_name}.so');
   if (dart_io.Platform.isMacOS || dart_io.Platform.isIOS)
     return {dart_ffi}.DynamicLibrary.executable();
-  if (dart_io.Platform.isLinux)
-    return {dart_ffi}.DynamicLibrary.open('{path_to_target}/{sub}/{lib_name}.so');
   if (dart_io.Platform.isMacOS)
     return {dart_ffi}.DynamicLibrary.open('{path_to_target}/{sub}/{lib_name}.dylib');
   if (dart_io.Platform.isWindows)
