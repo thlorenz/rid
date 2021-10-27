@@ -15,6 +15,52 @@ Note that `rid-build` makes platform specific assumptions about paths from which
 _rid_ documentation will always live on the [main docs
 section](https://thlorenz.com/rid-site/docs/getting-started/introduction/).
 
+## Using rid with an M1 Macbook
+
+Building rid for an M1 Macbook requires additional steps:
+* ⚠️  no need for Rosetta
+* install the appropriate target
+  ```sh
+  rustup target add x86_64-apple-darwin
+  ```
+* install LLVM
+  make sure LLVM version is `9+`
+  ```sh
+  brew install llvm
+  ```
+* install FFI
+  ```sh
+  arch -x86_64 sudo gem install ffi
+  ```
+* Dart SDK
+  make sure that Dart version is `>=2.14`
+  ```sh
+  dart --version
+  ```
+  otherwise install it as specified in the [documentation](https://dart.dev/get-dart)
+* configure bindgen script (at `PROJECT_ROOT/sh/bindgen`)
+  ```sh
+  # ...
+  cargo run --target=x86_64-apple-darwin --bin=rid_build
+  ```
+* configure macos script (at `PROJECT_ROOT/sh/macos`)
+  ⚠️  when compiling with `--target` compilation option,
+  binary and files, instead of being typically placed in the `/target` folder,
+  will be placed in a subfolder named as the specified target arch
+  ```sh
+  # ...
+  # TARGET_DIR="PROJECT_ROOT/target/x86_64-apple-darwin" where PROJECT_ROOT is the root of your project
+  # ...
+  cargo build --target=x86_64-apple-darwin && \
+    cp $LIB_SOURCE_FILE $LIB_TARGET_FILE
+  ```
+* run and enjoy
+  ```sh
+  ./sh/bindgen && ./sh/macos && flutter run -d macos
+  ```
+
+In the future, all these steps will be automated.
+
 ## Sponsors
 
 Thank you very much for sponsoring me to help me keep working on _rid_ as well as open source
