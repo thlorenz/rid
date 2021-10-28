@@ -23,8 +23,10 @@ flutter create --platforms=android,ios,macos,linux,windows --template=plugin $AP
 cd $APP_ROOT/plugin
 rm -rf example test CHANGELOG.md README.md .idea
 
+mkdir -p ios/Classes
 cp $TEMPLATE_ROOT/flutter/plugin/ios/Classes/SwiftPlugin.swift ios/Classes/SwiftPlugin.swift
 cp $TEMPLATE_ROOT/flutter/plugin/ios/plugin.podspec ios/plugin.podspec
+mkdir -p macos/Classes
 cp $TEMPLATE_ROOT/flutter/plugin/macos/Classes/Plugin.swift macos/Classes/Plugin.swift 
 cp $TEMPLATE_ROOT/flutter/plugin/macos/plugin.podspec macos/plugin.podspec
 cp $TEMPLATE_ROOT/flutter/plugin/pubspec.yaml pubspec.yaml
