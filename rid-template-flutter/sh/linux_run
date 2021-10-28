@@ -1,0 +1,11 @@
+#!/bin/bash
+
+PREV_LD_LIBRARY_PATH=$LD_LIBRARY_PATH
+
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+
+LD_LIBRARY_PATH="$DIR/../plugin/linux"
+
+flutter run -d linux
+
+LD_LIBRARY_PATH=PREV_LD_LIBRARY_PATH
