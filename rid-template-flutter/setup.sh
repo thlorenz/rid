@@ -23,6 +23,10 @@ flutter create --platforms=android,ios,macos,linux,windows --template=plugin $AP
 cd $APP_ROOT/plugin
 rm -rf example test CHANGELOG.md README.md .idea
 
+if [[ $OSTYPE != 'darwin'* ]]; then
+  mkdir -p ios/Classes
+  mkdir -p macos/Classes
+fi
 cp $TEMPLATE_ROOT/flutter/plugin/ios/Classes/SwiftPlugin.swift ios/Classes/SwiftPlugin.swift
 cp $TEMPLATE_ROOT/flutter/plugin/ios/plugin.podspec ios/plugin.podspec
 cp $TEMPLATE_ROOT/flutter/plugin/macos/Classes/Plugin.swift macos/Classes/Plugin.swift 
