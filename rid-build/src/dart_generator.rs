@@ -234,14 +234,12 @@ import '{reply_channel}';
             Project::Flutter(_) => {
                 format!(
                     r###"{dart_ffi}.DynamicLibrary _open() {{
-  if (dart_io.Platform.isLinux || dart_io.Platform.isAndroid)
+  if (dart_io.Platform.isAndroid)
     return {dart_ffi}.DynamicLibrary.open('{lib_name}.so');
-  if (dart_io.Platform.isMacOS || dart_io.Platform.isIOS)
-    return {dart_ffi}.DynamicLibrary.executable();
   if (dart_io.Platform.isLinux)
     return {dart_ffi}.DynamicLibrary.open('{path_to_target}/{sub}/{lib_name}.so');
-  if (dart_io.Platform.isMacOS)
-    return {dart_ffi}.DynamicLibrary.open('{path_to_target}/{sub}/{lib_name}.dylib');
+  if (dart_io.Platform.isMacOS || dart_io.Platform.isIOS)
+    return {dart_ffi}.DynamicLibrary.executable();
   if (dart_io.Platform.isWindows)
     return {dart_ffi}.DynamicLibrary.open('{path_to_target}\\{sub}\\{lib_name}.dll');
   throw UnsupportedError(
