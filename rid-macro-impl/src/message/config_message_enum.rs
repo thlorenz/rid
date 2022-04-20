@@ -47,6 +47,12 @@ impl MessageEnumConfig {
                         "cannot have rid::export attribute on enums"
                     );
                 }
+                RidAttr::Rid(attr_ident, _) => {
+                    abort!(
+                        attr_ident,
+                        "cannot have config rid() attributes on message enum"
+                    );
+                }
                 RidAttr::DeriveDebug(_) => debug = true,
             }
         }

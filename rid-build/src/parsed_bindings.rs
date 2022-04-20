@@ -14,6 +14,7 @@ const TYPEDEF_ENUM_LEN: usize = TYPEDEF_ENUM.len();
 const STORE_LOCK_FN: &str = "void rid_store_lock(void);";
 const REPLY_CHANNEL_FN: &str = "void include_reply(void);";
 
+#[derive(Debug)]
 pub struct ParsedBindings {
     /// Dart code extracted from the dart code blocks inside the binding
     pub dart_code: String,
@@ -143,6 +144,7 @@ impl ParsedBindings {
 
         let updated_binding =
             replace_struct_aliases(binding, &structs, &struct_aliases);
+        // let updated_binding = fix_cbindgen_issues(&updated_binding);
 
         let dart_code = join_sections(dart_sections);
         let swift_calls: Vec<String> = function_headers
@@ -178,6 +180,36 @@ impl ParsedBindings {
             has_store_lock,
             has_reply_channel,
         }
+    }
+
+    /// Structs that should be renamed to `Raw*` when running ffigen and re-exported as such.
+    pub fn raw_structs(&self) -> HashSet<String> {
+        let mut set = HashSet::new();
+        for ty in &self.structs {
+            // TODO(thlorenz): hacky way to avoid renaming rid types like Vec_Todo
+            // since rust uses PascalCase for structs this won't cause problems in most
+            // cases.
+            if !ty.contains('_') {
+                set.insert(ty.to_string());
+            }
+        }
+        set
+    }
+
+    /// All structs found in bindings file with the `Raw*` renaming applied where necessary.
+    pub fn renamed_structs(&self) -> Vec<String> {
+        let raws = self.raw_structs();
+        return self
+            .structs
+            .iter()
+            .map(|x| {
+                if raws.contains(x) {
+                    format!("Raw{}", x)
+                } else {
+                    x.to_string()
+                }
+            })
+            .collect::<Vec<String>>();
     }
 }
 

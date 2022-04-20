@@ -1,7 +1,6 @@
 mod attach;
-mod dart;
 mod debug;
-pub mod parsed_struct;
+pub mod field_access;
 mod render_enum;
 mod render_struct;
 mod store;

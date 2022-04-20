@@ -1,66 +1,32 @@
 use std::collections::HashMap;
 
 use crate::{
-    attrs::ImplBlockConfig,
-    common::state::{get_state, ImplementationType},
-    parse::{ParsedFunction, ParsedImplBlock},
-    render_common::{
-        render_vec_accesses, PointerTypeAlias, RenderFunctionExportConfig,
-        VecAccess,
+    accesses::RenderableAccess,
+    attrs::{self, FunctionConfig, ImplBlockConfig},
+    common::{
+        state::{get_state, ImplementationType},
+        utils_module_tokens_if,
     },
+    parse::{ParsedFunction, ParsedImplBlock},
+    render_common::{PointerTypeAlias, RenderFunctionExportConfig},
     render_dart,
-    render_rust::{self, ffi_prelude, render_free, RenderedTypeAliasInfo},
+    render_rust::{
+        allow_prelude, ffi_prelude, render_free, RenderedTypeAliasInfo,
+    },
 };
 
+use super::{
+    export_config::ExportConfig,
+    process_function_export::{
+        extract_tokens, process_function_export, ExtractedTokens,
+    },
+};
 use crate::{attrs::parse_rid_attrs, common::abort};
-use quote::{format_ident, quote};
+use quote::{format_ident, quote, quote_spanned};
 
 use proc_macro2::TokenStream;
 use render_dart::render_instance_method_extension;
 use syn::Ident;
-
-fn unpack_tuples<T, U>(tpls: Vec<(T, U)>) -> (Vec<T>, Vec<U>) {
-    let mut xs: Vec<T> = Vec::with_capacity(tpls.len());
-    let mut ys: Vec<U> = Vec::with_capacity(tpls.len());
-    for (x, y) in tpls {
-        xs.push(x);
-        ys.push(y);
-    }
-
-    (xs, ys)
-}
-
-pub struct ExportConfig {
-    render_dart_extension: bool,
-    render_vec_access: bool,
-    render_dart_free_extension: bool,
-    render_frees: bool,
-    include_ffi: bool,
-}
-
-impl Default for ExportConfig {
-    fn default() -> Self {
-        Self {
-            render_dart_extension: true,
-            render_vec_access: true,
-            render_dart_free_extension: true,
-            render_frees: true,
-            include_ffi: true,
-        }
-    }
-}
-
-impl ExportConfig {
-    pub fn for_tests() -> Self {
-        Self {
-            render_dart_extension: false,
-            render_vec_access: false,
-            render_dart_free_extension: false,
-            render_frees: false,
-            include_ffi: false,
-        }
-    }
-}
 
 pub fn rid_export_impl(
     item: syn::Item,
@@ -74,157 +40,121 @@ pub fn rid_export_impl(
 
             let mut ptr_type_aliases_map =
                 HashMap::<String, TokenStream>::new();
-            let mut raw_type_aliases_map =
-                HashMap::<String, TokenStream>::new();
-            let mut frees = HashMap::<String, PointerTypeAlias>::new();
-            let mut vec_accesses = HashMap::<Ident, VecAccess>::new();
+            let mut accesses =
+                HashMap::<String, Box<dyn RenderableAccess>>::new();
             let rust_fn_tokens = &parsed
                 .methods
                 .iter()
                 .map(|x| {
-                    let render_rust::RenderedFunctionExport {
-                        tokens,
-                        ptr_type_aliases,
-                        raw_type_aliases,
-                        vec_access,
-                    } = render_rust::render_function_export(
-                        x,
-                        Some(parsed.ty.ident().clone()),
-                        Some(RenderFunctionExportConfig {
-                            include_ffi: config.include_ffi,
-                            ..Default::default()
-                        }),
-                    );
-                    for PointerTypeAlias {
-                        alias,
-                        typedef,
-                        type_name,
-                        needs_free,
-                    } in ptr_type_aliases
-                    {
-                        ptr_type_aliases_map
-                            .insert(alias.to_string(), typedef.clone());
-                        if needs_free {
-                            frees.insert(
-                                type_name.clone(),
-                                PointerTypeAlias {
-                                    alias,
-                                    typedef,
-                                    type_name,
-                                    needs_free,
-                                },
-                            );
-                        }
-                    }
-                    for (key, tokens) in raw_type_aliases {
-                        raw_type_aliases_map.insert(key, tokens);
-                    }
-                    vec_access.map(|x| {
-                        vec_accesses.insert(x.vec_type.ident().clone(), x)
-                    });
+                    get_state()
+                        .register_handled_impl_method_export(&x.fn_ident);
 
-                    tokens
+                    process_function_export(
+                        x,
+                        Some(parsed.ty.rust_ident().clone()),
+                        config.include_ffi,
+                        &mut ptr_type_aliases_map,
+                        &mut accesses,
+                    )
                 })
                 .collect::<Vec<TokenStream>>();
 
             // Make sure we name the module differently for structs that have multiple impl blocks
             let module_ident = get_state().unique_ident(format_ident!(
                 "__rid_{}_impl",
-                parsed.ty.ident()
+                parsed.ty.rust_ident()
             ));
 
-            let vec_access_tokens = if config.render_vec_access {
-                let needed_vec_accesses = get_state().need_implemtation(
-                    &ImplementationType::VecAccess,
-                    vec_accesses,
-                );
-                render_vec_accesses(
-                    &needed_vec_accesses,
-                    parsed.type_infos(),
-                    "///",
-                )
-            } else {
-                vec![]
-            };
+            let ExtractedTokens {
+                access_tokens,
+                ptr_typedef_tokens,
+                utils_module,
+            } = extract_tokens(
+                accesses,
+                &ptr_type_aliases_map,
+                parsed.type_infos(),
+                &config,
+            );
 
-            let rendered_frees = if config.render_frees {
-                let needed_frees = get_state().need_implemtation(
-                    &ImplementationType::Free,
-                    frees.clone(),
-                );
-                needed_frees
-                    .into_iter()
-                    .map(|x| x.render_free(ffi_prelude()))
-                    .collect()
-            } else {
-                vec![]
-            };
-
-            let (infos, free_tokens) = unpack_tuples(rendered_frees);
-
-            // TODO: non-instance method strings
-            let dart_free_extensions_tokens =
-                if config.render_frees && config.render_dart_free_extension {
-                    infos
-                        .into_iter()
-                        .map(|RenderedTypeAliasInfo { alias, fn_ident }| {
-                            parsed.ty.render_dart_dispose_extension(
-                                fn_ident, &alias, "///",
-                            )
-                        })
-                        .collect()
-                } else {
-                    vec![]
-                };
-
+            // -----------------
+            // Dart impl Extension
+            // -----------------
             let dart_extension_tokens = if config.render_dart_extension {
                 render_instance_method_extension(&parsed, None)
             } else {
                 TokenStream::new()
             };
 
-            let outer_typedef = parsed.ty.typealias_tokens();
-            let ptr_typedef_tokens: Vec<&TokenStream> =
-                ptr_type_aliases_map.values().collect();
-            let raw_typedef_tokens: Vec<&TokenStream> =
-                raw_type_aliases_map.values().collect();
-
+            let allow = allow_prelude();
             quote! {
-                #[allow(non_snake_case)]
+                #allow
                 mod #module_ident {
                     use super::*;
-                    #outer_typedef
-                    #(#raw_typedef_tokens)*
                     #(#ptr_typedef_tokens)*
                     #dart_extension_tokens
                     #(#rust_fn_tokens)*
-                    #(#vec_access_tokens)*
-                    #(#dart_free_extensions_tokens)*
-                    #(#free_tokens)*
+                    #access_tokens
+                    #utils_module
                 }
             }
         }
         syn::Item::Fn(syn::ItemFn {
-            attrs: _, // Vec<Attribute>,
+            attrs,    // Vec<Attribute>,
             vis: _,   // Visibility,
-            sig: _,   // Signature,
+            sig,      // Signature,
             block: _, // Box<Block>,
         }) => {
-            // TODO: fix this
-            // NOTE: at this point we don't support exports on top level functions, but impl
-            // methods only.
-            // In the future we may allow this again, but might use a different attribute.
-            // The reason is that it is hard to know if a function is part of an impl and thus was
-            // exported already.
-            // An alternative would be to track already exported functions in our store via an id
-            // that is based on function name and possibly content.
-            // Another alternative is to require users to have a separate impl block with only
-            // methods meant to be exported, possibly excluding some via a #[rid::skip] attr.
+            // Ensure that we don't render an export that was already handled as an
+            // impl method export
+            if get_state().handled_impl_method_export(&sig.ident) {
+                return TokenStream::new();
+            }
 
-            // let attrs = attrs::parse_rid_attrs(&attrs);
-            // let parsed = ParsedFunction::new(sig, &attrs, None);
-            // render_function_export(&parsed, None, Default::default())
-            TokenStream::new()
+            let owner = None;
+            let owner_type_infos = None;
+
+            let attrs = attrs::parse_rid_attrs(&attrs);
+            let fn_config = FunctionConfig::new(&attrs, owner);
+            let parsed_fn = ParsedFunction::new(sig, fn_config, owner);
+
+            let mut ptr_type_aliases_map =
+                HashMap::<String, TokenStream>::new();
+            let mut accesses =
+                HashMap::<String, Box<dyn RenderableAccess>>::new();
+
+            let rust_fn_tokens = process_function_export(
+                &parsed_fn,
+                owner_type_infos,
+                config.include_ffi,
+                &mut ptr_type_aliases_map,
+                &mut accesses,
+            );
+
+            let ExtractedTokens {
+                access_tokens,
+                ptr_typedef_tokens,
+                utils_module,
+            } = extract_tokens(
+                accesses,
+                &ptr_type_aliases_map,
+                parsed_fn.type_infos(),
+                &config,
+            );
+
+            let module_ident =
+                format_ident!("__rid_export_{}", parsed_fn.fn_ident);
+
+            let allow = allow_prelude();
+            quote_spanned! { parsed_fn.fn_ident.span() =>
+                #allow
+                mod #module_ident {
+                    use super::*;
+                    #(#ptr_typedef_tokens)*
+                    #rust_fn_tokens
+                    #access_tokens
+                    #utils_module
+                }
+            }
         }
 
         syn::Item::Const(_)
@@ -250,6 +180,3 @@ pub fn rid_export_impl(
         }
     }
 }
-
-#[cfg(test)]
-mod tests {}

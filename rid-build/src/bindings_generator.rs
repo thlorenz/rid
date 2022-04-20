@@ -5,6 +5,7 @@ pub(crate) struct BindingsGenerator<'a> {
     pub(crate) cargo: &'a str,
     pub(crate) crate_dir: &'a str,
     pub(crate) crate_name: &'a str,
+    pub(crate) expand_args: Vec<String>,
 }
 
 pub fn inject_rid_ffi_types(stdout: &[u8]) -> String {
@@ -22,12 +23,10 @@ impl<'a> BindingsGenerator<'a> {
         Ok(bindings)
     }
 
-    // Option that doesn't depend on cargo-expand to be installed
-    // cargo rustc --lib -- -Zunstable-options --pretty=expanded
+    // cargo rustc --lib -- -Zunpretty=expanded
     fn expand_crate(&self) -> Result<String> {
         let output = Command::new(&self.cargo)
-            .args(&["expand", "--lib"])
-            .args(&["--color", "never"])
+            .args(&self.expand_args)
             .current_dir(&self.crate_dir)
             .output()?;
 
@@ -55,6 +54,8 @@ impl<'a> BindingsGenerator<'a> {
             .with_no_includes()
             .with_include("stdint.h")
             .with_parse_deps(false)
+            // Prevent wrapping to not break our simple line by line header parser
+            .with_line_length(usize::MAX)
             .generate()?;
         Ok(built)
     }

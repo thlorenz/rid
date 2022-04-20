@@ -1,3 +1,7 @@
 /target
+/rid-build/target
 /.idea
 /**/.idea
+tests/dart/**/src/wip.rs
+tests/dart/export/test/wip.dart
+.vimrc

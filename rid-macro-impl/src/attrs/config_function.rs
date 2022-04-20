@@ -46,6 +46,12 @@ impl FunctionConfig {
                     is_exported = true;
                     fn_export_alias = name.clone();
                 }
+                RidAttr::Rid(attr_ident, _) => {
+                    abort!(
+                        attr_ident,
+                        "cannot have config rid() attributes on function exports"
+                    );
+                }
                 // The below are invalid on a function but already checked by Rust itself
                 RidAttr::DeriveDebug(_) => {}
             }

@@ -1,6 +1,4 @@
-#![allow(stable_features)]
-#![feature(str_split_once)]
-use std::{fmt::Display, fs, path::Path};
+use std::{fmt::Display, fs, iter::FromIterator, path::Path};
 
 use anyhow::Result;
 
@@ -8,7 +6,10 @@ use bindings_generator::BindingsGenerator;
 use dart_generator::DartGenerator;
 
 mod bindings_generator;
+mod build_target;
+mod constants;
 mod dart_generator;
+mod ffigen;
 mod function_header;
 mod function_header_parser;
 mod log;
@@ -16,12 +17,14 @@ mod parsed_bindings;
 mod project;
 mod swift_injector;
 
-pub use dart_generator::BuildTarget;
+pub use build_target::BuildTarget;
+use ffigen::{run_ffigen, HostProps};
 pub use project::{FlutterConfig, FlutterPlatform, Project};
 
 use crate::{parsed_bindings::ParsedBindings, swift_injector::SwiftInjector};
 
 static ISOLATE_BINDING: &str = include_str!("../dart/_isolate_binding.dart");
+static MESSAGE_CHANNEL: &str = include_str!("../dart/_message_channel.dart");
 static REPLY_CHANNEL: &str = include_str!("../dart/_reply_channel.dart");
 
 pub struct BuildConfig<'a> {
@@ -45,7 +48,10 @@ pub struct BuildResult {
     /// Path to Dart that binds to Rust implementation Dart Isolate provided by Rid.
     isolate_binding_dart_path: String,
 
-    /// Path to Dart that provides ResponseChannel through which Rust posts messages to Dart.
+    /// Path to Dart that provides Message through which Rid communicates messages to Dart.
+    message_channel_dart_path: String,
+
+    /// Path to Dart that provides ResponseChannel through which user's Rust code posts messages to Dart.
     reply_channel_dart_path: String,
 
     /// Path at which the Dart/Flutter app expects the generated Dart code to be and from which the
@@ -60,6 +66,9 @@ pub struct BuildResult {
     /// Swift plugin files that were modified in ordert to prevent Rust functions from being
     /// removed via tree shaking.
     swift_plugin_files: Vec<String>,
+
+    /// Result of parsing `bindings.h` C-header file.
+    parsed_bindings: ParsedBindings,
 }
 
 impl Display for BuildResult {
@@ -94,10 +103,12 @@ fn generate(
         target,
     }: &BuildConfig,
 ) -> Result<BuildResult> {
+    let expand_args = target.cargo_expand_args();
     let bindings_generator = BindingsGenerator {
         crate_name,
         crate_dir: project_root,
         cargo: "cargo",
+        expand_args,
     };
     let target_crate_root = Path::new(workspace_root.unwrap_or(project_root));
     let project_root = Path::new(project_root);
@@ -121,6 +132,8 @@ fn generate(
     let rid_generated_api_path = project.path_to_rid_dart_api(project_root);
     let isolate_binding_dart_path =
         project.path_to_isolate_binding_dart(project_root);
+    let message_channel_dart_path =
+        project.path_to_message_channel_dart(project_root);
     let reply_channel_dart_path =
         project.path_to_reply_channel_dart(project_root);
 
@@ -128,6 +141,13 @@ fn generate(
     let ffigen_binding = &format!(
         "{}",
         ffigen_generated_path.file_name().unwrap().to_string_lossy()
+    );
+    let message_channel = &format!(
+        "{}",
+        message_channel_dart_path
+            .file_name()
+            .unwrap()
+            .to_string_lossy()
     );
     let reply_channel = &format!(
         "{}",
@@ -137,7 +157,9 @@ fn generate(
             .to_string_lossy()
     );
     let path_to_target =
-        &format!("{}", project.path_to_target(target_crate_root).display());
+        &format!("{}", project.path_to_target(target_crate_root).display())
+            .escape_default()
+            .to_string();
 
     // Extract Dart and Swift code from bindings.h
     let parsed_bindings = ParsedBindings::new(&bindings_h_content);
@@ -151,6 +173,7 @@ fn generate(
         lib_name,
         target,
         ffigen_binding,
+        message_channel,
         reply_channel,
         path_to_target,
         code_sections: &parsed_bindings,
@@ -176,12 +199,17 @@ fn generate(
             "{}",
             isolate_binding_dart_path.display()
         ),
+        message_channel_dart_path: format!(
+            "{}",
+            message_channel_dart_path.display()
+        ),
         reply_channel_dart_path: format!(
             "{}",
             reply_channel_dart_path.display()
         ),
         generated_bindings_h_path: format!("{}", bindings_h_path.display()),
         swift_plugin_files,
+        parsed_bindings,
     })
 }
 
@@ -193,14 +221,29 @@ pub fn build(build_config: &BuildConfig) -> Result<BuildResult> {
         generated_dart,
         generated_dart_path,
         isolate_binding_dart_path,
+        message_channel_dart_path,
         reply_channel_dart_path,
+        parsed_bindings,
         ..
     } = &generate_result;
 
     // NOTE: the directory to hold the file is recursively created if it doesn't exist yet
     fs::write(generated_dart_path, generated_dart)?;
     fs::write(isolate_binding_dart_path, ISOLATE_BINDING)?;
+    fs::write(message_channel_dart_path, MESSAGE_CHANNEL)?;
     fs::write(reply_channel_dart_path, REPLY_CHANNEL)?;
+
+    let host_props = HostProps::new();
+    let project_root: &Path = Path::new(build_config.project_root);
+    let structs_to_prefix_raw: Vec<String> =
+        Vec::from_iter(parsed_bindings.raw_structs());
+
+    run_ffigen(
+        &build_config.project,
+        &host_props,
+        project_root,
+        &structs_to_prefix_raw,
+    )?;
 
     Ok(generate_result)
 }

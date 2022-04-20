@@ -1,5 +1,5 @@
 use quote::format_ident;
-use rid_common::{DART_FFI, STRING_TO_NATIVE_INT8};
+use rid_common::{DART_COLLECTION, DART_FFI, STRING_TO_NATIVE_INT8};
 use syn::Ident;
 
 use crate::{
@@ -21,17 +21,26 @@ impl DartType {
     /// ### Raw Specifics
     ///
     /// Enum: is passed as 'int'
-    fn render_type(&self, raw: bool) -> String {
+    pub fn render_type(&self, raw: bool) -> String {
         use DartType::*;
         match self {
+            // -----------------
+            // Primitives
+            // -----------------
             Int32(nullable) | Int64(nullable) if *nullable => {
                 "int?".to_string()
             }
             Int32(_) | Int64(_) => "int".to_string(),
             Bool(nullable) if *nullable => "bool?".to_string(),
             Bool(_) => "bool".to_string(),
+            // -----------------
+            // Strings
+            // -----------------
             String(nullable) if *nullable => "String?".to_string(),
             String(_) => "String".to_string(),
+            // -----------------
+            // Custom
+            // -----------------
             Custom(nullable, info, ty) => {
                 use Category::*;
                 match info.cat {
@@ -53,17 +62,39 @@ impl DartType {
                     Struct | Prim => ty.to_string(),
                 }
             }
+            // -----------------
+            // Collection Types
+            // -----------------
             Vec(nullable, inner) if *nullable => {
                 format!("List<{inner}>?", inner = inner.render_type(raw))
             }
             Vec(_, inner) => {
                 format!("List<{inner}>", inner = inner.render_type(raw))
             }
+            HashMap(nullable, key, val) if *nullable => {
+                format!(
+                    "{dart_collection}.HashMap<{key}, {val}>?",
+                    dart_collection = DART_COLLECTION,
+                    key = key.render_type(raw),
+                    val = val.render_type(raw)
+                )
+            }
+            HashMap(_, key, val) => {
+                format!(
+                    "{dart_collection}.HashMap<{key}, {val}>",
+                    dart_collection = DART_COLLECTION,
+                    key = key.render_type(raw),
+                    val = val.render_type(raw)
+                )
+            }
+            // -----------------
+            // Invalid
+            // -----------------
             DartType::Unit => "".to_string(),
         }
     }
 
-    fn render_type_attribute(&self) -> Option<String> {
+    pub fn render_type_attribute(&self) -> Option<String> {
         match self {
             DartType::Int32(_) => {
                 Some(format!("@{dart_ffi}.Int32()", dart_ffi = DART_FFI))
@@ -75,50 +106,83 @@ impl DartType {
         }
     }
 
-    pub fn render_resolved_ffi_arg(&self, slot: usize) -> String {
+    fn render_resolved_ffi_var(&self, var: &str) -> String {
         use DartType::*;
         match self {
-            Bool(nullable) if *nullable => {
-                format!(
-                    "arg{slot} == null ? 0 : arg{slot} ? 1 : 0",
-                    slot = slot
-                )
+            // -----------------
+            // Primitives
+            // -----------------
+            // TODO(thlorenz): All the below also would resolve to a different type when nullable
+            Int32(nullable) | Int64(nullable) if *nullable => {
+                format!("{}", var)
             }
-            Bool(_) => format!("arg{} ? 1 : 0", slot),
+            Int32(_) | Int64(_) => format!("{var}", var = var),
+            Bool(nullable) if *nullable => {
+                format!("{var} == null ? 0 : {var} ? 1 : 0", var = var)
+            }
+            Bool(_) => format!("{var} ? 1 : 0", var = var),
+
+            // -----------------
+            // Strings
+            // -----------------
             // TODO(thlorenz): I doubt his is correct
             String(nullable) if *nullable => format!(
-                "arg{slot}?.{toNativeInt8}()",
-                slot = slot,
+                "{var}?.{toNativeInt8}()",
+                var = var,
                 toNativeInt8 = STRING_TO_NATIVE_INT8
             ),
             String(_) => format!(
-                "arg{slot}.{toNativeInt8}()",
-                slot = slot,
+                "{var}.{toNativeInt8}()",
+                var = var,
                 toNativeInt8 = STRING_TO_NATIVE_INT8
             ),
-            // TODO(thlorenz): All the below also would resolve to a different type when nullable
-            Int32(nullable) | Int64(nullable) if *nullable => {
-                format!("arg{}", slot)
-            }
-            Int32(_) | Int64(_) => format!("arg{}", slot),
-            Custom(_, _, _) => format!("arg{}", slot),
-            Vec(_, _) => format!("arg{}", slot),
-            Unit => todo!("render_resolved_ffi_arg"),
+
+            // -----------------
+            // Custom
+            // -----------------
+            Custom(_, _, _) => format!("{var}", var = var),
+
+            // -----------------
+            // Collection Types
+            // -----------------
+            Vec(_, _) => format!("{var}", var = var),
+            HashMap(_, _, _) => format!("{var}", var = var),
+
+            // -----------------
+            // Invalid
+            // -----------------
+            Unit => todo!("render_resolved_ffi_var"),
         }
+    }
+
+    pub fn render_resolved_ffi_arg(&self, slot: usize) -> String {
+        let arg_name = format!("arg{}", slot);
+        self.render_resolved_ffi_var(&arg_name)
     }
 
     pub fn render_to_dart_for_snippet(&self, snip: &str) -> String {
         use DartType::*;
         match self {
+            // -----------------
+            // Primitives
+            // -----------------
             Int32(nullable) | Int64(nullable) | Bool(nullable) if *nullable => {
                 format!("{snip}?", snip = snip)
             }
             Int32(_) | Int64(_) | Bool(_) => snip.to_string(),
+
+            // -----------------
+            // Strings
+            // -----------------
             // NOTE: Raw Strings are already converted to Dart Strings
             String(nullable) if *nullable => {
                 format!("{snip}?", snip = snip)
             }
             String(_) => snip.to_string(),
+
+            // -----------------
+            // Custom
+            // -----------------
             Custom(nullable, info, type_name) if *nullable => {
                 use Category::*;
                 match info.cat {
@@ -149,12 +213,28 @@ impl DartType {
                     Prim => snip.to_string(),
                 }
             }
+
+            // -----------------
+            // Collection Types
+            // -----------------
+
             // NOTE: All vecs are expected have a `toDart` extension method implemented
             // which maps all it's items `toDart` before converting it `toList`
             Vec(nullable, _) if *nullable => {
                 format!("{snip}?.toDart()", snip = snip)
             }
             Vec(_, _) => format!("{snip}.toDart()", snip = snip),
+
+            // NOTE: All hashmaps are expected have a `toDart` extension method implemented
+            // which maps all it's keys/values `toDart` before converting it `toHashMap`
+            HashMap(nullable, _, _) if *nullable => {
+                format!("{snip}?.toDart()", snip = snip)
+            }
+            HashMap(_, _, _) => format!("{snip}.toDart()", snip = snip),
+
+            // -----------------
+            // Invalid
+            // -----------------
             Unit => {
                 abort!(
                     format_ident!("()"),
@@ -239,5 +319,16 @@ impl RustType {
         snip: &str,
     ) -> String {
         DartType::from(&self, type_infos).render_to_dart_for_snippet(snip)
+    }
+
+    /// Renders the provided variable which is assumed to have a plain Dart type including
+    /// conversion to FFI Dart type, i.e. `var.toNative()` for [Strings].
+    /// For all other cases it just renders the name of the `var`.
+    pub fn render_dart_resolved_ffi_var(
+        &self,
+        type_infos: &TypeInfoMap,
+        var: &str,
+    ) -> String {
+        DartType::from(&self, type_infos).render_resolved_ffi_var(var)
     }
 }

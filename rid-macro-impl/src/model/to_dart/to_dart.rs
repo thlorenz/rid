@@ -12,22 +12,19 @@ use crate::{
     common::{
         abort,
         state::{get_state, ImplementationType},
-        tokens::cstring_free,
     },
     parse::{rust_type::RustType, ParsedStruct},
     render_dart::ParsedStructRenderConfig,
-    render_rust::RenderedDisplayImpl,
+    render_rust::{allow_prelude, RenderedDisplayImpl},
 };
 
 pub struct DartRenderImplConfig {
-    render_cstring_free: bool,
     render_dart_only: bool,
 }
 
 impl Default for DartRenderImplConfig {
     fn default() -> Self {
         Self {
-            render_cstring_free: true,
             render_dart_only: false,
         }
     }
@@ -36,7 +33,6 @@ impl Default for DartRenderImplConfig {
 impl DartRenderImplConfig {
     pub fn for_tests() -> Self {
         Self {
-            render_cstring_free: false,
             render_dart_only: false,
         }
     }
@@ -95,8 +91,9 @@ pub fn render_to_dart(
     let ident = &parsed_struct.ident;
     let mod_ident = format_ident!("__rid_{}_dart_mod", ident);
     let fn_ident = format_ident!("_to_dart_for_{}", ident);
+    let allow = allow_prelude();
     quote_spanned! { ident.span() =>
-        #[allow(non_snake_case)]
+        #allow
         mod #mod_ident {
             #dart_tokens
             #[no_mangle]

@@ -3,7 +3,9 @@ use quote::{format_ident, quote, quote_spanned};
 use syn::Ident;
 
 use crate::{
-    common::tokens::{resolve_bool_from_u8, resolve_string_ptr},
+    common::tokens::{
+        resolve_bool_from_u8, resolve_hash_map_ptr, resolve_string_ptr,
+    },
     parse::rust_type::{self, RustType, TypeKind},
     render_rust::render_rust_type,
 };
@@ -19,6 +21,9 @@ impl RustArg {
     pub fn from(ty: &RustType, slot: usize) -> Self {
         use TypeKind::*;
         match &ty.kind {
+            // -----------------
+            // Primitive
+            // -----------------
             Primitive(p) => {
                 let arg_ident = format_ident!("arg{}", slot);
                 let ty = p.render_rust_type();
@@ -38,6 +43,9 @@ impl RustArg {
             Value(value) => {
                 use crate::parse::rust_type::Value::*;
                 match value {
+                    // -----------------
+                    // String
+                    // -----------------
                     String => {
                         let arg_ident = format_ident!("arg{}", slot);
                         let type_tokens = quote_spanned! { arg_ident.span() =>  *mut ::std::os::raw::c_char };
@@ -49,6 +57,9 @@ impl RustArg {
                             resolver_tokens,
                         }
                     }
+                    // -----------------
+                    // Custom
+                    // -----------------
                     Custom(_, type_name) => {
                         let arg_ident = format_ident!("arg{}", slot);
                         let ty = format_ident!("{}", type_name);
@@ -60,11 +71,50 @@ impl RustArg {
                             resolver_tokens: TokenStream::new(),
                         }
                     }
+                    // -----------------
+                    // CString
+                    // -----------------
                     CString => todo!("RustArg::from::Value(CString)"),
+                    // -----------------
+                    // Str
+                    // -----------------
                     Str => todo!("RustArg::from::Value(Str)"),
                 }
             }
-            Composite(_, _) => todo!("RustArg::from::Composite"),
+            // -----------------
+            // Composite HashMap
+            // -----------------
+            Composite(rust_type::Composite::HashMap, key_ty, val_ty) => {
+                let arg_ident = format_ident!("arg{}", slot);
+                let key_ty =
+                    key_ty.as_ref().expect("HashMap should have key type");
+                let val_ty =
+                    val_ty.as_ref().expect("HashMap should have val type");
+                let key_ty_ident = key_ty.rust_ident();
+                let val_ty_ident = val_ty.rust_ident();
+                let type_tokens = quote_spanned! { arg_ident.span() =>
+                    *const HashMap<#key_ty_ident, #val_ty_ident>
+                };
+                let resolver_tokens = resolve_hash_map_ptr(
+                    &arg_ident,
+                    &key_ty_ident,
+                    &val_ty_ident,
+                );
+                RustArg {
+                    arg_ident,
+                    type_tokens,
+                    resolver_tokens,
+                }
+            }
+            // -----------------
+            // Todos
+            // -----------------
+            Composite(composite, _, _) => {
+                todo!("RustArg::from::Composite::{:?}", composite)
+            }
+            // -----------------
+            // Invalid
+            // -----------------
             Unit => todo!("RustArg::from::Unit"),
             Unknown => unimplemented!("RustArg::from::Unknown"),
         }

@@ -11,7 +11,8 @@ use crate::{
             ResolvedEnumFromInt,
         },
     },
-    parse::rust_type::{RustType, TypeKind, Value},
+    parse::rust_type::{Composite, RustType, TypeKind, Value},
+    render_rust::allow_prelude,
 };
 
 pub struct RenderedDisplayImpl {
@@ -54,10 +55,18 @@ impl RustType {
                     },
                 }
             }
-            TypeKind::Composite(_, _) => {
+            // TODO(thlorenz): HashMap
+            TypeKind::Composite(Composite::HashMap, key_type, val_type) => {
+                todo!(
+                    "render_display_impl::Composite::HashMap<{:?}, {:?}>",
+                    key_type,
+                    val_type
+                )
+            }
+            TypeKind::Composite(composite, _, _) => {
                 abort!(
                     self.rust_ident(),
-                    "TODO: Cannot yet render display impl for Composite type"
+                    "TODO: Cannot yet render display impl for Composite type {:?}", composite
                 )
             }
             TypeKind::Unit => {
@@ -78,13 +87,14 @@ impl RustType {
     fn render_struct_display_impl(&self) -> RenderedDisplayImpl {
         let fn_display_method_ident = self.get_fn_display_ident();
 
-        let struct_ident = &self.ident();
+        let struct_ident = &self.rust_ident();
         // TODO: consider using type aliases over `*mut` types via `self.render_pointer_type()`
         let resolve_struct_ptr = resolve_ptr(struct_ident);
 
+        let allow = allow_prelude();
         let tokens = quote_spanned! { struct_ident.span() =>
             #[no_mangle]
-            #[allow(non_snake_case)]
+            #allow
             pub extern "C" fn #fn_display_method_ident(ptr: *mut #struct_ident) -> *const ::std::os::raw::c_char {
                 let instance = #resolve_struct_ptr;
                 let s = instance.to_string();
@@ -105,8 +115,9 @@ impl RustType {
         is_primitive: bool,
     ) -> RenderedDisplayImpl {
         let fn_display_method_ident = self.get_fn_display_ident();
-        let enum_ident = &self.ident();
+        let enum_ident = &self.rust_ident();
 
+        let allow = allow_prelude();
         let tokens = if is_primitive {
             // NOTE: assuming `repr(C)` for primitive enums
             let ResolvedEnumFromInt {
@@ -118,7 +129,7 @@ impl RustType {
 
             quote_spanned! { enum_ident.span() =>
                 #[no_mangle]
-                #[allow(non_snake_case)]
+                #allow
                 pub extern "C" fn #fn_display_method_ident(#arg_ident: #arg_type_ident) -> *const ::std::os::raw::c_char {
                     #resolve_enum_arg_tokens
                     let s = #instance_ident.to_string();
@@ -130,7 +141,7 @@ impl RustType {
             let resolve_enum_ptr = resolve_ptr(enum_ident);
             quote_spanned! { enum_ident.span() =>
                 #[no_mangle]
-                #[allow(non_snake_case)]
+                #allow
                 pub extern "C" fn #fn_display_method_ident(ptr: *mut #enum_ident) -> *const ::std::os::raw::c_char {
                     let instance = #resolve_enum_ptr;
                     let s = instance.to_string();
@@ -148,7 +159,7 @@ impl RustType {
 
     fn get_fn_display_ident(&self) -> Ident {
         let method_prefix =
-            format!("rid_{}", self.ident().to_string().to_lowercase())
+            format!("rid_{}", self.rust_ident().to_string().to_lowercase())
                 .to_string();
         format_ident!("{}_display", method_prefix)
     }

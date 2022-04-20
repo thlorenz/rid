@@ -34,6 +34,12 @@ impl FlutterPlatform {
             swift_plugin_file: None,
         }
     }
+    pub fn windows() -> Self {
+        Self {
+            binding_file: None,
+            swift_plugin_file: None,
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -95,6 +101,15 @@ impl Project {
     ) -> PathBuf {
         self.path_to_generated_dir(project_root)
             .join("_reply_channel.dart")
+            .to_path_buf()
+    }
+
+    pub(crate) fn path_to_message_channel_dart(
+        &self,
+        project_root: &Path,
+    ) -> PathBuf {
+        self.path_to_generated_dir(project_root)
+            .join("_message_channel.dart")
             .to_path_buf()
     }
 

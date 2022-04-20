@@ -2,7 +2,7 @@ use proc_macro2::TokenStream;
 use quote::{format_ident, quote, quote_spanned, IdentFragment};
 use rid_common::{
     DART_ASYNC, DART_FFI, FFI_GEN_BIND, RID_DEBUG_REPLY, RID_FFI,
-    RID_MSG_TIMEOUT, STRING_TO_NATIVE_INT8,
+    RID_MSG_TIMEOUT, STRING_TO_NATIVE_INT8, _RID_REPLY_CHANNEL,
 };
 use syn::Ident;
 
@@ -23,6 +23,7 @@ pub struct MessageRenderConfig {
     pub render_reply_check: bool,
     pub dart_code_only: bool,
     pub rust_only: bool,
+    pub render_utils_module: bool,
 }
 
 impl Default for MessageRenderConfig {
@@ -32,6 +33,7 @@ impl Default for MessageRenderConfig {
             render_reply_check: true,
             dart_code_only: false,
             rust_only: false,
+            render_utils_module: true,
         }
     }
 }
@@ -43,6 +45,7 @@ impl MessageRenderConfig {
             render_reply_check: false,
             dart_code_only: false,
             rust_only: false,
+            render_utils_module: false,
         }
     }
 }
@@ -102,8 +105,6 @@ impl ParsedMessageEnum {
         variant: &ParsedMessageVariant,
         config: &MessageRenderConfig,
     ) -> TokenStream {
-        use crate::common::rust::ValueType::*;
-
         let variant_ident = &variant.ident;
 
         let fn_ident = &variant.method_ident;
@@ -228,8 +229,6 @@ impl ParsedMessageEnum {
         } else {
             format!(
                 r###"{comment}
-{comment} final Duration? RID_MSG_TIMEOUT = const Duration(milliseconds: 200);
-{comment} 
 {comment} Future<{class_name}> _replyWithTimeout(
 {comment}   Future<{class_name}> reply,
 {comment}   String msgCall,
@@ -297,7 +296,6 @@ impl ParsedMessageEnum {
         class_name: &str,
         comment: &str,
     ) -> String {
-        use crate::common::rust::ValueType::*;
         let fn_ident = &variant.method_ident;
         struct DartArg {
             arg: String,
@@ -359,15 +357,15 @@ impl ParsedMessageEnum {
         format!(
             r###"
 {comment}   Future<{class_name}> {dart_method_name}({args_decl}{{Duration? timeout}}) {{
-{comment}     final reqId = replyChannel.reqId;
+{comment}     final reqId = {_RID_REPLY_CHANNEL}.reqId;
 {comment}     {rid_ffi}.{method_name}(reqId, {args_call});
 {comment}
 {comment}     final reply = _isDebugMode && {rid_debug_reply} != null
-{comment}         ? replyChannel.reply(reqId).then(({class_name} reply) {{
+{comment}         ? {_RID_REPLY_CHANNEL}.reply(reqId).then(({class_name} reply) {{
 {comment}             if ({rid_debug_reply} != null) {rid_debug_reply}!(reply);
 {comment}             return reply;
 {comment}           }})
-{comment}         : replyChannel.reply(reqId);
+{comment}         : {_RID_REPLY_CHANNEL}.reply(reqId);
 {comment}     
 {comment}     if (!_isDebugMode) return reply;
 {comment}
@@ -383,6 +381,7 @@ impl ParsedMessageEnum {
             args_call = args_call,
             args_string = args_string,
             rid_ffi = RID_FFI,
+            _RID_REPLY_CHANNEL = _RID_REPLY_CHANNEL,
             rid_debug_reply = RID_DEBUG_REPLY,
             rid_msg_timeout = RID_MSG_TIMEOUT,
             comment = comment

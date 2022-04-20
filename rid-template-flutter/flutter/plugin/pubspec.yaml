@@ -3,20 +3,12 @@ description: Plugin to provide a bridge to Rust.
 version: 0.0.1
 
 environment:
-  sdk: ">=2.12.0 <=3.0.0"
+  sdk: ">=2.13.0 <3.0.0"
   flutter: ">=2.0.0"
-
-ffigen:
-  name: plugin
-  description: Plugin to provide a bridge to Rust.
-  output: 'lib/generated/ffigen_binding.dart'
-  headers:
-    entry-points:
-      - 'lib/generated/bindings.h'
 
 dependencies:
   ffi: ^1.0.0
-  ffigen: ^2.4.2
+  ffigen: ^4.1.0
 
   flutter:
     sdk: flutter
@@ -34,4 +26,8 @@ flutter:
       ios:
         pluginClass: Plugin
       macos:
+        pluginClass: Plugin
+      linux:
+        pluginClass: Plugin
+      windows:
         pluginClass: Plugin

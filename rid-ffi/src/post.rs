@@ -53,14 +53,13 @@ pub fn _encode_without_id(enum_idx: i64) -> i64 {
     val
 }
 
-#[no_mangle]
-pub extern "C" fn rid_init_isolate(port: i64) {
+pub fn _init_reply_isolate(port: i64) {
     unsafe {
         if RID_ISOLATE.is_some() {
             // It is very likely that the old isolate is leaking, but this is acceptable to support
             // hot restart while debugging the application
             eprintln!(
-                "[rid] WARN: reinitializing isolate. OK when hot reloading."
+                "[rid] WARN: reinitializing post isolate. OK when hot reloading."
             );
         }
         RID_ISOLATE = Some(Isolate::new(port));

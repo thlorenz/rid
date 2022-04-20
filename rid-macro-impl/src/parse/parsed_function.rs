@@ -7,6 +7,7 @@ use super::{
 use crate::{
     attrs::{Category, FunctionConfig, RidAttr, TypeInfo, TypeInfoMap},
     common::abort,
+    parse::rust_type::RustTypeContext,
     render_dart::DartArg,
 };
 
@@ -96,6 +97,7 @@ impl ParsedFunction {
                 ident.clone(),
                 TypeKind::Unit,
                 ParsedReference::Owned,
+                RustTypeContext::Default,
             ),
             ReturnType::Type(_, ty) => {
                 match RustType::from_boxed_type(ty.clone(), &config.type_infos)

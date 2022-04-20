@@ -6,7 +6,7 @@ use syn::Ident;
 use crate::{
     attrs::TypeInfo,
     parse::{
-        rust_type::{RustType, TypeKind, Value},
+        rust_type::{RustType, RustTypeContext, TypeKind, Value},
         ParsedReceiver,
     },
     render_common::PointerTypeAlias,
@@ -31,8 +31,12 @@ impl ParsedReceiver {
         } = self;
         let kind =
             TypeKind::Value(Value::Custom(info.clone(), info.key.to_string()));
-        let rust_type =
-            RustType::new(info.key.clone(), kind, reference.clone());
+        let rust_type = RustType::new(
+            info.key.clone(),
+            kind,
+            reference.clone(),
+            RustTypeContext::Default,
+        );
         let arg_pass = render_receiver_args_pass(&ptr_ident, info, &rust_type);
         let arg_resolve = render_receiver_arg_resolve(
             &ptr_ident,

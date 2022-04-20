@@ -1,0 +1,22 @@
+[package]
+name = "framework"
+version = "0.1.0"
+authors = ["Thorsten Lorenz <thlorenz@gmx.de>"]
+edition = "2018"
+
+[[example]]
+name = "messaging"
+crate-type = ["cdylib"]
+path = "src/messaging.rs"
+
+
+[dependencies]
+rid = { path = "../../../" }
+rid_build = { path = "../../../rid-build" }
+
+[build-dependencies]
+rid_build = { path = "../../../rid-build" }
+
+[[bin]]
+name = "rid_build"
+path = "rid_build.rs"

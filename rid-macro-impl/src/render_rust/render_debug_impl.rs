@@ -11,7 +11,8 @@ use crate::{
             ResolvedEnumFromInt,
         },
     },
-    parse::rust_type::{RustType, TypeKind, Value},
+    parse::rust_type::{Composite, RustType, TypeKind, Value},
+    render_rust::allow_prelude,
 };
 
 pub struct RenderedDebugImpl {
@@ -57,10 +58,18 @@ impl RustType {
                     },
                 }
             }
-            TypeKind::Composite(_, _) => {
+            // TODO(thlorenz): HashMap
+            TypeKind::Composite(Composite::HashMap, key_type, val_type) => {
+                todo!(
+                    "render_debug_impl::Composite::HashMap<{:?}, {:?}>",
+                    key_type,
+                    val_type
+                )
+            }
+            TypeKind::Composite(composite, _, _) => {
                 abort!(
                     self.rust_ident(),
-                    "TODO: Cannot yet render display impl for Composite type"
+                    "TODO: Cannot yet render_debug_impl for Composite type {:?}", composite
                 )
             }
             TypeKind::Unit => {
@@ -79,7 +88,7 @@ impl RustType {
     }
 
     fn render_struct_debug_impl(&self) -> RenderedDebugImpl {
-        let struct_ident = &self.ident();
+        let struct_ident = &self.rust_ident();
         let struct_instance_ident = instance_ident(struct_ident);
         let (fn_debug_method_ident, fn_debug_pretty_method_ident) =
             self.get_fn_debug_idents();
@@ -87,9 +96,10 @@ impl RustType {
         // TODO: consider using type aliases over `*mut` types via `self.render_pointer_type()`
         let resolve_struct_ptr = resolve_ptr(struct_ident);
 
+        let allow = allow_prelude();
         let tokens = quote_spanned! { struct_ident.span() =>
             #[no_mangle]
-            #[allow(non_snake_case)]
+            #allow
             pub extern "C" fn #fn_debug_method_ident(ptr: *mut #struct_ident) -> *const ::std::os::raw::c_char {
                 let #struct_instance_ident = #resolve_struct_ptr;
                 let s = format!("{:?}", #struct_instance_ident);
@@ -97,7 +107,7 @@ impl RustType {
                 cstring.into_raw()
             }
             #[no_mangle]
-            #[allow(non_snake_case)]
+            #allow
             pub extern "C" fn #fn_debug_pretty_method_ident(ptr: *mut #struct_ident) -> *const ::std::os::raw::c_char {
                 let #struct_instance_ident = #resolve_struct_ptr;
                 let s = format!("{:#?}", #struct_instance_ident);
@@ -120,8 +130,9 @@ impl RustType {
     ) -> RenderedDebugImpl {
         let (fn_debug_method_ident, fn_debug_pretty_method_ident) =
             self.get_fn_debug_idents();
-        let enum_ident = &self.ident();
+        let enum_ident = &self.rust_ident();
 
+        let allow = allow_prelude();
         let tokens = if is_primitive {
             // NOTE: assuming `repr(C)` for primitive enums
             let ResolvedEnumFromInt {
@@ -133,7 +144,7 @@ impl RustType {
 
             quote_spanned! { enum_ident.span() =>
                 #[no_mangle]
-                #[allow(non_snake_case)]
+                #allow
                 pub extern "C" fn #fn_debug_method_ident(#arg_ident: #arg_type_ident) -> *const ::std::os::raw::c_char {
                     #resolve_enum_arg_tokens
                     let s = format!("{:?}", #instance_ident);
@@ -141,7 +152,7 @@ impl RustType {
                     cstring.into_raw()
                 }
                 #[no_mangle]
-                #[allow(non_snake_case)]
+                #allow
                 pub extern "C" fn #fn_debug_pretty_method_ident(#arg_ident: #arg_type_ident) -> *const ::std::os::raw::c_char {
                     #resolve_enum_arg_tokens
                     let s = format!("{:#?}", #instance_ident);
@@ -153,7 +164,7 @@ impl RustType {
             let resolve_enum_ptr = resolve_ptr(enum_ident);
             quote_spanned! { enum_ident.span() =>
                 #[no_mangle]
-                #[allow(non_snake_case)]
+                #allow
                 pub extern "C" fn #fn_debug_method_ident(ptr: *mut #enum_ident) -> *const ::std::os::raw::c_char {
                     let instance = #resolve_enum_ptr;
                     let s = format!("{:?}", instance);
@@ -161,7 +172,7 @@ impl RustType {
                     cstring.into_raw()
                 }
                 #[no_mangle]
-                #[allow(non_snake_case)]
+                #allow
                 pub extern "C" fn #fn_debug_pretty_method_ident(ptr: *mut #enum_ident) -> *const ::std::os::raw::c_char {
                     let instance = #resolve_enum_ptr;
                     let s = format!("{:#?}", instance);
@@ -180,7 +191,7 @@ impl RustType {
 
     fn get_fn_debug_idents(&self) -> (Ident, Ident) {
         let method_prefix =
-            format!("rid_{}", self.ident().to_string().to_lowercase())
+            format!("rid_{}", self.rust_ident().to_string().to_lowercase())
                 .to_string();
         let fn_debug_method_ident = format_ident!("{}_debug", method_prefix);
         let fn_debug_pretty_method_ident =

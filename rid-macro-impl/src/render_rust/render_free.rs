@@ -4,6 +4,7 @@ use quote::{format_ident, quote_spanned};
 use syn::Ident;
 
 use crate::{
+    accesses::AccessKind,
     parse::{
         rust_type::{Composite, Primitive, RustType, TypeKind, Value},
         ParsedFunction,
@@ -20,6 +21,7 @@ pub fn render_free(
     rust_type: &RustType,
     fn_free_ident: &Ident,
     ffi_prelude: &TokenStream,
+    access_kind: &AccessKind,
 ) -> RenderedFree {
     use TypeKind as K;
 
@@ -28,17 +30,22 @@ pub fn render_free(
         tokens: return_type,
         type_alias,
         ..
-    } = render_return_type(rust_type, false);
+    } = render_return_type(rust_type, access_kind);
 
     let free: Option<TokenStream> = match &rust_type.kind {
         K::Primitive(_) | K::Unit => None,
         // TODO: in general we shouldn't free refs, but only owned values since the refs
         // are most likely to a model property which is still alive
         K::Value(val) => None,
-        K::Composite(Composite::Vec, rust_type) => {
+        K::Composite(Composite::Vec, _, _) => {
             Some(quote_spanned! { arg_ident.span() =>  #arg_ident.free(); })
         }
-        K::Composite(_, _) => todo!("render_free::Composite"),
+        K::Composite(Composite::HashMap, _, _) => {
+            Some(quote_spanned! { arg_ident.span() =>  #arg_ident.free(); })
+        }
+        K::Composite(composite, _, _) => {
+            todo!("render_free::Composite::{:?}", composite)
+        }
         K::Unknown => None,
     };
 

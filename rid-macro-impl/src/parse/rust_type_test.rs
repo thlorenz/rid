@@ -45,7 +45,7 @@ mod primitive {
         let res = parse(quote! { fn f(x: u8) {} });
         let ty = res.expect("extracts rust type");
 
-        assert_eq!(ty.ident().to_string(), "u8", "ident");
+        assert_eq!(ty.dart_wrapper_rust_string(), "u8", "ident");
         assert_eq!(ty.rust_ident().to_string(), "u8", "rust ident");
         assert_matches!(ty.reference, ParsedReference::Owned);
         assert_matches!(ty.kind, TypeKind::Primitive(Primitive::U8));
@@ -56,7 +56,7 @@ mod primitive {
         let res = parse(quote! { fn f(x: &u8) {} });
         let ty = res.expect("extracts rust type");
 
-        assert_eq!(ty.ident().to_string(), "u8", "ident");
+        assert_eq!(ty.dart_wrapper_rust_string(), "u8", "ident");
         assert_eq!(ty.rust_ident().to_string(), "u8", "rust ident");
         assert_matches!(ty.reference, ParsedReference::Ref(None));
         assert_matches!(ty.kind, TypeKind::Primitive(Primitive::U8));
@@ -67,7 +67,7 @@ mod primitive {
         let res = parse(quote! { fn f(x: &mut u8) {} });
         let ty = res.expect("extracts rust type");
 
-        assert_eq!(ty.ident().to_string(), "u8", "ident");
+        assert_eq!(ty.dart_wrapper_rust_string(), "u8", "ident");
         assert_eq!(ty.rust_ident().to_string(), "u8", "rust ident");
         assert_matches!(ty.reference, ParsedReference::RefMut(None));
         assert_matches!(ty.kind, TypeKind::Primitive(Primitive::U8));
@@ -78,7 +78,7 @@ mod primitive {
         let res = parse(quote! { fn f(x: &i64) {} });
         let ty = res.expect("extracts rust type");
 
-        assert_eq!(ty.ident().to_string(), "i64", "ident");
+        assert_eq!(ty.dart_wrapper_rust_string(), "i64", "ident");
         assert_eq!(ty.rust_ident().to_string(), "i64", "rust ident");
         assert_matches!(ty.reference, ParsedReference::Ref(None));
         assert_matches!(ty.kind, TypeKind::Primitive(Primitive::I64));
@@ -96,7 +96,7 @@ mod strings {
         let res = parse(quote! { fn f(x: String) {} });
         let ty = res.expect("extracts rust type");
 
-        assert_eq!(ty.ident().to_string(), "String", "ident");
+        assert_eq!(ty.dart_wrapper_rust_string(), "String", "ident");
         assert_eq!(ty.rust_ident().to_string(), "String", "rust ident");
         assert_matches!(ty.reference, ParsedReference::Owned);
         assert_matches!(ty.kind, TypeKind::Value(Value::String));
@@ -107,7 +107,7 @@ mod strings {
         let res = parse(quote! { fn f(x: &str) {} });
         let ty = res.expect("extracts rust type");
 
-        assert_eq!(ty.ident().to_string(), "str", "ident");
+        assert_eq!(ty.dart_wrapper_rust_string(), "str", "ident");
         assert_eq!(ty.rust_ident().to_string(), "str", "rust ident");
         assert_matches!(ty.reference, ParsedReference::Ref(None));
         assert_matches!(ty.kind, TypeKind::Value(Value::Str));
@@ -118,7 +118,7 @@ mod strings {
         let res = parse(quote! { fn f(x: &mut CString) {} });
         let ty = res.expect("extracts rust type");
 
-        assert_eq!(ty.ident().to_string(), "CString", "ident");
+        assert_eq!(ty.dart_wrapper_rust_string(), "CString", "ident");
         assert_eq!(ty.rust_ident().to_string(), "CString", "rust ident");
         assert_matches!(ty.reference, ParsedReference::RefMut(None));
         assert_matches!(ty.kind, TypeKind::Value(Value::CString));
@@ -140,7 +140,7 @@ mod custom {
         });
         let ty = res.expect("extracts rust type");
 
-        assert_eq!(ty.ident().to_string(), "RawModel", "ident");
+        assert_eq!(ty.dart_wrapper_rust_string(), "RawModel", "ident");
         assert_eq!(ty.rust_ident().to_string(), "Model", "rust ident");
         assert_matches!(ty.reference, ParsedReference::Owned);
         assert_matches!(
@@ -163,7 +163,7 @@ mod custom {
         let ty = res.expect("extracts rust type");
 
         // Doesn't alias to RawModel since it doesn't know if it is a struct or not
-        assert_eq!(ty.ident().to_string(), "Model", "ident");
+        assert_eq!(ty.dart_wrapper_rust_string(), "Model", "ident");
         assert_eq!(ty.rust_ident().to_string(), "Model", "rust ident");
         assert_matches!(ty.reference, ParsedReference::Owned);
         assert_matches!(ty.kind, TypeKind::Unknown)
@@ -177,7 +177,7 @@ mod custom {
         });
         let ty = res.expect("extracts rust type");
 
-        assert_eq!(ty.ident().to_string(), "RawModel", "ident");
+        assert_eq!(ty.dart_wrapper_rust_string(), "RawModel", "ident");
         assert_eq!(ty.rust_ident().to_string(), "Model", "rust ident");
         assert_matches!(ty.reference, ParsedReference::Ref(None));
         assert_matches!(
@@ -207,15 +207,19 @@ mod vec {
         });
         let ty = res.expect("extracts rust type");
 
-        assert_eq!(ty.ident().to_string(), "RawVec", "ident");
+        assert_eq!(ty.dart_wrapper_rust_string(), "RawVec", "ident");
         assert_eq!(ty.rust_ident().to_string(), "Vec", "rust ident");
         assert_matches!(ty.reference, ParsedReference::Owned);
 
-        if let TypeKind::Composite(composite, inner) = ty.kind {
+        if let TypeKind::Composite(composite, inner, _) = ty.kind {
             assert_matches!(composite, Composite::Vec);
             let inner_ty = inner.expect("has inner rust type");
 
-            assert_eq!(inner_ty.ident().to_string(), "u8", "inner ident");
+            assert_eq!(
+                inner_ty.dart_wrapper_rust_string(),
+                "u8",
+                "inner ident"
+            );
             assert_eq!(
                 inner_ty.rust_ident().to_string(),
                 "u8",
@@ -235,15 +239,19 @@ mod vec {
         });
         let ty = res.expect("extracts rust type");
 
-        assert_eq!(ty.ident().to_string(), "RawVec", "ident");
+        assert_eq!(ty.dart_wrapper_rust_string(), "RawVec", "ident");
         assert_eq!(ty.rust_ident().to_string(), "Vec", "rust ident");
         assert_matches!(ty.reference, ParsedReference::Owned);
 
-        if let TypeKind::Composite(composite, inner) = ty.kind {
+        if let TypeKind::Composite(composite, inner, _) = ty.kind {
             assert_matches!(composite, Composite::Vec);
             let inner_ty = inner.expect("has inner rust type");
 
-            assert_eq!(inner_ty.ident().to_string(), "u8", "inner ident");
+            assert_eq!(
+                inner_ty.dart_wrapper_rust_string(),
+                "u8",
+                "inner ident"
+            );
             assert_eq!(
                 inner_ty.rust_ident().to_string(),
                 "u8",
@@ -264,16 +272,20 @@ mod vec {
         });
         let ty = res.expect("extracts rust type");
 
-        assert_eq!(ty.ident().to_string(), "RawVec", "ident");
+        assert_eq!(ty.dart_wrapper_rust_string(), "RawVec", "ident");
         assert_eq!(ty.rust_ident().to_string(), "Vec", "rust ident");
         assert_matches!(ty.reference, ParsedReference::RefMut(None));
 
-        if let TypeKind::Composite(composite, inner) = ty.kind {
+        if let TypeKind::Composite(composite, inner, _) = ty.kind {
             let todo_str = "Todo".to_string();
             assert_matches!(composite, Composite::Vec);
             let inner_ty = inner.expect("has inner rust type");
 
-            assert_eq!(inner_ty.ident().to_string(), "RawTodo", "inner ident");
+            assert_eq!(
+                inner_ty.dart_wrapper_rust_string(),
+                "RawTodo",
+                "inner ident"
+            );
             assert_eq!(
                 inner_ty.rust_ident().to_string(),
                 "Todo",
@@ -303,11 +315,11 @@ mod vec {
         });
         let ty = res.expect("extracts rust type");
 
-        assert_eq!(ty.ident().to_string(), "RawVec", "ident");
+        assert_eq!(ty.dart_wrapper_rust_string(), "RawVec", "ident");
         assert_eq!(ty.rust_ident().to_string(), "Vec", "rust ident");
         assert_matches!(ty.reference, ParsedReference::Ref(None));
 
-        if let TypeKind::Composite(composite, inner) = ty.kind {
+        if let TypeKind::Composite(composite, inner, _) = ty.kind {
             let todo_str = "Todo".to_string();
             assert_matches!(composite, Composite::Vec);
             let inner_ty = inner.expect("has inner rust type");
@@ -346,11 +358,11 @@ mod custom_composites {
 
         // TODO(thlorenz): we don't properly alias arg types to Raw* yet,
         // see: src/render_rust/render_function_export.rs:93
-        assert_eq!(ty.ident().to_string(), "Cont", "ident");
+        assert_eq!(ty.dart_wrapper_rust_string(), "Cont", "ident");
         assert_eq!(ty.rust_ident().to_string(), "Cont", "rust ident");
         assert_matches!(ty.reference, ParsedReference::Ref(None));
 
-        if let TypeKind::Composite(composite, inner) = ty.kind {
+        if let TypeKind::Composite(composite, inner, _) = ty.kind {
             assert_matches!(
                 composite,
                 Composite::Custom(
@@ -364,7 +376,11 @@ mod custom_composites {
             );
             let inner_ty = inner.expect("has inner rust type");
 
-            assert_eq!(inner_ty.ident().to_string(), "u8", "inner ident");
+            assert_eq!(
+                inner_ty.dart_wrapper_rust_string(),
+                "u8",
+                "inner ident"
+            );
             assert_eq!(
                 inner_ty.rust_ident().to_string(),
                 "u8",
@@ -393,15 +409,19 @@ mod composite_option {
         });
         let ty = res.expect("extracts rust type");
 
-        assert_eq!(ty.ident().to_string(), "Option", "ident");
+        assert_eq!(ty.dart_wrapper_rust_string(), "Option", "ident");
         assert_eq!(ty.rust_ident().to_string(), "Option", "rust ident");
         assert_matches!(ty.reference, ParsedReference::Owned);
 
-        if let TypeKind::Composite(composite, inner) = ty.kind {
+        if let TypeKind::Composite(composite, inner, _) = ty.kind {
             assert_matches!(composite, Composite::Option);
             let inner_ty = inner.expect("has inner rust type");
 
-            assert_eq!(inner_ty.ident().to_string(), "RawTodo", "inner ident");
+            assert_eq!(
+                inner_ty.dart_wrapper_rust_string(),
+                "RawTodo",
+                "inner ident"
+            );
             assert_eq!(
                 inner_ty.rust_ident().to_string(),
                 "Todo",
@@ -437,15 +457,19 @@ mod composite_option {
         });
         let ty = res.expect("extracts rust type");
 
-        assert_eq!(ty.ident().to_string(), "Option", "ident");
+        assert_eq!(ty.dart_wrapper_rust_string(), "Option", "ident");
         assert_eq!(ty.rust_ident().to_string(), "Option", "rust ident");
         assert_matches!(ty.reference, ParsedReference::Owned);
 
-        if let TypeKind::Composite(composite, inner) = ty.kind {
+        if let TypeKind::Composite(composite, inner, _) = ty.kind {
             assert_matches!(composite, Composite::Option);
             let inner_ty = inner.expect("has inner rust type");
 
-            assert_eq!(inner_ty.ident().to_string(), "u8", "inner ident");
+            assert_eq!(
+                inner_ty.dart_wrapper_rust_string(),
+                "u8",
+                "inner ident"
+            );
             assert_eq!(
                 inner_ty.rust_ident().to_string(),
                 "u8",

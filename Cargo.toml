@@ -16,6 +16,11 @@ exclude = [
   "examples/dart/clock",
   "examples/dart/todo",
   "examples/dart/wip",
+  "tests/dart/field_access",
+  "tests/dart/apps",
+  "tests/dart/export",
+  "tests/dart/framework",
+  "rid-template-flutter",
 ]
 
 [dependencies]

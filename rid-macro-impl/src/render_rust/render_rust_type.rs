@@ -22,15 +22,18 @@ impl RustType {
         let tokens = match kind {
             K::Primitive(prim) => prim.render_rust_type(),
             K::Value(val) => val.render_rust_type(reference),
-            K::Composite(Composite::Vec, rust_type) => {
+            K::Composite(Composite::Vec, rust_type, _) => {
                 // similar to same case in ./render_return_type.rs
                 todo!("render_rust_type::custom_composite::vec")
             }
-            K::Composite(Composite::Option, rust_type) => {
+            K::Composite(Composite::Option, rust_type, _) => {
                 todo!("render_rust_type::custom_composite::option")
             }
-            K::Composite(composite, rust_type) => {
-                todo!("render_rust_type::custom_composite")
+            K::Composite(Composite::HashMap, key_type, val_type) => {
+                todo!("render_rust_type::custom_composite::hashmap")
+            }
+            K::Composite(composite, rust_type, _) => {
+                todo!("render_rust_type::custom_composite::{:?}", composite)
             }
             K::Unit => {
                 unimplemented!("render_rust_type::unit .. need error")

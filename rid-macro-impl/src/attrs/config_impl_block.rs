@@ -42,6 +42,12 @@ impl ImplBlockConfig {
                         is_exported = true;
                     }
                 }
+                RidAttr::Rid(attr_ident, _) => {
+                    abort!(
+                        attr_ident,
+                        "cannot have config rid() attributes on impl blocks"
+                    );
+                }
                 // The below are invalid on an impl block but already checked by Rust itself
                 RidAttr::DeriveDebug(_) => {}
             }

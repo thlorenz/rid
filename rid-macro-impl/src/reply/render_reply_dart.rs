@@ -1,4 +1,5 @@
 use proc_macro2::TokenStream;
+use rid_common::{RID_DEBUG_REPLY, _RID_REPLY_CHANNEL};
 use syn::{punctuated::Punctuated, ItemEnum, Token, Variant};
 
 use crate::{
@@ -42,9 +43,15 @@ pub fn render_reply_dart(
 {comment}   }}
 {comment} }}
 {comment} 
-{comment} void Function({PostedReply})? RID_DEBUG_REPLY = (PostedReply reply) {{
+{comment} void Function({PostedReply})? _RID_DEBUG_REPLY = ({PostedReply} reply) {{
 {comment}   print('$reply');
 {comment} }};
+{comment}
+{comment}
+{comment} extension PostedReplyConfig on Rid {{
+{comment}   void Function({PostedReply})? get debugReply => _RID_DEBUG_REPLY;
+{comment}   void set debugReply(void Function({PostedReply})? val) => _RID_DEBUG_REPLY = val;
+{comment} }}
 {comment}
 {comment} const int _TYPE_MASK= 0x000000000000ffff;
 {comment} const int _I64_MIN = -9223372036854775808;
@@ -58,10 +65,15 @@ pub fn render_reply_dart(
 {comment}   return {class_name}._(type, reqId, data);
 {comment} }}
 {comment} 
-{comment} final ReplyChannel<{class_name}> replyChannel = ReplyChannel.instance(_dl, decode, _isDebugMode);
+{comment} final RidReplyChannelInternal<{class_name}> _replyChannel = RidReplyChannelInternal.instance(_dl, decode, _isDebugMode);
+{comment}
+{comment} extension ExposeRidReplyChannel on Rid {{
+{comment}   RidReplyChannel<{PostedReply}> get replyChannel => {_RID_REPLY_CHANNEL};
+{comment} }}
 {comment} ```
     "###,
         PostedReply = posted_reply_type,
+        _RID_REPLY_CHANNEL = _RID_REPLY_CHANNEL,
         comment = comment,
         enum = dart_enum_name,
         class_name = class_name,

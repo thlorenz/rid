@@ -1,10 +1,11 @@
 use std::collections::HashMap;
 
 use super::{
-    render_access_item, render_free, render_lifetime, render_lifetime_def,
-    render_return_type, ReceiverArg, RenderedReturnType,
+    render_free, render_lifetime, render_lifetime_def, render_return_type,
+    ReceiverArg, RenderedReturnType,
 };
 use crate::{
+    accesses::{AccessKind, VecAccess},
     attrs::Category,
     parse::{
         rust_type::{Composite, Primitive, RustType, TypeKind, Value},
@@ -12,13 +13,12 @@ use crate::{
     },
     render_common::{
         fn_ident_and_impl_ident_string, PointerTypeAlias,
-        RenderFunctionExportConfig, VecAccess,
+        RenderFunctionExportConfig,
     },
     render_rust::{ffi_prelude, render_rust_arg, RenderedReceiverArgPass},
 };
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote, quote_spanned};
-use render_access_item::RenderedAccessItem;
 use render_free::RenderedFree;
 use render_rust_arg::RustArg;
 use syn::Ident;
@@ -26,7 +26,6 @@ use syn::Ident;
 pub struct RenderedFunctionExport {
     pub tokens: TokenStream,
     pub ptr_type_aliases: Vec<PointerTypeAlias>,
-    pub raw_type_aliases: HashMap<String, TokenStream>,
     pub vec_access: Option<VecAccess>,
 }
 
@@ -37,7 +36,6 @@ pub fn render_function_export(
 ) -> RenderedFunctionExport {
     let config = config.unwrap_or(Default::default());
     let mut ptr_type_aliases = Vec::<PointerTypeAlias>::new();
-    let mut raw_type_aliases = HashMap::<String, TokenStream>::new();
 
     let ParsedFunction {
         fn_ident,
@@ -68,17 +66,14 @@ pub fn render_function_export(
     let RenderedReturnType {
         tokens: ret_type,
         type_alias: ret_alias,
-        inner_typedef: ret_inner_typedef,
-    } = render_return_type(return_arg, true);
-    if let Some((key, tokens)) = ret_inner_typedef {
-        if !raw_type_aliases.contains_key(&key) {
-            raw_type_aliases.insert(key, tokens);
-        }
-    }
-    ret_alias.clone().map(|x| ptr_type_aliases.push(x));
+    } = render_return_type(return_arg, &AccessKind::MethodReturn);
+    ret_alias.as_ref().map(|x| ptr_type_aliases.push(x.clone()));
 
-    let ret_to_pointer =
-        return_arg.render_to_return(&return_ident, &return_pointer_ident);
+    let ret_to_pointer = return_arg.render_to_return(
+        &return_ident,
+        &return_pointer_ident,
+        false,
+    );
 
     let receiver_arg =
         receiver.as_ref().map(ParsedReceiver::render_receiver_arg);
@@ -136,29 +131,25 @@ pub fn render_function_export(
     };
 
     let vec_access = if return_arg.is_vec() {
-        // TODO: does this work when type is not aliased?
+        let inner_return_ty = return_arg.inner_composite_type().unwrap();
+
         let ret_ident = match &ret_alias {
-            Some(PointerTypeAlias { alias, .. }) => alias,
-            Option::None => &return_arg.ident(),
+            Some(PointerTypeAlias { alias, .. }) => alias.clone(),
+            None if inner_return_ty.is_primitive() => {
+                inner_return_ty.rust_ident().clone()
+            }
+            None if inner_return_ty.is_enum() => {
+                format_ident!("i32")
+            }
+            None => return_arg.rust_ident().clone(),
         };
 
-        let fn_len_ident = format_ident!("rid_len_{}", ret_ident);
-        let fn_free_ident = format_ident!("rid_free_vec_{}", ret_ident);
-        let fn_get_ident = format_ident!("rid_get_item_{}", ret_ident);
-
-        let item_type = return_arg
-            .inner_composite_type()
-            .expect("Vec should have inner type");
-
-        Some(VecAccess {
-            vec_type: return_arg.clone(),
-            vec_type_dart: format!("RidVec_{}", ret_ident),
-            item_type,
-            rust_ffi_prelude: ffi_prelude,
-            fn_len_ident,
-            fn_free_ident,
-            fn_get_ident,
-        })
+        Some(VecAccess::new(
+            &return_arg,
+            ret_ident,
+            AccessKind::MethodReturn,
+            &ffi_prelude,
+        ))
     } else {
         None
     };
@@ -166,7 +157,6 @@ pub fn render_function_export(
     RenderedFunctionExport {
         tokens: fn_export,
         ptr_type_aliases,
-        raw_type_aliases,
         vec_access,
     }
 }
