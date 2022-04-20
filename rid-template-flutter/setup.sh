@@ -1,11 +1,14 @@
 #!/usr/bin/env bash
+echo "Path: \"${BASH_SOURCE[0]}\""
+if [[ -z "${BASH_SOURCE[0]}" ]]; then
+  echo "You need to specify project name!"
+  exit 0;
+fi
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
-TEMPLATE_ROOT=$DIR
-
+TEMPLATE_ROOT="$DIR/template"
 APP_NAME=$1
-
-mkdir $APP_NAME && cd $APP_NAME
+mkdir -p "projects/$APP_NAME" && cd "projects/$APP_NAME"
 APP_ROOT=`pwd`
 
 # Rust
@@ -53,6 +56,7 @@ cp $TEMPLATE_ROOT/gitignore $APP_ROOT/.gitignore
 
 # Build all Targets that are most likely supported on the host OS
 # and have binding files copied and setup flutter plugin to hook things up
+flutter pub get
 $APP_ROOT/sh/bindgen
 
 if [[ "$OSTYPE" == "linux-gnu"* ]]; then
