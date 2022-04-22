@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-echo "Path: \"${BASH_SOURCE[0]}\""
-if [[ -z "${BASH_SOURCE[0]}" ]]; then
+echo "Project name: \"$1\""
+if [[ -z $1 ]]; then
   echo "You need to specify project name!"
   exit 0;
 fi
