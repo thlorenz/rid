@@ -11,6 +11,7 @@ use crate::{
     common::{
         derive_error, prefixes::reply_class_name_for_enum, tokens::resolve_ptr,
     },
+    parse::rust_type::TypeKind,
     render_dart::RenderDartTypeOpts,
     render_rust::{ffi_prelude, RustArg},
     reply,
@@ -303,8 +304,16 @@ impl ParsedMessageEnum {
         comment: &str,
     ) -> String {
         let fn_ident = &variant.method_ident;
+
+        enum ArgType {
+            Vector,
+            Hashmap,
+            Other,
+        }
+
         struct DartArg {
             arg: String,
+            arg_type: ArgType,
             ty: String,
             ffi_arg: String,
         }
@@ -320,6 +329,15 @@ impl ParsedMessageEnum {
                 let ffi_arg = f.dart_ty.render_resolved_ffi_arg(f.slot);
                 DartArg {
                     arg: format!("arg{}", f.slot),
+                    arg_type: match f.rust_ty.kind {
+                        TypeKind::Composite(_, Some(_), None) => {
+                            ArgType::Vector
+                        }
+                        TypeKind::Composite(_, Some(_), Some(_)) => {
+                            ArgType::Hashmap
+                        }
+                        _ => ArgType::Other,
+                    },
                     ty: f.rust_ty.render_dart_type(
                         &type_infos,
                         RenderDartTypeOpts::attr_raw(),
@@ -337,25 +355,90 @@ impl ParsedMessageEnum {
             },
         );
 
+        /*
+            print("Allocating native memory...");
+            final data = calloc<Uint8>(arg0.length);
+            for (int i = 0; i < arg0.length; i++) {
+            data[i] = arg0[i];
+            }
+            print("Copied values...");
+            rid_ffi.rid_msg_Write(reqId, arg0.length, data);
+            print("Data written.");
+        */
+
+        let additional_processing = args_info.iter().fold(
+            String::new(),
+            |acc, (index, DartArg { arg_type, arg, .. })| {
+                match arg_type {
+                    ArgType::Vector => {
+                        let code = format!(
+                            "
+                    // Conversion into a C-compatible array.
+                    final {arg}_data = calloc<Uint8>({arg}.length);
+                    for (int i = 0; i < arg0.length; i++) {{
+                        {arg}_data[i] = {arg}[i];
+                    }}
+                    "
+                        );
+                        format!(r#"{acc}{code}\n"#)
+                    }
+                    ArgType::Hashmap => {
+                        //TODO: Implement hashmap
+                        acc
+                    }
+                    ArgType::Other => acc,
+                }
+            },
+        );
+
         let (args_call, args_string) = args_info.iter().fold(
             ("".to_string(), "".to_string()),
             |(args_acc, args_string_acc),
-             (idx, DartArg { ffi_arg, arg, .. })| {
+             (
+                idx,
+                DartArg {
+                    ffi_arg,
+                    arg,
+                    arg_type,
+                    ..
+                },
+            )| {
                 let comma = if *idx == 0 { "" } else { ", " };
-                (
-                    format!(
-                        "{acc}{comma}{arg}",
-                        acc = args_acc,
-                        comma = comma,
-                        arg = ffi_arg
-                    ),
-                    format!(
-                        "{acc}{comma}${arg}",
-                        acc = args_string_acc,
-                        comma = comma,
-                        arg = arg
-                    ),
-                )
+
+                match arg_type {
+                    ArgType::Vector => {
+                        (
+                            format!(
+                                "{acc}{comma}{arg}.length, {arg}_data",
+                                acc = args_acc,
+                                comma = comma,
+                                arg = ffi_arg
+                            ),
+                            format!(
+                                "{acc}{comma}${arg}.length, ${arg}_data",
+                                acc = args_string_acc,
+                                comma = comma,
+                                arg = arg
+                            ),
+                        )
+                    },
+                    ArgType::Hashmap | ArgType::Other => {
+                        (
+                            format!(
+                                "{acc}{comma}{arg}",
+                                acc = args_acc,
+                                comma = comma,
+                                arg = ffi_arg
+                            ),
+                            format!(
+                                "{acc}{comma}${arg}",
+                                acc = args_string_acc,
+                                comma = comma,
+                                arg = arg
+                            ),
+                        )
+                    }
+                }
             },
         );
 
@@ -364,6 +447,7 @@ impl ParsedMessageEnum {
             r###"
 {comment}   Future<{class_name}> {dart_method_name}({args_decl}{{Duration? timeout}}) {{
 {comment}     final reqId = {_RID_REPLY_CHANNEL}.reqId;
+{comment}     {additional_processing}
 {comment}     {rid_ffi}.{method_name}(reqId, {args_call});
 {comment}
 {comment}     final reply = _isDebugMode && {rid_debug_reply} != null
