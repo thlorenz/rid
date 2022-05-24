@@ -116,6 +116,7 @@ impl ParsedEnumVariantField {
     // types yet
     fn from(f: &Field, slot: usize, type_infos: &TypeInfoMap) -> Self {
         let rust_type = RustType::from_plain_type(&f.ty);
+        dbg!(&rust_type);
         let rust_type = match rust_type {
             Some(x) => x,
             None => abort!(f.ident, "invalid rust type"),

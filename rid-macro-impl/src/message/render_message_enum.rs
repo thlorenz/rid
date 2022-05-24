@@ -118,6 +118,7 @@ impl ParsedMessageEnum {
             .iter()
             .enumerate()
             .map(|(slot, f)| RustArg::from(&f.rust_ty, slot))
+            .flatten()
             .collect();
 
         let args = if arg_idents.is_empty() {
@@ -150,20 +151,25 @@ impl ParsedMessageEnum {
             arg_idents
                 .iter()
                 .enumerate()
-                .map(|(slot, RustArg { arg_ident, .. })| {
-                    if slot == last_slot {
-                        quote_spanned! { fn_ident.span() => #arg_ident }
+                .map(|(slot, RustArg { arg_ident, virt, .. })| {
+                    if !virt {
+                        Some(if slot == last_slot {
+                            quote_spanned! { fn_ident.span() => #arg_ident }
+                        } else {
+                            quote_spanned! { fn_ident.span() => #arg_ident, }
+                        })
                     } else {
-                        quote_spanned! { fn_ident.span() => #arg_ident, }
+                        None
                     }
                 })
+                .flatten()
                 .collect()
         };
 
         let req_id_ident = format_ident!("__rid_req_id");
         let msg_ident = format_ident!("__rid_msg");
 
-        // TODO: getting error in the right place if the model struct doesn't implement udpate at
+        // TODO: getting error in the right place if the model struct doesn't implement update at
         // all, however when it is implemented incorrectly then the error doesn't even mention the
         // method name
         let update_method = quote_spanned! { self.struct_ident.span() =>
