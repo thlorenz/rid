@@ -26,16 +26,16 @@ pub fn render_reply_dart(
 {comment} ```dart
 {comment}
 {comment} class {class_name} extends IReply {{
-{comment}   final {enum} type;
+{comment}   final {en} type;
 {comment}   final int? reqId;
-{comment}   final String? data; 
+{comment}   final Uint8List? data; 
 {comment} 
 {comment}   {class_name}._(this.type, this.reqId, this.data);
 {comment} 
 {comment}   @override
 {comment}   String toString() {{
 {comment}     return '''{class_name} {{
-{comment}   type:  ${{this.type.toString().substring('{enum}.'.length)}}
+{comment}   type:  ${{this.type.toString().substring('{en}.'.length)}}
 {comment}   reqId: $reqId
 {comment}   data:  $data
 {comment} }}
@@ -56,12 +56,12 @@ pub fn render_reply_dart(
 {comment} const int _TYPE_MASK= 0x000000000000ffff;
 {comment} const int _I64_MIN = -9223372036854775808;
 {comment} 
-{comment} {class_name} decode(int packed, String? data) {{
+{comment} {class_name} decode(int packed, Uint8List? data) {{
 {comment}   final ntype = packed & _TYPE_MASK;
 {comment}   final id = (packed - _I64_MIN) >> 16;
 {comment}   final reqId = id > 0 ? id : null;
 {comment} 
-{comment}   final type = {enum}.values[ntype];
+{comment}   final type = {en}.values[ntype];
 {comment}   return {class_name}._(type, reqId, data);
 {comment} }}
 {comment} 
@@ -75,7 +75,7 @@ pub fn render_reply_dart(
         PostedReply = posted_reply_type,
         _RID_REPLY_CHANNEL = _RID_REPLY_CHANNEL,
         comment = comment,
-        enum = dart_enum_name,
+        en = dart_enum_name,
         class_name = class_name,
     );
 

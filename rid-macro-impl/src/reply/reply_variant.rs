@@ -2,14 +2,15 @@ use syn::{Field, Variant};
 
 use crate::{
     common::abort,
-    parse::rust_type::{self, Primitive, RustType, Value},
+    parse::rust_type::{self, Primitive, RustType, Value, TypeKind},
 };
 
+#[derive(Debug)]
 pub struct ReplyVariant {
     pub ident: syn::Ident,
     pub slot: usize,
     pub has_req_id: bool,
-    pub has_data: bool,
+    pub has_data: Option<TypeKind>,
 }
 
 // There are only four versions of a reply variant which simplifies parsing a lot.
@@ -17,6 +18,10 @@ pub struct ReplyVariant {
 // With RequestId field:              Foo(u64)
 // With RequestId and data fields:    Foo(u64, String)
 // With data field:                   Foo(String)
+// With RequestId and data fields:    Foo(u64, Vec<Primitive>)
+// With data field:                   Foo(Vec<Primitive>)
+// With RequestId and data fields:    Foo(u64, Vec<String>)
+// With data field:                   Foo(Vec<String>)
 impl ReplyVariant {
     pub fn new(slot: usize, variant: &Variant) -> Self {
         let field_vec: Vec<&Field> = variant.fields.iter().collect();
@@ -26,7 +31,7 @@ impl ReplyVariant {
                 ident,
                 slot,
                 has_req_id: false,
-                has_data: false,
+                has_data: None,
             }
         } else if field_vec.len() == 1 {
             if is_req_id_type(field_vec[0]) {
@@ -34,19 +39,19 @@ impl ReplyVariant {
                     ident,
                     slot,
                     has_req_id: true,
-                    has_data: false,
+                    has_data: None,
                 }
-            } else if is_data_type(field_vec[0]) {
+            } else if let Some(typ) = get_data_type(field_vec[0]) {
                 ReplyVariant {
                     ident,
                     slot,
                     has_req_id: false,
-                    has_data: true,
+                    has_data: Some(typ),
                 }
             } else {
                 abort!(
                     ident,
-                    "For replies with a single field it needs to be a u64 or String, i.e. 'Started(u64) or Started(String)'"
+                    "For replies with a single field it needs to be a u64, Vector or String, i.e. 'Started(u64) or Started(String)'"
                 )
             }
         } else if field_vec.len() == 2 {
@@ -56,18 +61,18 @@ impl ReplyVariant {
                     "For replies with two fields the first field needs to be a u64, i.e. 'Started(u64, String)'"
                 )
             }
-            if !is_data_type(field_vec[1]) {
+            if let Some(typ) = get_data_type(field_vec[1]) {
+                ReplyVariant {
+                    ident,
+                    slot,
+                    has_req_id: true,
+                    has_data: Some(typ),
+                }
+            }else{
                 abort!(
                     ident,
-                    "For reply with two fields the second field needs to be a String, i.e. 'Started(u64, String)'"
+                    "For reply with two fields the second field needs to be a String or a Vector, i.e. 'Started(u64, String)'"
                 )
-            }
-
-            ReplyVariant {
-                ident,
-                slot,
-                has_req_id: true,
-                has_data: true,
             }
         } else {
             abort!(ident.span(), "Only specific forms of reply are valid, i.e. 'Started | Started(u64) | Started(String) | Started(u64, String)'")
@@ -86,13 +91,24 @@ fn is_req_id_type(req_id: &Field) -> bool {
     }
 }
 
-fn is_data_type(data: &Field) -> bool {
+fn get_data_type(data: &Field) -> Option<TypeKind> {
     let rust_type = RustType::from_plain_type(&data.ty);
-    match rust_type {
+    match &rust_type {
+        // String
         Some(RustType {
             kind: rust_type::TypeKind::Value(v),
             ..
-        }) if v == Value::String => true,
-        _ => false,
+        }) if *v == Value::String => Some(rust_type.unwrap().kind.clone()),
+        // Vector of Strings
+        Some(RustType {
+            kind: rust_type::TypeKind::Composite(_, Some(v), _),
+            ..
+        }) if v.is_string() => Some(rust_type.unwrap().kind),
+        // Vector of Primitives
+        Some(RustType {
+            kind: rust_type::TypeKind::Composite(_, Some(v), _),
+            ..
+        }) if v.is_primitive() => Some(rust_type.unwrap().kind),
+        _ => None,
     }
 }

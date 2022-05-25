@@ -185,6 +185,7 @@ import 'package:flutter/foundation.dart' as Foundation;"###
             r###"import 'dart:ffi' as {dart_ffi};
 import 'dart:async' as {dart_async};
 import 'dart:io' as dart_io;
+import 'dart:typed_data';
 import 'dart:collection' as {dart_collection};
 import 'package:ffi/ffi.dart' as {pack_ffi};
 import '{ffigen_binding}' as {ffigen_bind};
