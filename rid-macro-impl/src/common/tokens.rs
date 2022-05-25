@@ -31,7 +31,6 @@ pub fn resolve_vec_msg_ptr(arg: &syn::Ident, len: &syn::Ident, ty: &syn::Ident) 
             assert!(!#arg.is_null());
             std::slice::from_raw_parts(#arg, #len).to_vec()
         };
-        println!("Vector read!");
     }
 }
 
