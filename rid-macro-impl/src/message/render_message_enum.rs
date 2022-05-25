@@ -68,7 +68,6 @@ impl ParsedMessageEnum {
             .map(|v| self.render_rust_method(v, config));
         let dart_comment = self.render_dart_extension(config);
         let module_ident = &self.module_ident;
-
         let reply_check = if config.render_reply_check {
             self.render_reply_check()
         } else {
@@ -83,7 +82,6 @@ impl ParsedMessageEnum {
             } else {
                 TokenStream::new()
             };
-
         (
             quote_spanned! { self.ident.span() =>
                 mod #module_ident {
@@ -373,14 +371,14 @@ impl ParsedMessageEnum {
                     ArgType::Vector => {
                         let code = format!(
                             "
-                    // Conversion into a C-compatible array.
-                    final {arg}_data = calloc<Uint8>({arg}.length);
-                    for (int i = 0; i < arg0.length; i++) {{
-                        {arg}_data[i] = {arg}[i];
-                    }}
+///    ///Conversion into a C-compatible array.
+{comment}    final {arg}_data = calloc<Uint8>({arg}.length);
+{comment}    for (int i = 0; i < arg0.length; i++) {{
+{comment}        {arg}_data[i] = {arg}[i];
+{comment}    }}
                     "
                         );
-                        format!(r#"{acc}{code}\n"#)
+                        format!("{acc}{code}\n")
                     }
                     ArgType::Hashmap => {
                         //TODO: Implement hashmap
