@@ -183,6 +183,8 @@ import 'package:flutter/foundation.dart' as Foundation;"###
         };
         format!(
             r###"import 'dart:ffi' as {dart_ffi};
+import 'dart:ffi';
+import 'package:ffi/ffi.dart';
 import 'dart:async' as {dart_async};
 import 'dart:io' as dart_io;
 import 'dart:collection' as {dart_collection};
