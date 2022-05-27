@@ -41,6 +41,22 @@ pub fn render_reply_dart(
 {comment} }}
 {comment} ''';
 {comment}   }}
+{comment} String? asString() {{
+{comment}     if (this.data != null) {{
+{comment}         return utf8.decode(this.data!);
+{comment}     }} else {{
+{comment}         return null;
+{comment}     }}
+{comment} }}
+{comment} 
+{comment} int? asInt() {{
+{comment}     if (this.data != null) {{
+{comment}         int number = ByteData.view(this.data!.buffer).getUint64(0);
+{comment}         return number;
+{comment}     }} else {{
+{comment}         return null;
+{comment}     }}
+{comment} }}
 {comment} }}
 {comment} 
 {comment} void Function({PostedReply})? _RID_DEBUG_REPLY = ({PostedReply} reply) {{
