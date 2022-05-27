@@ -53,13 +53,13 @@ fn render_variant(variant: &ReplyVariant) -> TokenStream {
         // String with id
         (true, Some(TypeKind::Value(Value::String))) => {
             quote_spanned! { ident.span() =>
-                #ident(id, d) => (rid::_encode_with_id(#slot, id), d.bytes()),
+                #ident(id, d) => (rid::_encode_with_id(#slot, id), d.as_bytes().to_vec()),
             }
         }
         // String without id
         (false, Some(TypeKind::Value(Value::String))) => {
             quote_spanned! { ident.span() =>
-                #ident(d) => (rid::_encode_without_id(#slot), d.bytes()),
+                #ident(d) => (rid::_encode_without_id(#slot), d.as_bytes().to_vec()),
             }
         }
         // Primitive data with ID
