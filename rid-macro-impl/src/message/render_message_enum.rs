@@ -11,7 +11,7 @@ use crate::{
     common::{
         derive_error, prefixes::reply_class_name_for_enum, tokens::resolve_ptr,
     },
-    parse::rust_type::TypeKind,
+    parse::rust_type::{TypeKind, RustType},
     render_dart::RenderDartTypeOpts,
     render_rust::{ffi_prelude, RustArg},
     reply,
@@ -304,7 +304,7 @@ impl ParsedMessageEnum {
         let fn_ident = &variant.method_ident;
 
         enum ArgType {
-            Vector,
+            Vector(Box<RustType>),
             Hashmap,
             Other,
         }
@@ -327,9 +327,9 @@ impl ParsedMessageEnum {
                 let ffi_arg = f.dart_ty.render_resolved_ffi_arg(f.slot);
                 DartArg {
                     arg: format!("arg{}", f.slot),
-                    arg_type: match f.rust_ty.kind {
-                        TypeKind::Composite(_, Some(_), None) => {
-                            ArgType::Vector
+                    arg_type: match &f.rust_ty.kind {
+                        TypeKind::Composite(_, Some(typ), None) => {
+                            ArgType::Vector(typ.clone())
                         }
                         TypeKind::Composite(_, Some(_), Some(_)) => {
                             ArgType::Hashmap
@@ -368,8 +368,8 @@ impl ParsedMessageEnum {
             String::new(),
             |acc, (index, DartArg { arg_type, arg, .. })| {
                 match arg_type {
-                    ArgType::Vector => {
-                        //TODO: Vectors included here might not be Uint8, fix that.
+                    ArgType::Vector(typ) if typ.kind.is_numeric() => {
+                        let byte_size = typ.kind.get_numeric_size().expect("Numeric type without a bytesize?");
                         let code = format!(
                             "
     // Conversion into a C-compatible array.
@@ -377,13 +377,28 @@ impl ParsedMessageEnum {
 {comment}    for (int i = 0; i < {arg}.length; i++) {{
 {comment}        {arg}_data[i] = {arg}[i];
 {comment}    }}
-    // Assertion test for correct pass-through
+                    "
+                        );
+                        format!("{acc}{code}\n")
+                    }
+                    ArgType::Vector(typ) if typ.kind.is_string_like() => {
+                        let code = format!(
+                            "
+{comment}    final {arg}_data = calloc<Uint8>();
+{comment}    int byte_counter = 0;
 {comment}    for (int i = 0; i < {arg}.length; i++) {{
-{comment}        assert({arg}_data[i] == {arg}[i]);
+{comment}        var encoded = utf8.encode({arg}[i]);
+{comment}        for (int j = 0; j < encoded.length; j++) {{
+{comment}           {arg}_data[byte_counter] = encoded[j];
+{comment}           byte_counter++;
+{comment}        }}
 {comment}    }}
                     "
                         );
                         format!("{acc}{code}\n")
+                    }
+                    ArgType::Vector(a) => {
+                        unimplemented!("Vector of type {:#?} currently isn't supported!", a);
                     }
                     ArgType::Hashmap => {
                         //TODO: Implement hashmap
@@ -409,7 +424,7 @@ impl ParsedMessageEnum {
                 let comma = if *idx == 0 { "" } else { ", " };
 
                 match arg_type {
-                    ArgType::Vector => {
+                    ArgType::Vector(_) => {
                         (
                             format!(
                                 "{acc}{comma}{arg}.length, {arg}_data",

@@ -287,6 +287,42 @@ impl TypeKind {
         }
     }
 
+    pub fn is_numeric(&self) -> bool {
+        if let TypeKind::Primitive(a) = self {
+            *a != Primitive::Bool
+        } else {
+            false
+        }
+    }
+
+    pub fn get_numeric_size(&self) -> Option<usize> {
+        if let TypeKind::Primitive(a) = self {
+            if *a == Primitive::Bool {
+                None
+            }else{
+                match *a {
+                    Primitive::U8 | Primitive::I8 | Primitive::Bool => {
+                        Some(1)
+                    }
+                    Primitive::U16 | Primitive::I16 => {
+                        Some(2)
+                    }
+                    Primitive::U32 | Primitive::I32 => {
+                        Some(3)
+                    }
+                    Primitive::U64 | Primitive::I64 => {
+                        Some(4)
+                    }
+                    Primitive::USize => {
+                        Some(std::mem::size_of::<usize>())
+                    }
+                }
+            }
+        } else {
+            None
+        }
+    }
+
     pub fn is_primitive(&self) -> bool {
         if let TypeKind::Primitive(_) = self {
             true
