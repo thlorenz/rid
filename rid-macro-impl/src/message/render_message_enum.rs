@@ -372,12 +372,12 @@ impl ParsedMessageEnum {
                         //TODO: Vectors included here might not be Uint8, fix that.
                         let code = format!(
                             "
-    ///Conversion into a C-compatible array.
+    // Conversion into a C-compatible array.
 {comment}    final {arg}_data = calloc<Uint8>({arg}.length);
 {comment}    for (int i = 0; i < {arg}.length; i++) {{
 {comment}        {arg}_data[i] = {arg}[i];
 {comment}    }}
-    /// Assertion test for correct pass-through
+    // Assertion test for correct pass-through
 {comment}    for (int i = 0; i < {arg}.length; i++) {{
 {comment}        assert({arg}_data[i] == {arg}[i]);
 {comment}    }}
