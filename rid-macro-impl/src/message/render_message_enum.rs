@@ -385,17 +385,22 @@ impl ParsedMessageEnum {
                     ArgType::Vector(typ) if typ.kind.is_string_like() => {
                         let code = format!(
                             "
- {comment}      List<Pointer<Int8>> utf8PointerList = {arg}.map((str) => str.toNativeUtf8().cast<Int8>()).toList();
+ {comment}      // Turn Dart strings into byte arrays.
+ {comment}      final List<Pointer<Int8>> utf8PointerList = [
+ {comment}          for (final str in {arg}) 
+ {comment}              str.toNativeUtf8().cast<Int8>()
+ {comment}      ];
  {comment}      
+ {comment}      // Reserve memory for string pointers
  {comment}      final Pointer<Pointer<Int8>> {arg}_data =
  {comment}          malloc.allocate(sizeOf<Pointer<Int8>>() * utf8PointerList.length);
  {comment}
- {comment}      int {arg}_len = 0;
- {comment}
- {comment}      {arg}.asMap().forEach((index, utf) {{
- {comment}          {arg}_len++;
- {comment}          {arg}_data[index] = utf8PointerList[index];
- {comment}      }});
+ {comment}      // Set string pointers to point to actual strings
+ {comment}      for (int index = 0; index < dartStrings.length; index++) {{
+ {comment}        {arg}_data[index] = utf8PointerList[index];
+ {comment}      }}
+ {comment}      
+ {comment}      int {arg}_len = {arg}.length;
                             "
                         );
                         format!("{acc}{code}\n")
