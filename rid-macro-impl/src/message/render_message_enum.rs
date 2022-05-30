@@ -369,6 +369,7 @@ impl ParsedMessageEnum {
             |acc, (index, DartArg { arg_type, arg, .. })| {
                 match arg_type {
                     ArgType::Vector(typ) if typ.kind.is_numeric() => {
+                        //TODO: Fix memory leaks!
                         let byte_size = typ.kind.get_numeric_size().expect("Numeric type without a bytesize?");
                         let code = format!(
                             "
@@ -383,6 +384,7 @@ impl ParsedMessageEnum {
                         format!("{acc}{code}\n")
                     }
                     ArgType::Vector(typ) if typ.kind.is_string_like() => {
+                        //TODO: Fix memory leaks!
                         let code = format!(
                             "
  {comment}      // Turn Dart strings into byte arrays.
