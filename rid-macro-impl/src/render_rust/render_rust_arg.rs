@@ -115,20 +115,24 @@ impl RustArg {
             // -----------------
             // Composite Vec
             // -----------------
-            Composite(rust_type::Composite::Vec, val_ty, _) => {
+            Composite(rust_type::Composite::Vec, Some(val_ty), _) => {
                 let len_ident = format_ident!("len{}", slot);
                 let len_type_tokens = quote_spanned! { len_ident.span() =>
                     usize
                 };
 
                 let arg_ident = format_ident!("arg{}", slot);
-                let val_ty = val_ty.as_ref().expect("Vec should have a type");
-                let val_ty_ident = val_ty.rust_ident();
-                let type_tokens = quote_spanned! { arg_ident.span() =>
-                    *const #val_ty_ident
+                let type_tokens = if val_ty.is_string_like(){
+                    quote_spanned!{
+                        arg_ident.span() => *const *const std::os::raw::c_char
+                    }
+                }else{
+                    quote_spanned!{
+                        arg_ident.span() => *const u8
+                    }
                 };
                 let resolver_tokens =
-                    resolve_vec_msg_ptr(&arg_ident, &len_ident, &val_ty_ident);
+                    resolve_vec_msg_ptr(&arg_ident, &len_ident, &val_ty);
                 vec![
                     RustArg {
                         virt: true,
@@ -143,7 +147,6 @@ impl RustArg {
                         resolver_tokens,
                     },
                 ]
-                // todo!("RustArg::from::Vec")
             }
             // -----------------
             // Todos

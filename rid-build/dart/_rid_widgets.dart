@@ -12,7 +12,7 @@ class RidStatelessElement extends StatelessElement {
   Widget build() {
     try {
       ridStoreLock();
-      return widget.build(this);
+      return this.build();
     } finally {
       ridStoreUnlock();
     }

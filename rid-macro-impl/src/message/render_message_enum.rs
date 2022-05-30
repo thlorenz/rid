@@ -374,7 +374,8 @@ impl ParsedMessageEnum {
                             "
     // Conversion into a C-compatible array.
 {comment}    final {arg}_data = calloc<Uint8>({arg}.length);
-{comment}    for (int i = 0; i < {arg}.length; i++) {{
+{comment}    final {arg}_len = {arg}.length;
+{comment}    for (int i = 0; i < {arg}_len; i++) {{
 {comment}        {arg}_data[i] = {arg}[i];
 {comment}    }}
                     "
@@ -384,16 +385,18 @@ impl ParsedMessageEnum {
                     ArgType::Vector(typ) if typ.kind.is_string_like() => {
                         let code = format!(
                             "
-{comment}    final {arg}_data = calloc<Uint8>();
-{comment}    int byte_counter = 0;
-{comment}    for (int i = 0; i < {arg}.length; i++) {{
-{comment}        var encoded = utf8.encode({arg}[i]);
-{comment}        for (int j = 0; j < encoded.length; j++) {{
-{comment}           {arg}_data[byte_counter] = encoded[j];
-{comment}           byte_counter++;
-{comment}        }}
-{comment}    }}
-                    "
+ {comment}      List<Pointer<Int8>> utf8PointerList = {arg}.map((str) => str.toNativeUtf8().cast<Int8>()).toList();
+ {comment}      
+ {comment}      final Pointer<Pointer<Int8>> {arg}_data =
+ {comment}          malloc.allocate(sizeOf<Pointer<Int8>>() * utf8PointerList.length);
+ {comment}
+ {comment}      int {arg}_len = 0;
+ {comment}
+ {comment}      {arg}.asMap().forEach((index, utf) {{
+ {comment}          {arg}_len++;
+ {comment}          {arg}_data[index] = utf8PointerList[index];
+ {comment}      }});
+                            "
                         );
                         format!("{acc}{code}\n")
                     }
@@ -427,13 +430,13 @@ impl ParsedMessageEnum {
                     ArgType::Vector(_) => {
                         (
                             format!(
-                                "{acc}{comma}{arg}.length, {arg}_data",
+                                "{acc}{comma}{arg}_len, {arg}_data",
                                 acc = args_acc,
                                 comma = comma,
                                 arg = ffi_arg
                             ),
                             format!(
-                                "{acc}{comma}${arg}.length, ${arg}_data",
+                                "{acc}{comma}${arg}_len, ${arg}_data",
                                 acc = args_string_acc,
                                 comma = comma,
                                 arg = arg

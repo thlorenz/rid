@@ -1,4 +1,4 @@
-use crate::common::state::ImplementationType;
+use crate::{common::state::ImplementationType, parse::rust_type::RustType};
 
 use super::state::get_state;
 use quote::{format_ident, quote_spanned};
@@ -25,12 +25,36 @@ pub fn resolve_vec_ptr(ty: &syn::Ident) -> TokenStream {
     }
 }
 
-pub fn resolve_vec_msg_ptr(arg: &syn::Ident, len: &syn::Ident, ty: &syn::Ident) -> TokenStream {
-    quote_spanned! { ty.span() =>
-        let #arg: Vec<#ty> = unsafe {
-            assert!(!#arg.is_null());
-            std::slice::from_raw_parts(#arg, #len).to_vec()
-        };
+pub fn resolve_vec_msg_ptr(
+    arg: &syn::Ident,
+    len: &syn::Ident,
+    ty: &Box<RustType>,
+) -> TokenStream {
+    // Always *const u8 input
+    if ty.kind.is_string_like() {
+        let ty = ty.rust_ident();
+        let arg_out = format_ident!("{arg}_out");
+        quote_spanned! { ty.span() =>
+            let #arg: Vec<String> = unsafe {
+                use std::os::raw::c_char;
+                use std::ffi::CStr;
+                use std::slice;
+                //TODO: Error handling!
+                slice::from_raw_parts(#arg, #len)
+                    .into_iter()
+                    .map(|&s| CStr::from_ptr(s).to_str().unwrap_or("Nope").to_owned())
+                    .collect()
+            };
+            println!("Finished string processing!");
+        }
+    } else {
+        let ty = ty.rust_ident();
+        quote_spanned! { ty.span() =>
+            let #arg: Vec<#ty> = unsafe {
+                assert!(!#arg.is_null());
+                std::slice::from_raw_parts(#arg, #len).to_vec()
+            };
+        }
     }
 }
 
