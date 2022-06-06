@@ -52,7 +52,7 @@ pub fn resolve_vec_msg_ptr(
         quote_spanned! { ty.span() =>
             let #arg: Vec<#ty> = unsafe {
                 assert!(!#arg.is_null());
-                std::slice::from_raw_parts(#arg, #len).to_vec()
+                std::slice::from_raw_parts::<#ty>(#arg as *const #ty, #len).to_vec()
             };
         }
     }

@@ -11,7 +11,7 @@ use crate::{
     common::{
         derive_error, prefixes::reply_class_name_for_enum, tokens::resolve_ptr,
     },
-    parse::rust_type::{TypeKind, RustType},
+    parse::rust_type::{RustType, TypeKind},
     render_dart::RenderDartTypeOpts,
     render_rust::{ffi_prelude, RustArg},
     reply,
@@ -369,7 +369,6 @@ impl ParsedMessageEnum {
             |acc, (index, DartArg { arg_type, arg, .. })| {
                 match arg_type {
                     ArgType::Vector(typ) if typ.kind.is_numeric() => {
-                        //TODO: Fix memory leaks!
                         let byte_size = typ.kind.get_numeric_size().expect("Numeric type without a bytesize?");
                         let code = format!(
                             "
@@ -384,22 +383,21 @@ impl ParsedMessageEnum {
                         format!("{acc}{code}\n")
                     }
                     ArgType::Vector(typ) if typ.kind.is_string_like() => {
-                        //TODO: Fix memory leaks!
                         let code = format!(
                             "
  {comment}      // Turn Dart strings into byte arrays.
- {comment}      final List<Pointer<Int8>> utf8PointerList = [
+ {comment}      final List<Pointer<Int8>> {arg}_utf8PointerList = [
  {comment}          for (final str in {arg}) 
  {comment}              str.toNativeUtf8().cast<Int8>()
  {comment}      ];
  {comment}      
  {comment}      // Reserve memory for string pointers
  {comment}      final Pointer<Pointer<Int8>> {arg}_data =
- {comment}          malloc.allocate(sizeOf<Pointer<Int8>>() * utf8PointerList.length);
+ {comment}          malloc.allocate(sizeOf<Pointer<Int8>>() * {arg}_utf8PointerList.length);
  {comment}
  {comment}      // Set string pointers to point to actual strings
- {comment}      for (int index = 0; index < dartStrings.length; index++) {{
- {comment}        {arg}_data[index] = utf8PointerList[index];
+ {comment}      for (int index = 0; index < {arg}.length; index++) {{
+ {comment}        {arg}_data[index] = {arg}_utf8PointerList[index];
  {comment}      }}
  {comment}      
  {comment}      int {arg}_len = {arg}.length;
@@ -409,6 +407,50 @@ impl ParsedMessageEnum {
                     }
                     ArgType::Vector(a) => {
                         unimplemented!("Vector of type {:#?} currently isn't supported!", a);
+                    }
+                    ArgType::Hashmap => {
+                        //TODO: Implement hashmap
+                        acc
+                    }
+                    ArgType::Other => acc,
+                }
+            },
+        );
+
+        let deallocators = args_info.iter().fold(
+            String::new(),
+            |acc, (index, DartArg { arg_type, arg, .. })| {
+                match arg_type {
+                    ArgType::Vector(typ) if typ.kind.is_numeric() => {
+                        //TODO: Fix memory leaks!
+                        let byte_size = typ
+                            .kind
+                            .get_numeric_size()
+                            .expect("Numeric type without a bytesize?");
+                        let code = format!(
+                            "
+{comment}      calloc.free({arg}_data);
+                            "
+                        );
+                        format!("{acc}{code}\n")
+                    }
+                    ArgType::Vector(typ) if typ.kind.is_string_like() => {
+                        //TODO: Fix memory leaks!
+                        let code = format!(
+                            "
+{comment}      for (int index = 0; index < {arg}.length; index++) {{
+{comment}        calloc.free({arg}_data[index]);
+{comment}      }}
+{comment}      calloc.free({arg}_data);
+                            "
+                        );
+                        format!("{acc}{code}\n")
+                    }
+                    ArgType::Vector(a) => {
+                        unimplemented!(
+                            "Vector of type {:#?} currently isn't supported!",
+                            a
+                        );
                     }
                     ArgType::Hashmap => {
                         //TODO: Implement hashmap
@@ -434,38 +476,34 @@ impl ParsedMessageEnum {
                 let comma = if *idx == 0 { "" } else { ", " };
 
                 match arg_type {
-                    ArgType::Vector(_) => {
-                        (
-                            format!(
-                                "{acc}{comma}{arg}_len, {arg}_data",
-                                acc = args_acc,
-                                comma = comma,
-                                arg = ffi_arg
-                            ),
-                            format!(
-                                "{acc}{comma}${arg}_len, ${arg}_data",
-                                acc = args_string_acc,
-                                comma = comma,
-                                arg = arg
-                            ),
-                        )
-                    },
-                    ArgType::Hashmap | ArgType::Other => {
-                        (
-                            format!(
-                                "{acc}{comma}{arg}",
-                                acc = args_acc,
-                                comma = comma,
-                                arg = ffi_arg
-                            ),
-                            format!(
-                                "{acc}{comma}${arg}",
-                                acc = args_string_acc,
-                                comma = comma,
-                                arg = arg
-                            ),
-                        )
-                    }
+                    ArgType::Vector(_) => (
+                        format!(
+                            "{acc}{comma}{arg}_len, {arg}_data",
+                            acc = args_acc,
+                            comma = comma,
+                            arg = ffi_arg
+                        ),
+                        format!(
+                            "{acc}{comma}${arg}_len, ${arg}_data",
+                            acc = args_string_acc,
+                            comma = comma,
+                            arg = arg
+                        ),
+                    ),
+                    ArgType::Hashmap | ArgType::Other => (
+                        format!(
+                            "{acc}{comma}{arg}",
+                            acc = args_acc,
+                            comma = comma,
+                            arg = ffi_arg
+                        ),
+                        format!(
+                            "{acc}{comma}${arg}",
+                            acc = args_string_acc,
+                            comma = comma,
+                            arg = arg
+                        ),
+                    ),
                 }
             },
         );
@@ -477,7 +515,7 @@ impl ParsedMessageEnum {
 {comment}     final reqId = {_RID_REPLY_CHANNEL}.reqId;
 {comment}     {additional_processing}
 {comment}     {rid_ffi}.{method_name}(reqId, {args_call});
-{comment}
+{comment}     {deallocators}
 {comment}     final reply = _isDebugMode && {rid_debug_reply} != null
 {comment}         ? {_RID_REPLY_CHANNEL}.reply(reqId).then(({class_name} reply) {{
 {comment}             if ({rid_debug_reply} != null) {rid_debug_reply}!(reply);
