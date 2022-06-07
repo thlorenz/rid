@@ -353,17 +353,6 @@ impl ParsedMessageEnum {
             },
         );
 
-        /*
-            print("Allocating native memory...");
-            final data = calloc<Uint8>(arg0.length);
-            for (int i = 0; i < arg0.length; i++) {
-            data[i] = arg0[i];
-            }
-            print("Copied values...");
-            rid_ffi.rid_msg_Write(reqId, arg0.length, data);
-            print("Data written.");
-        */
-
         let additional_processing = args_info.iter().fold(
             String::new(),
             |acc, (index, DartArg { arg_type, arg, .. })| {
@@ -372,7 +361,7 @@ impl ParsedMessageEnum {
                         let byte_size = typ.kind.get_numeric_size().expect("Numeric type without a bytesize?");
                         let code = format!(
                             "
-    // Conversion into a C-compatible array.
+{comment}    // Conversion into a C-compatible array.
 {comment}    final {arg}_data = calloc<Uint8>({arg}.length * {byte_size});
 {comment}    final {arg}_len = {arg}.length;
 {comment}    var {arg}_counter = 0;
