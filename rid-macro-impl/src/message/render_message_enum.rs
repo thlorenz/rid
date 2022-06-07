@@ -373,10 +373,14 @@ impl ParsedMessageEnum {
                         let code = format!(
                             "
     // Conversion into a C-compatible array.
-{comment}    final {arg}_data = calloc<Uint8>({arg}.length);
+{comment}    final {arg}_data = calloc<Uint8>({arg}.length * {byte_size});
 {comment}    final {arg}_len = {arg}.length;
+{comment}    var {arg}_counter = 0;
 {comment}    for (int i = 0; i < {arg}_len; i++) {{
-{comment}        {arg}_data[i] = {arg}[i];
+{comment}      for (int j = 0; j < {byte_size}; j++) {{
+{comment}        {arg}_data[{arg}_counter] = ({arg}[i] >> j * 8) & 0xFF;
+{comment}        {arg}_counter++;
+{comment}      }}
 {comment}    }}
                     "
                         );
