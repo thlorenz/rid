@@ -13,6 +13,7 @@ use super::ParsedReference;
 pub enum DartType {
     Int32(bool),
     Int64(bool),
+    Double(bool),
     Bool(bool),
     String(bool),
     Custom(bool, TypeInfo, String),
@@ -47,6 +48,7 @@ impl DartType {
                     }
                     U64 | I64 => DartType::Int64(nullable),
                     USize => DartType::Int64(nullable),
+                    F32 | F64 => DartType::Double(nullable),
                     // assuming 64-bit target
                     Bool => DartType::Bool(nullable),
                 }

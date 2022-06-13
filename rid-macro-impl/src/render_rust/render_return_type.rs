@@ -113,6 +113,8 @@ fn render_primitive_return(prim: &Primitive, ty: &RustType) -> TokenStream {
         I32 => quote! { #ref_token i32 },
         U64 => quote! { #ref_token u64 },
         I64 => quote! { #ref_token i64 },
+        F32 => quote! { #ref_token f32 },
+        F64 => quote! { #ref_token f64 },
         USize => quote! { #ref_token usize },
         Bool => quote! { #ref_token u8 },
     }

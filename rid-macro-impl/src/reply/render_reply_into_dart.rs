@@ -33,21 +33,63 @@ fn render_variant(variant: &ReplyVariant) -> TokenStream {
         // Vector with id
         (true, Some(TypeKind::Composite(_, Some(a), None))) => {
             let typ_ident = a.rust_ident();
-            quote_spanned! { ident.span() =>
-                #ident(id, d) => {
-                    let rid_vec: Vec<#typ_ident> = d.into();
-                    (rid::_encode_with_id(#slot, id), rid_vec)
-                },
+            if a.is_string_like(){
+                quote_spanned! { ident.span() =>
+                    #ident(id, d) => {
+                        let rid_vec: Vec<#typ_ident> = d.into();
+                        let mut byte_vec: Vec<u8> = vec![];
+                        for v in rid_vec{
+                            let mut str_bytes = v.as_bytes().to_vec();
+                            str_bytes.push(0);
+                            byte_vec.append(&mut str_bytes);
+                        }
+                        (rid::_encode_with_id(#slot, id), byte_vec)
+                    },
+                }
+            }else if a.is_primitive(){
+                quote_spanned! { ident.span() =>
+                    #ident(id, d) => {
+                        let rid_vec: Vec<#typ_ident> = d.into();
+                        let mut byte_vec: Vec<u8> = vec![];
+                        for v in rid_vec{
+                            byte_vec.extend_from_slice(&v.to_be_bytes())
+                        }
+                        (rid::_encode_with_id(#slot, id), byte_vec)
+                    },
+                }
+            }else{
+                unimplemented!("Type {typ_ident} isn't supported yet!");
             }
         }
         // Vector without id
         (false, Some(TypeKind::Composite(_, Some(a), None))) => {
             let typ_ident = a.rust_ident();
-            quote_spanned! { ident.span() =>
-                #ident(d) => {
-                    let rid_vec: Vec<#typ_ident> = d.into();
-                    (rid::_encode_without_id(#slot), rid_vec)
-                },
+            if a.is_string_like(){
+                quote_spanned! { ident.span() =>
+                    #ident(d) => {
+                        let rid_vec: Vec<#typ_ident> = d.into();
+                        let mut byte_vec: Vec<u8> = vec![];
+                        for v in rid_vec{
+                            let mut str_bytes = v.as_bytes().to_vec();
+                            str_bytes.push(0);
+                            byte_vec.append(&mut str_bytes);
+                        }
+                        (rid::_encode_without_id(#slot), byte_vec)
+                    },
+                }
+            }else if a.is_primitive(){
+                quote_spanned! { ident.span() =>
+                    #ident(d) => {
+                        let rid_vec: Vec<#typ_ident> = d.into();
+                        let mut byte_vec: Vec<u8> = vec![];
+                        for v in rid_vec{
+                            byte_vec.extend_from_slice(&v.to_be_bytes())
+                        }
+                        (rid::_encode_without_id(#slot), byte_vec)
+                    },
+                }
+            }else{
+                unimplemented!("Type {typ_ident} isn't supported yet!");
             }
         }
         // String with id

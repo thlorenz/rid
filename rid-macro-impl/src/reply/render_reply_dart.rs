@@ -48,13 +48,80 @@ pub fn render_reply_dart(
 {comment}         return null;
 {comment}     }}
 {comment} }}
-{comment} 
 {comment} int? asInt() {{
 {comment}     if (this.data != null) {{
 {comment}         int number = ByteData.view(this.data!.buffer).getUint64(0);
 {comment}         return number;
 {comment}     }} else {{
 {comment}         return null;
+{comment}     }}
+{comment} }}
+{comment} double? asDouble() {{
+{comment}     if (this.data != null) {{
+{comment}         var number = ByteData.view(this.data!.buffer).getFloat64(0);
+{comment}         return number;
+{comment}     }} else {{
+{comment}         return null;
+{comment}     }}
+{comment} }}
+{comment} List<String>? asStringArray() {{
+{comment}     if (this.data != null) {{
+{comment}         List<int> tmp = <int>[];
+{comment}         List<String> ret = <String>[];
+{comment}         for (var d in this.data!) {{
+{comment}           if (d == 0){{
+{comment}             var str = utf8.decode(tmp);
+{comment}             ret.add(str);
+{comment}             tmp.clear();
+{comment}           }}else{{
+{comment}             tmp.add(d);
+{comment}           }}
+{comment}         }}
+{comment}         return ret;
+{comment}     }} else {{
+{comment}         return null;
+{comment}     }}
+{comment} }}
+{comment} List<int>? asIntArray() {{
+{comment}     if (this.data != null) {{
+{comment}       var length = this.data!.length;
+{comment}       var ret = <int>[];
+{comment}       const int INT_SIZE = 4;
+{comment}       for (var i = 0; i < length/INT_SIZE; i++){{
+{comment}         var number = ByteData.view(this.data!.buffer).getUint32(i*INT_SIZE);
+{comment}         ret.add(number);
+{comment}       }}
+{comment}       return ret;
+{comment}     }} else {{
+{comment}       return null;
+{comment}     }}
+{comment} }}
+{comment} List<double>? asFloatArray() {{
+{comment}     if (this.data != null) {{
+{comment}       var length = this.data!.length;
+{comment}       var ret = <double>[];
+{comment}       const int FLOAT_SIZE = 4;
+{comment}       for (var i = 0; i < length/FLOAT_SIZE; i++){{
+{comment}         var number = ByteData.view(this.data!.buffer).getFloat32(i*FLOAT_SIZE);
+{comment}         ret.add(number);
+{comment}       }}
+{comment}       return ret;
+{comment}     }} else {{
+{comment}       return null;
+{comment}     }}
+{comment} }}
+{comment} List<double>? asDoubleArray() {{
+{comment}     if (this.data != null) {{
+{comment}       var length = this.data!.length;
+{comment}       var ret = <double>[];
+{comment}       const int DOUBLE_SIZE = 8;
+{comment}       for (var i = 0; i < length/DOUBLE_SIZE; i++){{
+{comment}         var number = ByteData.view(this.data!.buffer).getFloat64(i*DOUBLE_SIZE);
+{comment}         ret.add(number);
+{comment}       }}
+{comment}       return ret;
+{comment}     }} else {{
+{comment}       return null;
 {comment}     }}
 {comment} }}
 {comment} }}

@@ -523,17 +523,12 @@ impl ParsedMessageEnum {
 {comment}     final msgCall = '{dart_method_name}({args_string}) with reqId: $reqId';
 {comment}     return _replyWithTimeout(reply, msgCall, StackTrace.current, timeout);
 {comment}   }}"###,
-            class_name = class_name,
             dart_method_name = self.dart_method_name(&fn_ident.to_string()),
             method_name = fn_ident.to_string(),
-            args_decl = args_decl,
-            args_call = args_call,
-            args_string = args_string,
             rid_ffi = RID_FFI,
             _RID_REPLY_CHANNEL = _RID_REPLY_CHANNEL,
             rid_debug_reply = RID_DEBUG_REPLY,
             rid_msg_timeout = RID_MSG_TIMEOUT,
-            comment = comment
         )
     }
 

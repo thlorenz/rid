@@ -34,6 +34,11 @@ impl DartType {
             Bool(nullable) if *nullable => "bool?".to_string(),
             Bool(_) => "bool".to_string(),
             // -----------------
+            // Double
+            // -----------------
+            Double(nullable) if *nullable => "double?".to_string(),
+            Double(_) => "double".to_string(),
+            // -----------------
             // Strings
             // -----------------
             String(nullable) if *nullable => "String?".to_string(),
@@ -113,19 +118,18 @@ impl DartType {
             // Primitives
             // -----------------
             // TODO(thlorenz): All the below also would resolve to a different type when nullable
-            Int32(nullable) | Int64(nullable) if *nullable => {
+            Int32(nullable) | Int64(nullable) | Double(nullable) if *nullable => {
                 format!("{}", var)
             }
-            Int32(_) | Int64(_) => format!("{var}", var = var),
+            Int32(_) | Int64(_) | Double(_) => format!("{}", var),
             Bool(nullable) if *nullable => {
                 format!("{var} == null ? 0 : {var} ? 1 : 0", var = var)
             }
-            Bool(_) => format!("{var} ? 1 : 0", var = var),
-
+            Bool(_) => format!("{} ? 1 : 0", var),
             // -----------------
             // Strings
             // -----------------
-            // TODO(thlorenz): I doubt his is correct
+            // TODO(thlorenz): I doubt this is correct
             String(nullable) if *nullable => format!(
                 "{var}?.{toNativeInt8}()",
                 var = var,
@@ -166,10 +170,10 @@ impl DartType {
             // -----------------
             // Primitives
             // -----------------
-            Int32(nullable) | Int64(nullable) | Bool(nullable) if *nullable => {
-                format!("{snip}?", snip = snip)
+            Int32(nullable) | Int64(nullable) | Bool(nullable) | Double(nullable) if *nullable => {
+                format!("{}?", snip)
             }
-            Int32(_) | Int64(_) | Bool(_) => snip.to_string(),
+            Int32(_) | Int64(_) | Bool(_) | Double(_) => snip.to_string(),
 
             // -----------------
             // Strings
