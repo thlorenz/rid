@@ -11,13 +11,28 @@ use crate::{
     common::{
         derive_error, prefixes::reply_class_name_for_enum, tokens::resolve_ptr,
     },
-    parse::rust_type::{RustType, TypeKind},
-    render_dart::RenderDartTypeOpts,
+    parse::rust_type::{RustType, TypeKind, Composite, Primitive},
+    render_dart::{DartArg, RenderDartTypeOpts},
     render_rust::{ffi_prelude, RustArg},
     reply,
 };
 
 use super::{parsed_variant::ParsedMessageVariant, ParsedMessageEnum};
+
+#[derive(Debug)]
+enum ArgType {
+    Vector(Box<RustType>),
+    Hashmap,
+    Other,
+}
+
+#[derive(Debug)]
+struct RustDartArg {
+    arg: String,
+    arg_type: ArgType,
+    ty: String,
+    ffi_arg: String,
+}
 
 pub struct MessageRenderConfig {
     pub include_ffi: bool,
@@ -303,29 +318,16 @@ impl ParsedMessageEnum {
     ) -> String {
         let fn_ident = &variant.method_ident;
 
-        enum ArgType {
-            Vector(Box<RustType>),
-            Hashmap,
-            Other,
-        }
-
-        struct DartArg {
-            arg: String,
-            arg_type: ArgType,
-            ty: String,
-            ffi_arg: String,
-        }
-
         // NOTE: we don't support data of custom types inside message variants
         // Only primitives and Strings are allowed
         let type_infos = TypeInfoMap::default();
 
-        let args_info: Vec<(usize, DartArg)> = variant
+        let args_info: Vec<(usize, RustDartArg)> = variant
             .fields
             .iter()
             .map(|f| {
                 let ffi_arg = f.dart_ty.render_resolved_ffi_arg(f.slot);
-                DartArg {
+                RustDartArg {
                     arg: format!("arg{}", f.slot),
                     arg_type: match &f.rust_ty.kind {
                         TypeKind::Composite(_, Some(typ), None) => {
@@ -348,71 +350,155 @@ impl ParsedMessageEnum {
 
         let args_decl = args_info.iter().fold(
             "".to_string(),
-            |acc, (idx, DartArg { arg, ty, .. })| {
+            |acc, (idx, RustDartArg { arg, ty, .. })| {
                 format!("{acc}{ty} {arg}, ", acc = acc, ty = ty, arg = arg)
             },
         );
 
-        let additional_processing = args_info.iter().fold(
-            String::new(),
-            |acc, (index, DartArg { arg_type, arg, .. })| {
-                match arg_type {
+        let additional_processing =
+            args_info.iter().fold(String::new(), |acc, (index, it)| {
+                let arg = it.arg.clone();
+                match &it.arg_type {
                     ArgType::Vector(typ) if typ.kind.is_numeric() => {
-                        let byte_size = typ.kind.get_numeric_size().expect("Numeric type without a bytesize?");
+                        let byte_size = typ
+                            .kind
+                            .get_numeric_size()
+                            .expect("Numeric type without a bytesize?");
                         let code = format!(
                             "
-{comment}    // Conversion into a C-compatible array.
-{comment}    final {arg}_data = calloc<Uint8>({arg}.length * {byte_size});
-{comment}    final {arg}_len = {arg}.length;
-{comment}    var {arg}_counter = 0;
-{comment}    for (int i = 0; i < {arg}_len; i++) {{
-{comment}      for (int j = 0; j < {byte_size}; j++) {{
-{comment}        {arg}_data[{arg}_counter] = ({arg}[i] >> j * 8) & 0xFF;
-{comment}        {arg}_counter++;
-{comment}      }}
-{comment}    }}
-                    "
+            {comment}    // Conversion into a C-compatible array.
+            {comment}    final {arg}_data = calloc<Uint8>({arg}.length * {byte_size});
+            {comment}    final {arg}_len = {arg}.length;
+            {comment}    var {arg}_counter = 0;
+            {comment}    for (int i = 0; i < {arg}_len; i++) {{
+            {comment}      for (int j = 0; j < {byte_size}; j++) {{
+            {comment}        {arg}_data[{arg}_counter] = ({arg}[i] >> j * 8) & 0xFF;
+            {comment}        {arg}_counter++;
+            {comment}      }}
+            {comment}    }}
+                        "
                         );
-                        format!("{acc}{code}\n")
+                        format!("{code}\n")
                     }
                     ArgType::Vector(typ) if typ.kind.is_string_like() => {
                         let code = format!(
-                            "
- {comment}      // Turn Dart strings into byte arrays.
- {comment}      final List<Pointer<Int8>> {arg}_utf8PointerList = [
- {comment}          for (final str in {arg}) 
- {comment}              str.toNativeUtf8().cast<Int8>()
- {comment}      ];
- {comment}      
- {comment}      // Reserve memory for string pointers
- {comment}      final Pointer<Pointer<Int8>> {arg}_data =
- {comment}          malloc.allocate(sizeOf<Pointer<Int8>>() * {arg}_utf8PointerList.length);
- {comment}
- {comment}      // Set string pointers to point to actual strings
- {comment}      for (int index = 0; index < {arg}.length; index++) {{
- {comment}        {arg}_data[index] = {arg}_utf8PointerList[index];
- {comment}      }}
- {comment}      
- {comment}      int {arg}_len = {arg}.length;
-                            "
-                        );
-                        format!("{acc}{code}\n")
+                                "
+            {comment}      // Turn Dart strings into byte arrays.
+            {comment}      final List<Pointer<Int8>> {arg}_utf8PointerList = [
+            {comment}          for (final str in {arg}) 
+            {comment}              str.toNativeUtf8().cast<Int8>()
+            {comment}      ];
+            {comment}      
+            {comment}      // Reserve memory for string pointers
+            {comment}      final Pointer<Pointer<Int8>> {arg}_data =
+            {comment}          malloc.allocate(sizeOf<Pointer<Int8>>() * {arg}_utf8PointerList.length);
+            {comment}
+            {comment}      // Set string pointers to point to actual strings
+            {comment}      for (int index = 0; index < {arg}.length; index++) {{
+            {comment}        {arg}_data[index] = {arg}_utf8PointerList[index];
+            {comment}      }}
+            {comment}      
+            {comment}      int {arg}_len = {arg}.length;
+                                "
+                            );
+                        format!("{code}\n")
                     }
-                    ArgType::Vector(a) => {
-                        unimplemented!("Vector of type {:#?} currently isn't supported!", a);
+                    ArgType::Vector(typ) if typ.kind.is_vec() => {
+                        let typ = match &typ.kind{
+                            TypeKind::Composite(Composite::Vec, Some(typ), None) => {
+                                typ
+                            },
+                            _=>{
+                                unimplemented!("Non-primitive types haven't been implemented yet.");
+                            }
+                        };
+                        let byte_size = typ
+                            .kind
+                            .get_numeric_size()
+                            .expect("Numeric type without a bytesize?");
+                        //? For 2D vectors, only primitives are implemented!
+                        let (method, byte_size) = match typ.kind{
+                            TypeKind::Primitive(Primitive::F32) => {
+                                ("setFloat32", 4)
+                            },
+                            TypeKind::Primitive(Primitive::F64) => {
+                                ("setFloat64", 8)
+                            },
+                            TypeKind::Primitive(Primitive::I32) => {
+                                ("setInt32", 4)
+                            },
+                            TypeKind::Primitive(Primitive::I64) => {
+                                ("setInt64", 8)
+                            },
+                            TypeKind::Primitive(Primitive::U32) => {
+                                ("setUint32", 4)
+                            },
+                            TypeKind::Primitive(Primitive::U64) => {
+                                ("setUint64", 8)
+                            },
+                            _=>{
+                                unimplemented!("Type {:#?} hasn't been implemented for Vector type yet!", typ);
+                            }
+                        };
+                        let code = format!("
+  {comment}     var {arg}_len = {arg}.length;
+  {comment}     const INT32_SIZE = 4;
+  {comment}     int len = INT32_SIZE;
+  {comment}     for (var d in {arg}) {{
+  {comment}       len += d.length;
+  {comment}     }}
+  {comment}     // Add Int32 for every line
+  {comment}     len += INT32_SIZE * {arg}_len;
+  {comment}     final Pointer<Uint8> {arg}_data = malloc.allocate(4 * len);
+  {comment}     var index = 0;
+  {comment}     var byteData = ByteData(4);
+  {comment}     // Add Line count
+  {comment}     byteData.setUint32(0, {arg}_len, Endian.little);
+  {comment}     var bytes = byteData.buffer.asUint8List();
+  {comment}     for (var i = 0; i < bytes.length; i++) {{
+  {comment}       {arg}_data[index] = bytes[i];
+  {comment}       index++;
+  {comment}     }}
+  {comment}     for (var l in {arg}) {{
+  {comment}       byteData.setUint32(0, l.length, Endian.little);
+  {comment}       bytes = byteData.buffer.asUint8List();
+  {comment}       for (int i = 0; i < bytes.length; i++) {{
+  {comment}         {arg}_data[index] = bytes[i];
+  {comment}         index++;
+  {comment}       }}
+  {comment}       byteData = ByteData({byte_size});
+  {comment}       for (var item in l) {{
+  {comment}         byteData.{method}(0, item, Endian.little);
+  {comment}         bytes = byteData.buffer.asUint8List();
+  {comment}         for (int i = 0; i < bytes.length; i++) {{
+  {comment}           {arg}_data[index] = bytes[i];
+  {comment}           index++;
+  {comment}         }}
+  {comment}       }}
+  {comment}     }}
+  {comment}     {arg}_len = index;
+                            ");
+                        format!("{code}\n")
+                    }
+                    ArgType::Vector(typ) => {
+                        dbg!(&typ.is_vec());
+                        dbg!(&typ);
+                        unimplemented!(
+                            "Vector of type {:#?} currently isn't supported!",
+                            typ
+                        );
                     }
                     ArgType::Hashmap => {
                         //TODO: Implement hashmap
-                        acc
+                        String::new()
                     }
-                    ArgType::Other => acc,
+                    ArgType::Other => String::new(),
                 }
-            },
-        );
+            });
 
         let deallocators = args_info.iter().fold(
             String::new(),
-            |acc, (index, DartArg { arg_type, arg, .. })| {
+            |acc, (index, RustDartArg { arg_type, arg, .. })| {
                 match arg_type {
                     ArgType::Vector(typ) if typ.kind.is_numeric() => {
                         //TODO: Fix memory leaks!
@@ -439,10 +525,18 @@ impl ParsedMessageEnum {
                         );
                         format!("{acc}{code}\n")
                     }
-                    ArgType::Vector(a) => {
+                    ArgType::Vector(typ) if typ.kind.is_vec() => {
+                        let code = format!(
+                            "
+{comment}      calloc.free({arg}_data);
+                            "
+                        );
+                        format!("{acc}{code}\n")
+                    }
+                    ArgType::Vector(typ) => {
                         unimplemented!(
-                            "Vector of type {:#?} currently isn't supported!",
-                            a
+                            "Deallocator: Vector of type {:#?} currently isn't supported!",
+                            typ
                         );
                     }
                     ArgType::Hashmap => {
@@ -459,7 +553,7 @@ impl ParsedMessageEnum {
             |(args_acc, args_string_acc),
              (
                 idx,
-                DartArg {
+                RustDartArg {
                     ffi_arg,
                     arg,
                     arg_type,

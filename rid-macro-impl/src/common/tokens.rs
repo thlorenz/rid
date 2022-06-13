@@ -1,4 +1,4 @@
-use crate::{common::state::ImplementationType, parse::rust_type::RustType};
+use crate::{common::state::ImplementationType, parse::rust_type::{RustType, Composite, TypeKind}};
 
 use super::state::get_state;
 use quote::{format_ident, quote_spanned};
@@ -46,6 +46,40 @@ pub fn resolve_vec_msg_ptr(
                     .collect()
             };
             println!("Finished string processing!");
+        }
+    } else if ty.kind.is_vec(){
+        let typ = match &ty.kind {
+            TypeKind::Composite(Composite::Vec, Some(typ), None) => {
+                typ
+            },
+            _=>{
+                unimplemented!("Non-primitive types haven't been implemented yet.");
+            }
+        };
+        let ty = typ.rust_ident();
+        quote_spanned! { ty.span() =>
+            let #arg: Vec<Vec<#ty>> = unsafe {
+                assert!(!#arg.is_null());
+                use std::convert::TryInto;
+                let data = std::slice::from_raw_parts::<u8>(#arg as *const u8, #len).to_vec();
+                let mut ret: Vec<Vec<#ty>> = vec![];
+                let byte_size = std::mem::size_of::<#ty>();
+                let lines = i32::from_le_bytes(data[0..4].try_into().unwrap());
+                let mut counter = 4;
+                for _i in 0..lines {
+                    let elements = i32::from_le_bytes(data[counter..counter + 4].try_into().unwrap());
+                    counter += 4;
+                    let mut line = vec![];
+                    for _el in 0..elements {
+                        let el_data = &data[counter..counter+byte_size];
+                        counter += byte_size;
+                        let it = #ty::from_le_bytes(el_data.try_into().unwrap());
+                        line.push(it);
+                    }
+                    ret.push(line);
+                }
+                ret
+            };
         }
     } else {
         let ty = ty.rust_ident();

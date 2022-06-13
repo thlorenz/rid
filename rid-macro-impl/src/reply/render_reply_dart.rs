@@ -64,6 +64,14 @@ pub fn render_reply_dart(
 {comment}         return null;
 {comment}     }}
 {comment} }}
+{comment} double? asFloat() {{
+{comment}     if (this.data != null) {{
+{comment}         var number = ByteData.view(this.data!.buffer).getFloat32(0);
+{comment}         return number;
+{comment}     }} else {{
+{comment}         return null;
+{comment}     }}
+{comment} }}
 {comment} List<String>? asStringArray() {{
 {comment}     if (this.data != null) {{
 {comment}         List<int> tmp = <int>[];
