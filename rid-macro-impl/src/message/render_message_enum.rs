@@ -378,7 +378,7 @@ impl ParsedMessageEnum {
             {comment}    }}
                         "
                         );
-                        format!("{code}\n")
+                        format!("{acc}{code}\n")
                     }
                     ArgType::Vector(typ) if typ.kind.is_string_like() => {
                         let code = format!(
@@ -401,7 +401,7 @@ impl ParsedMessageEnum {
             {comment}      int {arg}_len = {arg}.length;
                                 "
                             );
-                        format!("{code}\n")
+                        format!("{acc}{code}\n")
                     }
                     ArgType::Vector(typ) if typ.kind.is_vec() => {
                         let typ = match &typ.kind{
@@ -441,44 +441,49 @@ impl ParsedMessageEnum {
                             }
                         };
                         let code = format!("
-  {comment}     var {arg}_len = {arg}.length;
-  {comment}     const INT32_SIZE = 4;
-  {comment}     int len = INT32_SIZE;
+  {comment}     var {arg}_num_lines = {arg}.length;
+  {comment}     const {arg}_INT32_SIZE = 4;
+  {comment}     int {arg}_len = 0;
   {comment}     for (var d in {arg}) {{
-  {comment}       len += d.length;
+  {comment}       {arg}_len += d.length;
   {comment}     }}
+  {comment}     // Calculate bytes for all entries
+  {comment}     {arg}_len = {arg}_len * {byte_size};
+  {comment}     // Add line counter
+  {comment}     {arg}_len += {arg}_INT32_SIZE;
   {comment}     // Add Int32 for every line
-  {comment}     len += INT32_SIZE * {arg}_len;
-  {comment}     final Pointer<Uint8> {arg}_data = malloc.allocate(4 * len);
-  {comment}     var index = 0;
-  {comment}     var byteData = ByteData(4);
+  {comment}     {arg}_len += {arg}_INT32_SIZE * {arg}_num_lines;
+  {comment}     final Pointer<Uint8> {arg}_data = malloc.allocate({arg}_len);
+  {comment}     var {arg}_index = 0;
+  {comment}     var {arg}_byteData = ByteData({arg}_INT32_SIZE);
   {comment}     // Add Line count
-  {comment}     byteData.setUint32(0, {arg}_len, Endian.little);
-  {comment}     var bytes = byteData.buffer.asUint8List();
-  {comment}     for (var i = 0; i < bytes.length; i++) {{
-  {comment}       {arg}_data[index] = bytes[i];
-  {comment}       index++;
+  {comment}     {arg}_byteData.setUint32(0, {arg}.length, Endian.little);
+  {comment}     var {arg}_bytes = {arg}_byteData.buffer.asUint8List();
+  {comment}     for (var i = 0; i < {arg}_bytes.length; i++) {{
+  {comment}       {arg}_data[{arg}_index] = {arg}_bytes[i];
+  {comment}       {arg}_index++;
   {comment}     }}
   {comment}     for (var l in {arg}) {{
-  {comment}       byteData.setUint32(0, l.length, Endian.little);
-  {comment}       bytes = byteData.buffer.asUint8List();
-  {comment}       for (int i = 0; i < bytes.length; i++) {{
-  {comment}         {arg}_data[index] = bytes[i];
-  {comment}         index++;
+  {comment}       {arg}_byteData = ByteData({arg}_INT32_SIZE);
+  {comment}       {arg}_byteData.setUint32(0, l.length, Endian.little);
+  {comment}       {arg}_bytes = {arg}_byteData.buffer.asUint8List();
+  {comment}       for (int i = 0; i < {arg}_bytes.length; i++) {{
+  {comment}         {arg}_data[{arg}_index] = {arg}_bytes[i];
+  {comment}         {arg}_index++;
   {comment}       }}
-  {comment}       byteData = ByteData({byte_size});
+  {comment}       {arg}_byteData = ByteData({byte_size});
   {comment}       for (var item in l) {{
-  {comment}         byteData.{method}(0, item, Endian.little);
-  {comment}         bytes = byteData.buffer.asUint8List();
-  {comment}         for (int i = 0; i < bytes.length; i++) {{
-  {comment}           {arg}_data[index] = bytes[i];
-  {comment}           index++;
+  {comment}         {arg}_byteData.{method}(0, item, Endian.little);
+  {comment}         {arg}_bytes = {arg}_byteData.buffer.asUint8List();
+  {comment}         for (int i = 0; i < {arg}_bytes.length; i++) {{
+  {comment}           {arg}_data[{arg}_index] = {arg}_bytes[i];
+  {comment}           {arg}_index++;
   {comment}         }}
   {comment}       }}
   {comment}     }}
-  {comment}     {arg}_len = index;
+  {comment}     {arg}_len = {arg}_index;
                             ");
-                        format!("{code}\n")
+                        format!("{acc}{code}\n")
                     }
                     ArgType::Vector(typ) => {
                         dbg!(&typ.is_vec());
@@ -490,9 +495,9 @@ impl ParsedMessageEnum {
                     }
                     ArgType::Hashmap => {
                         //TODO: Implement hashmap
-                        String::new()
+                        acc
                     }
-                    ArgType::Other => String::new(),
+                    ArgType::Other => acc,
                 }
             });
 
@@ -508,7 +513,7 @@ impl ParsedMessageEnum {
                             .expect("Numeric type without a bytesize?");
                         let code = format!(
                             "
-{comment}      calloc.free({arg}_data);
+{comment}     calloc.free({arg}_data);
                             "
                         );
                         format!("{acc}{code}\n")
@@ -517,10 +522,10 @@ impl ParsedMessageEnum {
                         //TODO: Fix memory leaks!
                         let code = format!(
                             "
-{comment}      for (int index = 0; index < {arg}.length; index++) {{
-{comment}        calloc.free({arg}_data[index]);
-{comment}      }}
-{comment}      calloc.free({arg}_data);
+{comment}     for (int index = 0; index < {arg}.length; index++) {{
+{comment}       calloc.free({arg}_data[index]);
+{comment}     }}
+{comment}     calloc.free({arg}_data);
                             "
                         );
                         format!("{acc}{code}\n")
@@ -528,7 +533,7 @@ impl ParsedMessageEnum {
                     ArgType::Vector(typ) if typ.kind.is_vec() => {
                         let code = format!(
                             "
-{comment}      calloc.free({arg}_data);
+{comment}     calloc.free({arg}_data);
                             "
                         );
                         format!("{acc}{code}\n")
