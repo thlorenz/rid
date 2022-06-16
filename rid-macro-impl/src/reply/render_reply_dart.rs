@@ -50,7 +50,25 @@ pub fn render_reply_dart(
 {comment} }}
 {comment} int? asInt() {{
 {comment}     if (this.data != null) {{
-{comment}         int number = ByteData.view(this.data!.buffer).getUint64(0);
+{comment}         int? number = null;
+{comment}         if (this.data!.length == 4) {{
+{comment}             number = ByteData.view(this.data!.buffer).getInt32(0);
+{comment}         }}else if (this.data!.length == 8) {{
+{comment}             number = ByteData.view(this.data!.buffer).getInt64(0);
+{comment}         }}
+{comment}         return number;
+{comment}     }} else {{
+{comment}         return null;
+{comment}     }}
+{comment} }}
+{comment} int? asUint() {{
+{comment}     if (this.data != null) {{
+{comment}         int? number = null;
+{comment}         if (this.data!.length == 4) {{
+{comment}             number = ByteData.view(this.data!.buffer).getUint32(0);
+{comment}         }}else if (this.data!.length == 8) {{
+{comment}             number = ByteData.view(this.data!.buffer).getUint64(0);
+{comment}         }}
 {comment}         return number;
 {comment}     }} else {{
 {comment}         return null;
@@ -90,13 +108,55 @@ pub fn render_reply_dart(
 {comment}         return null;
 {comment}     }}
 {comment} }}
-{comment} List<int>? asIntArray() {{
+{comment} List<int>? asUint32Array() {{
 {comment}     if (this.data != null) {{
 {comment}       var length = this.data!.length;
 {comment}       var ret = <int>[];
 {comment}       const int INT_SIZE = 4;
 {comment}       for (var i = 0; i < length/INT_SIZE; i++){{
 {comment}         var number = ByteData.view(this.data!.buffer).getUint32(i*INT_SIZE);
+{comment}         ret.add(number);
+{comment}       }}
+{comment}       return ret;
+{comment}     }} else {{
+{comment}       return null;
+{comment}     }}
+{comment} }}
+{comment} List<int>? asUint64Array() {{
+{comment}     if (this.data != null) {{
+{comment}       var length = this.data!.length;
+{comment}       var ret = <int>[];
+{comment}       const int INT_SIZE = 8;
+{comment}       for (var i = 0; i < length/INT_SIZE; i++){{
+{comment}         var number = ByteData.view(this.data!.buffer).getUint64(i*INT_SIZE);
+{comment}         ret.add(number);
+{comment}       }}
+{comment}       return ret;
+{comment}     }} else {{
+{comment}       return null;
+{comment}     }}
+{comment} }}
+{comment} List<int>? asInt32Array() {{
+{comment}     if (this.data != null) {{
+{comment}       var length = this.data!.length;
+{comment}       var ret = <int>[];
+{comment}       const int INT_SIZE = 4;
+{comment}       for (var i = 0; i < length/INT_SIZE; i++){{
+{comment}         var number = ByteData.view(this.data!.buffer).getInt32(i*INT_SIZE);
+{comment}         ret.add(number);
+{comment}       }}
+{comment}       return ret;
+{comment}     }} else {{
+{comment}       return null;
+{comment}     }}
+{comment} }}
+{comment} List<int>? asInt64Array() {{
+{comment}     if (this.data != null) {{
+{comment}       var length = this.data!.length;
+{comment}       var ret = <int>[];
+{comment}       const int INT_SIZE = 8;
+{comment}       for (var i = 0; i < length/INT_SIZE; i++){{
+{comment}         var number = ByteData.view(this.data!.buffer).getInt64(i*INT_SIZE);
 {comment}         ret.add(number);
 {comment}       }}
 {comment}       return ret;
