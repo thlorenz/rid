@@ -52,9 +52,9 @@ pub fn render_reply_dart(
 {comment}     if (this.data != null) {{
 {comment}         int? number = null;
 {comment}         if (this.data!.length == 4) {{
-{comment}             number = ByteData.view(this.data!.buffer).getInt32(0);
+{comment}             number = ByteData.view(this.data!.buffer).getInt32(0, Endian.little);
 {comment}         }}else if (this.data!.length == 8) {{
-{comment}             number = ByteData.view(this.data!.buffer).getInt64(0);
+{comment}             number = ByteData.view(this.data!.buffer).getInt64(0, Endian.little);
 {comment}         }}
 {comment}         return number;
 {comment}     }} else {{
@@ -65,9 +65,9 @@ pub fn render_reply_dart(
 {comment}     if (this.data != null) {{
 {comment}         int? number = null;
 {comment}         if (this.data!.length == 4) {{
-{comment}             number = ByteData.view(this.data!.buffer).getUint32(0);
+{comment}             number = ByteData.view(this.data!.buffer).getUint32(0, Endian.little);
 {comment}         }}else if (this.data!.length == 8) {{
-{comment}             number = ByteData.view(this.data!.buffer).getUint64(0);
+{comment}             number = ByteData.view(this.data!.buffer).getUint64(0, Endian.little);
 {comment}         }}
 {comment}         return number;
 {comment}     }} else {{
@@ -76,7 +76,7 @@ pub fn render_reply_dart(
 {comment} }}
 {comment} double? asDouble() {{
 {comment}     if (this.data != null) {{
-{comment}         var number = ByteData.view(this.data!.buffer).getFloat64(0);
+{comment}         var number = ByteData.view(this.data!.buffer).getFloat64(0, Endian.little);
 {comment}         return number;
 {comment}     }} else {{
 {comment}         return null;
@@ -84,7 +84,7 @@ pub fn render_reply_dart(
 {comment} }}
 {comment} double? asFloat() {{
 {comment}     if (this.data != null) {{
-{comment}         var number = ByteData.view(this.data!.buffer).getFloat32(0);
+{comment}         var number = ByteData.view(this.data!.buffer).getFloat32(0, Endian.little);
 {comment}         return number;
 {comment}     }} else {{
 {comment}         return null;
@@ -114,7 +114,7 @@ pub fn render_reply_dart(
 {comment}       var ret = <int>[];
 {comment}       const int INT_SIZE = 4;
 {comment}       for (var i = 0; i < length/INT_SIZE; i++){{
-{comment}         var number = ByteData.view(this.data!.buffer).getUint32(i*INT_SIZE);
+{comment}         var number = ByteData.view(this.data!.buffer).getUint32(i*INT_SIZE, Endian.little);
 {comment}         ret.add(number);
 {comment}       }}
 {comment}       return ret;
@@ -128,7 +128,7 @@ pub fn render_reply_dart(
 {comment}       var ret = <int>[];
 {comment}       const int INT_SIZE = 8;
 {comment}       for (var i = 0; i < length/INT_SIZE; i++){{
-{comment}         var number = ByteData.view(this.data!.buffer).getUint64(i*INT_SIZE);
+{comment}         var number = ByteData.view(this.data!.buffer).getUint64(i*INT_SIZE, Endian.little);
 {comment}         ret.add(number);
 {comment}       }}
 {comment}       return ret;
@@ -142,7 +142,7 @@ pub fn render_reply_dart(
 {comment}       var ret = <int>[];
 {comment}       const int INT_SIZE = 4;
 {comment}       for (var i = 0; i < length/INT_SIZE; i++){{
-{comment}         var number = ByteData.view(this.data!.buffer).getInt32(i*INT_SIZE);
+{comment}         var number = ByteData.view(this.data!.buffer).getInt32(i*INT_SIZE, Endian.little);
 {comment}         ret.add(number);
 {comment}       }}
 {comment}       return ret;
@@ -156,7 +156,7 @@ pub fn render_reply_dart(
 {comment}       var ret = <int>[];
 {comment}       const int INT_SIZE = 8;
 {comment}       for (var i = 0; i < length/INT_SIZE; i++){{
-{comment}         var number = ByteData.view(this.data!.buffer).getInt64(i*INT_SIZE);
+{comment}         var number = ByteData.view(this.data!.buffer).getInt64(i*INT_SIZE, Endian.little);
 {comment}         ret.add(number);
 {comment}       }}
 {comment}       return ret;
@@ -170,7 +170,7 @@ pub fn render_reply_dart(
 {comment}       var ret = <double>[];
 {comment}       const int FLOAT_SIZE = 4;
 {comment}       for (var i = 0; i < length/FLOAT_SIZE; i++){{
-{comment}         var number = ByteData.view(this.data!.buffer).getFloat32(i*FLOAT_SIZE);
+{comment}         var number = ByteData.view(this.data!.buffer).getFloat32(i*FLOAT_SIZE, Endian.little);
 {comment}         ret.add(number);
 {comment}       }}
 {comment}       return ret;
@@ -184,7 +184,7 @@ pub fn render_reply_dart(
 {comment}       var ret = <double>[];
 {comment}       const int DOUBLE_SIZE = 8;
 {comment}       for (var i = 0; i < length/DOUBLE_SIZE; i++){{
-{comment}         var number = ByteData.view(this.data!.buffer).getFloat64(i*DOUBLE_SIZE);
+{comment}         var number = ByteData.view(this.data!.buffer).getFloat64(i*DOUBLE_SIZE, Endian.little);
 {comment}         ret.add(number);
 {comment}       }}
 {comment}       return ret;
