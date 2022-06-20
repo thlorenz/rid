@@ -119,6 +119,15 @@ impl DartType {
                 ffi_method = ffi_method_ident,
             ),
             // -----------------
+            // Double
+            // -----------------
+            DartType::Double(true) => todo!("DartType:render_field_access_getter_body:Double:nullable"),
+            DartType::Double(false) => format!(
+                "{{ return {rid_ffi}.{ffi_method}(this); }}",
+                rid_ffi = RID_FFI,
+                ffi_method = ffi_method_ident,
+            ),
+            // -----------------
             // String
             // -----------------
             DartType::String(nullable) if *nullable => format!(

@@ -11,12 +11,28 @@ use crate::{
     common::{
         derive_error, prefixes::reply_class_name_for_enum, tokens::resolve_ptr,
     },
-    render_dart::RenderDartTypeOpts,
+    parse::rust_type::{RustType, TypeKind, Composite, Primitive},
+    render_dart::{DartArg, RenderDartTypeOpts},
     render_rust::{ffi_prelude, RustArg},
     reply,
 };
 
 use super::{parsed_variant::ParsedMessageVariant, ParsedMessageEnum};
+
+#[derive(Debug)]
+enum ArgType {
+    Vector(Box<RustType>),
+    Hashmap,
+    Other,
+}
+
+#[derive(Debug)]
+struct RustDartArg {
+    arg: String,
+    arg_type: ArgType,
+    ty: String,
+    ffi_arg: String,
+}
 
 pub struct MessageRenderConfig {
     pub include_ffi: bool,
@@ -67,7 +83,6 @@ impl ParsedMessageEnum {
             .map(|v| self.render_rust_method(v, config));
         let dart_comment = self.render_dart_extension(config);
         let module_ident = &self.module_ident;
-
         let reply_check = if config.render_reply_check {
             self.render_reply_check()
         } else {
@@ -82,7 +97,6 @@ impl ParsedMessageEnum {
             } else {
                 TokenStream::new()
             };
-
         (
             quote_spanned! { self.ident.span() =>
                 mod #module_ident {
@@ -118,6 +132,7 @@ impl ParsedMessageEnum {
             .iter()
             .enumerate()
             .map(|(slot, f)| RustArg::from(&f.rust_ty, slot))
+            .flatten()
             .collect();
 
         let args = if arg_idents.is_empty() {
@@ -150,20 +165,25 @@ impl ParsedMessageEnum {
             arg_idents
                 .iter()
                 .enumerate()
-                .map(|(slot, RustArg { arg_ident, .. })| {
-                    if slot == last_slot {
-                        quote_spanned! { fn_ident.span() => #arg_ident }
+                .map(|(slot, RustArg { arg_ident, virt, .. })| {
+                    if !virt {
+                        Some(if slot == last_slot {
+                            quote_spanned! { fn_ident.span() => #arg_ident }
+                        } else {
+                            quote_spanned! { fn_ident.span() => #arg_ident, }
+                        })
                     } else {
-                        quote_spanned! { fn_ident.span() => #arg_ident, }
+                        None
                     }
                 })
+                .flatten()
                 .collect()
         };
 
         let req_id_ident = format_ident!("__rid_req_id");
         let msg_ident = format_ident!("__rid_msg");
 
-        // TODO: getting error in the right place if the model struct doesn't implement udpate at
+        // TODO: getting error in the right place if the model struct doesn't implement update at
         // all, however when it is implemented incorrectly then the error doesn't even mention the
         // method name
         let update_method = quote_spanned! { self.struct_ident.span() =>
@@ -297,23 +317,27 @@ impl ParsedMessageEnum {
         comment: &str,
     ) -> String {
         let fn_ident = &variant.method_ident;
-        struct DartArg {
-            arg: String,
-            ty: String,
-            ffi_arg: String,
-        }
 
         // NOTE: we don't support data of custom types inside message variants
         // Only primitives and Strings are allowed
         let type_infos = TypeInfoMap::default();
 
-        let args_info: Vec<(usize, DartArg)> = variant
+        let args_info: Vec<(usize, RustDartArg)> = variant
             .fields
             .iter()
             .map(|f| {
                 let ffi_arg = f.dart_ty.render_resolved_ffi_arg(f.slot);
-                DartArg {
+                RustDartArg {
                     arg: format!("arg{}", f.slot),
+                    arg_type: match &f.rust_ty.kind {
+                        TypeKind::Composite(_, Some(typ), None) => {
+                            ArgType::Vector(typ.clone())
+                        }
+                        TypeKind::Composite(_, Some(_), Some(_)) => {
+                            ArgType::Hashmap
+                        }
+                        _ => ArgType::Other,
+                    },
                     ty: f.rust_ty.render_dart_type(
                         &type_infos,
                         RenderDartTypeOpts::attr_raw(),
@@ -326,30 +350,249 @@ impl ParsedMessageEnum {
 
         let args_decl = args_info.iter().fold(
             "".to_string(),
-            |acc, (idx, DartArg { arg, ty, .. })| {
+            |acc, (idx, RustDartArg { arg, ty, .. })| {
                 format!("{acc}{ty} {arg}, ", acc = acc, ty = ty, arg = arg)
+            },
+        );
+
+        let additional_processing =
+            args_info.iter().fold(String::new(), |acc, (index, it)| {
+                let arg = it.arg.clone();
+                match &it.arg_type {
+                    ArgType::Vector(typ) if typ.kind.is_numeric() => {
+                        let byte_size = typ
+                            .kind
+                            .get_numeric_size()
+                            .expect("Numeric type without a bytesize?");
+                        let code = format!(
+                            "
+            {comment}    // Conversion into a C-compatible array.
+            {comment}    final {arg}_data = calloc<Uint8>({arg}.length * {byte_size});
+            {comment}    final {arg}_len = {arg}.length;
+            {comment}    var {arg}_counter = 0;
+            {comment}    for (int i = 0; i < {arg}_len; i++) {{
+            {comment}      for (int j = 0; j < {byte_size}; j++) {{
+            {comment}        {arg}_data[{arg}_counter] = ({arg}[i] >> j * 8) & 0xFF;
+            {comment}        {arg}_counter++;
+            {comment}      }}
+            {comment}    }}
+                        "
+                        );
+                        format!("{acc}{code}\n")
+                    }
+                    ArgType::Vector(typ) if typ.kind.is_string_like() => {
+                        let code = format!(
+                                "
+            {comment}      // Turn Dart strings into byte arrays.
+            {comment}      final List<Pointer<Int8>> {arg}_utf8PointerList = [
+            {comment}          for (final str in {arg}) 
+            {comment}              str.toNativeUtf8().cast<Int8>()
+            {comment}      ];
+            {comment}      
+            {comment}      // Reserve memory for string pointers
+            {comment}      final Pointer<Pointer<Int8>> {arg}_data =
+            {comment}          malloc.allocate(sizeOf<Pointer<Int8>>() * {arg}_utf8PointerList.length);
+            {comment}
+            {comment}      // Set string pointers to point to actual strings
+            {comment}      for (int index = 0; index < {arg}.length; index++) {{
+            {comment}        {arg}_data[index] = {arg}_utf8PointerList[index];
+            {comment}      }}
+            {comment}      
+            {comment}      int {arg}_len = {arg}.length;
+                                "
+                            );
+                        format!("{acc}{code}\n")
+                    }
+                    ArgType::Vector(typ) if typ.kind.is_vec() => {
+                        let typ = match &typ.kind{
+                            TypeKind::Composite(Composite::Vec, Some(typ), None) => {
+                                typ
+                            },
+                            _=>{
+                                unimplemented!("Non-primitive types haven't been implemented yet.");
+                            }
+                        };
+                        //? For 2D vectors, only primitives are implemented!
+                        let (method, byte_size) = match typ.kind{
+                            TypeKind::Primitive(Primitive::F32) => {
+                                ("setFloat32", 4)
+                            },
+                            TypeKind::Primitive(Primitive::F64) => {
+                                ("setFloat64", 8)
+                            },
+                            TypeKind::Primitive(Primitive::I32) => {
+                                ("setInt32", 4)
+                            },
+                            TypeKind::Primitive(Primitive::I64) => {
+                                ("setInt64", 8)
+                            },
+                            TypeKind::Primitive(Primitive::U32) => {
+                                ("setUint32", 4)
+                            },
+                            TypeKind::Primitive(Primitive::U64) => {
+                                ("setUint64", 8)
+                            },
+                            _=>{
+                                unimplemented!("Type {:#?} hasn't been implemented for Vector type yet!", typ);
+                            }
+                        };
+                        let code = format!("
+  {comment}     var {arg}_num_lines = {arg}.length;
+  {comment}     const {arg}_INT32_SIZE = 4;
+  {comment}     int {arg}_len = 0;
+  {comment}     for (var d in {arg}) {{
+  {comment}       {arg}_len += d.length;
+  {comment}     }}
+  {comment}     // Calculate bytes for all entries
+  {comment}     {arg}_len = {arg}_len * {byte_size};
+  {comment}     // Add line counter
+  {comment}     {arg}_len += {arg}_INT32_SIZE;
+  {comment}     // Add Int32 for every line
+  {comment}     {arg}_len += {arg}_INT32_SIZE * {arg}_num_lines;
+  {comment}     final Pointer<Uint8> {arg}_data = malloc.allocate({arg}_len);
+  {comment}     var {arg}_index = 0;
+  {comment}     var {arg}_byteData = ByteData({arg}_INT32_SIZE);
+  {comment}     // Add Line count
+  {comment}     {arg}_byteData.setUint32(0, {arg}.length, Endian.little);
+  {comment}     var {arg}_bytes = {arg}_byteData.buffer.asUint8List();
+  {comment}     for (var i = 0; i < {arg}_bytes.length; i++) {{
+  {comment}       {arg}_data[{arg}_index] = {arg}_bytes[i];
+  {comment}       {arg}_index++;
+  {comment}     }}
+  {comment}     for (var l in {arg}) {{
+  {comment}       {arg}_byteData = ByteData({arg}_INT32_SIZE);
+  {comment}       {arg}_byteData.setUint32(0, l.length, Endian.little);
+  {comment}       {arg}_bytes = {arg}_byteData.buffer.asUint8List();
+  {comment}       for (int i = 0; i < {arg}_bytes.length; i++) {{
+  {comment}         {arg}_data[{arg}_index] = {arg}_bytes[i];
+  {comment}         {arg}_index++;
+  {comment}       }}
+  {comment}       {arg}_byteData = ByteData({byte_size});
+  {comment}       for (var item in l) {{
+  {comment}         {arg}_byteData.{method}(0, item, Endian.little);
+  {comment}         {arg}_bytes = {arg}_byteData.buffer.asUint8List();
+  {comment}         for (int i = 0; i < {arg}_bytes.length; i++) {{
+  {comment}           {arg}_data[{arg}_index] = {arg}_bytes[i];
+  {comment}           {arg}_index++;
+  {comment}         }}
+  {comment}       }}
+  {comment}     }}
+  {comment}     {arg}_len = {arg}_index;
+                            ");
+                        format!("{acc}{code}\n")
+                    }
+                    ArgType::Vector(typ) => {
+                        dbg!(&typ.is_vec());
+                        dbg!(&typ);
+                        unimplemented!(
+                            "Vector of type {:#?} currently isn't supported!",
+                            typ
+                        );
+                    }
+                    ArgType::Hashmap => {
+                        //TODO: Implement hashmap
+                        acc
+                    }
+                    ArgType::Other => acc,
+                }
+            });
+
+        let deallocators = args_info.iter().fold(
+            String::new(),
+            |acc, (index, RustDartArg { arg_type, arg, .. })| {
+                match arg_type {
+                    ArgType::Vector(typ) if typ.kind.is_numeric() => {
+                        //TODO: Fix memory leaks!
+                        let byte_size = typ
+                            .kind
+                            .get_numeric_size()
+                            .expect("Numeric type without a bytesize?");
+                        let code = format!(
+                            "
+{comment}     calloc.free({arg}_data);
+                            "
+                        );
+                        format!("{acc}{code}\n")
+                    }
+                    ArgType::Vector(typ) if typ.kind.is_string_like() => {
+                        //TODO: Fix memory leaks!
+                        let code = format!(
+                            "
+{comment}     for (int index = 0; index < {arg}.length; index++) {{
+{comment}       calloc.free({arg}_data[index]);
+{comment}     }}
+{comment}     calloc.free({arg}_data);
+                            "
+                        );
+                        format!("{acc}{code}\n")
+                    }
+                    ArgType::Vector(typ) if typ.kind.is_vec() => {
+                        let code = format!(
+                            "
+{comment}     calloc.free({arg}_data);
+                            "
+                        );
+                        format!("{acc}{code}\n")
+                    }
+                    ArgType::Vector(typ) => {
+                        unimplemented!(
+                            "Deallocator: Vector of type {:#?} currently isn't supported!",
+                            typ
+                        );
+                    }
+                    ArgType::Hashmap => {
+                        //TODO: Implement hashmap
+                        acc
+                    }
+                    ArgType::Other => acc,
+                }
             },
         );
 
         let (args_call, args_string) = args_info.iter().fold(
             ("".to_string(), "".to_string()),
             |(args_acc, args_string_acc),
-             (idx, DartArg { ffi_arg, arg, .. })| {
+             (
+                idx,
+                RustDartArg {
+                    ffi_arg,
+                    arg,
+                    arg_type,
+                    ..
+                },
+            )| {
                 let comma = if *idx == 0 { "" } else { ", " };
-                (
-                    format!(
-                        "{acc}{comma}{arg}",
-                        acc = args_acc,
-                        comma = comma,
-                        arg = ffi_arg
+
+                match arg_type {
+                    ArgType::Vector(_) => (
+                        format!(
+                            "{acc}{comma}{arg}_len, {arg}_data",
+                            acc = args_acc,
+                            comma = comma,
+                            arg = ffi_arg
+                        ),
+                        format!(
+                            "{acc}{comma}${arg}_len, ${arg}_data",
+                            acc = args_string_acc,
+                            comma = comma,
+                            arg = arg
+                        ),
                     ),
-                    format!(
-                        "{acc}{comma}${arg}",
-                        acc = args_string_acc,
-                        comma = comma,
-                        arg = arg
+                    ArgType::Hashmap | ArgType::Other => (
+                        format!(
+                            "{acc}{comma}{arg}",
+                            acc = args_acc,
+                            comma = comma,
+                            arg = ffi_arg
+                        ),
+                        format!(
+                            "{acc}{comma}${arg}",
+                            acc = args_string_acc,
+                            comma = comma,
+                            arg = arg
+                        ),
                     ),
-                )
+                }
             },
         );
 
@@ -358,8 +601,9 @@ impl ParsedMessageEnum {
             r###"
 {comment}   Future<{class_name}> {dart_method_name}({args_decl}{{Duration? timeout}}) {{
 {comment}     final reqId = {_RID_REPLY_CHANNEL}.reqId;
+{comment}     {additional_processing}
 {comment}     {rid_ffi}.{method_name}(reqId, {args_call});
-{comment}
+{comment}     {deallocators}
 {comment}     final reply = _isDebugMode && {rid_debug_reply} != null
 {comment}         ? {_RID_REPLY_CHANNEL}.reply(reqId).then(({class_name} reply) {{
 {comment}             if ({rid_debug_reply} != null) {rid_debug_reply}!(reply);
@@ -374,17 +618,11 @@ impl ParsedMessageEnum {
 {comment}     final msgCall = '{dart_method_name}({args_string}) with reqId: $reqId';
 {comment}     return _replyWithTimeout(reply, msgCall, StackTrace.current, timeout);
 {comment}   }}"###,
-            class_name = class_name,
             dart_method_name = self.dart_method_name(&fn_ident.to_string()),
             method_name = fn_ident.to_string(),
-            args_decl = args_decl,
-            args_call = args_call,
-            args_string = args_string,
             rid_ffi = RID_FFI,
-            _RID_REPLY_CHANNEL = _RID_REPLY_CHANNEL,
             rid_debug_reply = RID_DEBUG_REPLY,
             rid_msg_timeout = RID_MSG_TIMEOUT,
-            comment = comment
         )
     }
 

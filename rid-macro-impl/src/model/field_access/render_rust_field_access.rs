@@ -80,7 +80,7 @@ impl ParsedStruct {
             Primitive(p) => {
                 use rust_type::Primitive::*;
                 match p {
-                    U8 | I8 | U16 | I16 | U32 | I32 | U64 | I64 | USize => {
+                    U8 | I8 | U16 | I16 | U32 | I32 | U64 | I64 | USize | F32 | F64 => {
                         quote_spanned! { fn_ident.span() =>
                             #ffi_prelude fn #fn_ident(ptr: *mut #struct_ident) -> #field_ty {
                                 let receiver = #resolve_receiver;

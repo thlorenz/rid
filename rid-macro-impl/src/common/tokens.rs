@@ -1,4 +1,4 @@
-use crate::common::state::ImplementationType;
+use crate::{common::state::ImplementationType, parse::rust_type::{RustType, Composite, TypeKind}};
 
 use super::state::get_state;
 use quote::{format_ident, quote_spanned};
@@ -25,6 +25,73 @@ pub fn resolve_vec_ptr(ty: &syn::Ident) -> TokenStream {
     }
 }
 
+pub fn resolve_vec_msg_ptr(
+    arg: &syn::Ident,
+    len: &syn::Ident,
+    ty: &Box<RustType>,
+) -> TokenStream {
+    // Always *const u8 input
+    if ty.kind.is_string_like() {
+        let ty = ty.rust_ident();
+        let arg_out = format_ident!("{arg}_out");
+        quote_spanned! { ty.span() =>
+            let #arg: Vec<String> = unsafe {
+                use std::os::raw::c_char;
+                use std::ffi::CStr;
+                use std::slice;
+                //TODO: Error handling!
+                slice::from_raw_parts(#arg, #len)
+                    .into_iter()
+                    .map(|&s| CStr::from_ptr(s).to_str().unwrap_or("Nope").to_owned())
+                    .collect()
+            };
+            println!("Finished string processing!");
+        }
+    } else if ty.kind.is_vec(){
+        let typ = match &ty.kind {
+            TypeKind::Composite(Composite::Vec, Some(typ), None) => {
+                typ
+            },
+            _=>{
+                unimplemented!("Non-primitive types haven't been implemented yet.");
+            }
+        };
+        let ty = typ.rust_ident();
+        quote_spanned! { ty.span() =>
+            let #arg: Vec<Vec<#ty>> = unsafe {
+                assert!(!#arg.is_null());
+                use std::convert::TryInto;
+                let data = std::slice::from_raw_parts::<u8>(#arg as *const u8, #len).to_vec();
+                let mut ret: Vec<Vec<#ty>> = vec![];
+                let byte_size = std::mem::size_of::<#ty>();
+                let lines = i32::from_le_bytes(data[0..4].try_into().unwrap());
+                let mut counter = 4;
+                for _i in 0..lines {
+                    let elements = i32::from_le_bytes(data[counter..counter + 4].try_into().unwrap());
+                    counter += 4;
+                    let mut line = vec![];
+                    for _el in 0..elements {
+                        let el_data = &data[counter..counter+byte_size];
+                        counter += byte_size;
+                        let it = #ty::from_le_bytes(el_data.try_into().unwrap());
+                        line.push(it);
+                    }
+                    ret.push(line);
+                }
+                ret
+            };
+        }
+    } else {
+        let ty = ty.rust_ident();
+        quote_spanned! { ty.span() =>
+            let #arg: Vec<#ty> = unsafe {
+                assert!(!#arg.is_null());
+                std::slice::from_raw_parts::<#ty>(#arg as *const #ty, #len).to_vec()
+            };
+        }
+    }
+}
+
 pub fn resolve_hash_set_ptr(ty: &syn::Ident) -> TokenStream {
     quote_spanned! { ty.span() =>
         unsafe {
@@ -44,6 +111,19 @@ pub fn resolve_hash_map_ptr(
         let #arg: &HashMap<#key_ty, #val_ty> = unsafe {
             assert!(!#arg.is_null());
             #arg.as_ref().expect("resolve_hash_map_ptr.as_mut failed")
+        };
+    }
+}
+
+pub fn resolve_hash_map_msg_ptr(
+    arg: &syn::Ident,
+    key_ty: &syn::Ident,
+    val_ty: &syn::Ident,
+) -> TokenStream {
+    quote_spanned! { key_ty.span() =>
+        let #arg: HashMap<#key_ty, #val_ty> = unsafe {
+            assert!(!#arg.is_null());
+            #arg.read()
         };
     }
 }

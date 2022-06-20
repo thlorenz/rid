@@ -287,6 +287,42 @@ impl TypeKind {
         }
     }
 
+    pub fn is_numeric(&self) -> bool {
+        if let TypeKind::Primitive(a) = self {
+            *a != Primitive::Bool
+        } else {
+            false
+        }
+    }
+
+    pub fn get_numeric_size(&self) -> Option<usize> {
+        if let TypeKind::Primitive(a) = self {
+            if *a == Primitive::Bool {
+                None
+            }else{
+                match *a {
+                    Primitive::U8 | Primitive::I8 | Primitive::Bool => {
+                        Some(1)
+                    }
+                    Primitive::U16 | Primitive::I16 => {
+                        Some(2)
+                    }
+                    Primitive::U32 | Primitive::I32 | Primitive::F32 => {
+                        Some(4)
+                    }
+                    Primitive::U64 | Primitive::I64 | Primitive::F64 => {
+                        Some(8)
+                    }
+                    Primitive::USize => {
+                        Some(std::mem::size_of::<usize>())
+                    }
+                }
+            }
+        } else {
+            None
+        }
+    }
+
     pub fn is_primitive(&self) -> bool {
         if let TypeKind::Primitive(_) = self {
             true
@@ -416,6 +452,8 @@ pub enum Primitive {
     I32,
     U64,
     I64,
+    F32,
+    F64,
     USize,
     Bool,
 }
@@ -431,6 +469,8 @@ impl Debug for Primitive {
             Primitive::I32 => "Primitive::I32",
             Primitive::U64 => "Primitive::U64",
             Primitive::I64 => "Primitive::I64",
+            Primitive::F32 => "Primitive::F32",
+            Primitive::F64 => "Primitive::F64",
             Primitive::USize => "Primitive::Usize",
             Primitive::Bool => "Primitive::Bool",
         };
@@ -612,6 +652,8 @@ fn ident_to_kind(
                 "i32" => return TypeKind::Primitive(Primitive::I32),
                 "u64" => return TypeKind::Primitive(Primitive::U64),
                 "i64" => return TypeKind::Primitive(Primitive::I64),
+                "f32" => return TypeKind::Primitive(Primitive::F32),
+                "f64" => return TypeKind::Primitive(Primitive::F64),
                 "usize" => return TypeKind::Primitive(Primitive::USize),
                 "bool" => return TypeKind::Primitive(Primitive::Bool),
                 _ => {}

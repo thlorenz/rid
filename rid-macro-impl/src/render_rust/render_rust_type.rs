@@ -58,6 +58,8 @@ impl Primitive {
             I32 => quote! { i32 },
             U64 => quote! { u64 },
             I64 => quote! { i64 },
+            F32 => quote! { f32 },
+            F64 => quote! { f64 },
             USize => quote! { usize },
             Bool => quote! { u8 },
         }

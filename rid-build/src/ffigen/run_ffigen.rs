@@ -67,7 +67,7 @@ pub fn run_ffigen(
 
     if !output.status.success() {
         bail!(
-            "\n'dart run ffigen' failed to run successfully\nstderr: {stderr}\nstdout: {stdout}",
+            "\n'{FFIGEN_RUNNER} run ffigen' failed to run successfully\nstderr: \"{stderr}\"\nstdout: \"{stdout}\"",
             stderr = std::str::from_utf8(&output.stderr).unwrap(),
             stdout = std::str::from_utf8(&output.stdout).unwrap()
         );
@@ -79,7 +79,7 @@ pub fn run_ffigen(
 
     if stdout.contains("[SEVERE]") {
         bail!(
-            "\n'dart run ffigen' encountered severe error(s): \n\n{}\n\n",
+            "\n'{FFIGEN_RUNNER} run ffigen' encountered severe error(s): \n\n{}\n\n",
             stdout
         );
     }

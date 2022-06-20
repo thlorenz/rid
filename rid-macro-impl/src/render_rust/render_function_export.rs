@@ -91,7 +91,7 @@ pub fn render_function_export(
     let arg_idents: Vec<RustArg> = args
         .iter()
         .enumerate()
-        .map(|(slot, arg)| RustArg::from(&arg, slot))
+        .map(|(slot, arg)| RustArg::from(&arg, slot)).flatten()
         .collect();
 
     let typed_arg_tokens = render_incoming_args(&fn_ident, &arg_idents);

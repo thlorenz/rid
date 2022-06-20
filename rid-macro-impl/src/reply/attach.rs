@@ -23,7 +23,6 @@ pub fn rid_ffi_reply_impl(item: &Item, _: &[NestedMeta]) -> TokenStream {
                 .enumerate()
                 .map(|(slot, x)| ReplyVariant::new(slot, x))
                 .collect();
-
             let into_dart =
                 render_reply_into_dart(&enum_item.ident, &reply_variants);
             let enum_config = EnumConfig::from(&enum_item);

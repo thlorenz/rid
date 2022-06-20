@@ -4,7 +4,8 @@ use syn::Ident;
 
 use crate::{
     common::tokens::{
-        resolve_bool_from_u8, resolve_hash_map_ptr, resolve_string_ptr,
+        resolve_bool_from_u8, resolve_hash_map_msg_ptr, resolve_hash_map_ptr,
+        resolve_string_ptr, resolve_vec_msg_ptr, resolve_vec_ptr,
     },
     parse::rust_type::{self, RustType, TypeKind},
     render_rust::render_rust_type,
@@ -12,13 +13,14 @@ use crate::{
 
 #[derive(Debug)]
 pub struct RustArg {
+    pub virt: bool,
     pub arg_ident: Ident,
     pub type_tokens: TokenStream,
     pub resolver_tokens: TokenStream,
 }
 
 impl RustArg {
-    pub fn from(ty: &RustType, slot: usize) -> Self {
+    pub fn from(ty: &RustType, slot: usize) -> Vec<Self> {
         use TypeKind::*;
         match &ty.kind {
             // -----------------
@@ -26,19 +28,20 @@ impl RustArg {
             // -----------------
             Primitive(p) => {
                 let arg_ident = format_ident!("arg{}", slot);
-                let ty = p.render_rust_type();
-                let type_tokens = quote_spanned! { arg_ident.span() => #ty };
+                let typ = p.render_rust_type();
+                let type_tokens = quote_spanned! { arg_ident.span() => #typ };
                 let resolver_tokens = match p {
                     rust_type::Primitive::Bool => {
                         resolve_bool_from_u8(&arg_ident, true)
                     }
                     _ => TokenStream::new(),
                 };
-                RustArg {
+                vec![RustArg {
+                    virt: false,
                     arg_ident,
                     type_tokens,
                     resolver_tokens,
-                }
+                }]
             }
             Value(value) => {
                 use crate::parse::rust_type::Value::*;
@@ -51,25 +54,27 @@ impl RustArg {
                         let type_tokens = quote_spanned! { arg_ident.span() =>  *mut ::std::os::raw::c_char };
                         let resolver_tokens =
                             resolve_string_ptr(&arg_ident, true);
-                        RustArg {
+                        vec![RustArg {
+                            virt: false,
                             arg_ident,
                             type_tokens,
                             resolver_tokens,
-                        }
+                        }]
                     }
                     // -----------------
                     // Custom
                     // -----------------
                     Custom(_, type_name) => {
                         let arg_ident = format_ident!("arg{}", slot);
-                        let ty = format_ident!("{}", type_name);
+                        let typ = format_ident!("{}", type_name);
                         let type_tokens =
-                            quote_spanned! { arg_ident.span() => #ty };
-                        RustArg {
+                            quote_spanned! { arg_ident.span() => #typ };
+                        vec![RustArg {
+                            virt: false,
                             arg_ident,
                             type_tokens,
                             resolver_tokens: TokenStream::new(),
-                        }
+                        }]
                     }
                     // -----------------
                     // CString
@@ -95,22 +100,59 @@ impl RustArg {
                 let type_tokens = quote_spanned! { arg_ident.span() =>
                     *const HashMap<#key_ty_ident, #val_ty_ident>
                 };
-                let resolver_tokens = resolve_hash_map_ptr(
+                let resolver_tokens = resolve_hash_map_msg_ptr(
                     &arg_ident,
                     &key_ty_ident,
                     &val_ty_ident,
                 );
-                RustArg {
+                vec![RustArg {
+                    virt: false,
                     arg_ident,
                     type_tokens,
                     resolver_tokens,
-                }
+                }]
+            }
+            // -----------------
+            // Composite Vec
+            // -----------------
+            Composite(rust_type::Composite::Vec, Some(val_ty), _) => {
+                let len_ident = format_ident!("len{}", slot);
+                let len_type_tokens = quote_spanned! { len_ident.span() =>
+                    usize
+                };
+
+                let arg_ident = format_ident!("arg{}", slot);
+                let type_tokens = if val_ty.is_string_like(){
+                    quote_spanned!{
+                        arg_ident.span() => *const *const std::os::raw::c_char
+                    }
+                }else{
+                    quote_spanned!{
+                        arg_ident.span() => *const u8
+                    }
+                };
+                let resolver_tokens =
+                    resolve_vec_msg_ptr(&arg_ident, &len_ident, &val_ty);
+                vec![
+                    RustArg {
+                        virt: true,
+                        arg_ident: len_ident,
+                        type_tokens: len_type_tokens,
+                        resolver_tokens: quote! {},
+                    },
+                    RustArg {
+                        virt: false,
+                        arg_ident,
+                        type_tokens,
+                        resolver_tokens,
+                    },
+                ]
             }
             // -----------------
             // Todos
             // -----------------
             Composite(composite, _, _) => {
-                todo!("RustArg::from::Composite::{:?}", composite)
+                todo!("RustArg::from::{:?}", composite)
             }
             // -----------------
             // Invalid
