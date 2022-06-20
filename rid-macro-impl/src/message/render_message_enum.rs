@@ -412,10 +412,6 @@ impl ParsedMessageEnum {
                                 unimplemented!("Non-primitive types haven't been implemented yet.");
                             }
                         };
-                        let byte_size = typ
-                            .kind
-                            .get_numeric_size()
-                            .expect("Numeric type without a bytesize?");
                         //? For 2D vectors, only primitives are implemented!
                         let (method, byte_size) = match typ.kind{
                             TypeKind::Primitive(Primitive::F32) => {
