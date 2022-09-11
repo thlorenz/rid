@@ -1,4 +1,4 @@
-use heck::MixedCase;
+use heck::ToLowerCamelCase;
 use rid_common::{DART_FFI, FFI_GEN_BIND};
 
 use crate::{
@@ -145,13 +145,13 @@ impl ParsedStruct {
                         "{comment}    {ffi_ty}\n{comment}   final {ty} {name};",
                         ffi_ty = ffi_ty,
                         ty = ty,
-                        name = x.ident.to_string().to_mixed_case(),
+                        name = x.ident.to_string().to_lower_camel_case(),
                         comment = config.comment
                     ),
                     None => format!(
                         "{comment}   final {ty} {name};",
                         ty = ty,
-                        name = x.ident.to_string().to_mixed_case(),
+                        name = x.ident.to_string().to_lower_camel_case(),
                         comment = config.comment
                     ),
                 }
@@ -192,7 +192,7 @@ impl ParsedStruct {
                 .map(|x| {
                     format!(
                         "this.{name}",
-                        name = x.ident.to_string().to_mixed_case()
+                        name = x.ident.to_string().to_lower_camel_case()
                     )
                 })
                 .collect::<Vec<String>>()
@@ -242,7 +242,7 @@ impl ParsedStruct {
                 .map(|x| {
                     format!(
                         "{comment}      {field}.hashCode",
-                        field = x.ident.to_string().to_mixed_case(),
+                        field = x.ident.to_string().to_lower_camel_case(),
                         comment = config.comment
                     )
                 })
@@ -290,7 +290,7 @@ impl ParsedStruct {
                 .map(|x| {
                     format!(
                         "{comment}          {field} == other.{field}",
-                        field = x.ident.to_string().to_mixed_case(),
+                        field = x.ident.to_string().to_lower_camel_case(),
                         comment = config.comment
                     )
                 })
@@ -345,7 +345,7 @@ impl ParsedStruct {
                 .map(|x| {
                     format!(
                         "{field}: ${field}",
-                        field = x.ident.to_string().to_mixed_case()
+                        field = x.ident.to_string().to_lower_camel_case()
                     )
                 })
                 .collect::<Vec<String>>()

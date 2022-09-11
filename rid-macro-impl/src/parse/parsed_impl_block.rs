@@ -81,7 +81,7 @@ impl ParsedImplBlock {
                 | ImplItem::Type(_)
                 | ImplItem::Macro(_)
                 | ImplItem::Verbatim(_)
-                | ImplItem::__TestExhaustive(_) => None,
+                | _ => None,
             })
             .collect();
 

@@ -172,11 +172,13 @@ pub fn rid_export_impl(
         | syn::Item::Union(_)
         | syn::Item::Use(_)
         | syn::Item::Verbatim(_)
-        | syn::Item::__TestExhaustive(_) => {
+         => {
             abort!(
                 item,
                 "export attribute can only be applied to impl blocks and functions"
             );
         }
+
+        _ => todo!()
     }
 }

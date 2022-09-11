@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use heck::SnakeCase;
+use heck::ToSnakeCase;
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote, quote_spanned};
 
