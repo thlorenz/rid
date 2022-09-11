@@ -67,9 +67,10 @@ pub fn rid_message_impl(
         | Item::Type(_)
         | Item::Union(_)
         | Item::Use(_)
-        | Item::Verbatim(_)
-        | Item::__TestExhaustive(_) => {
+        | Item::Verbatim(_) => {
             abort!(item, "rid::message attribute can only be applied to enums");
         }
+
+        &_ => todo!()
     }
 }
