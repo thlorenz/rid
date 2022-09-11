@@ -1,4 +1,4 @@
-use heck::{CamelCase, SnakeCase};
+use heck::{ToLowerCamelCase, ToSnakeCase, ToUpperCamelCase};
 use rid_common::{
     DART_COLLECTION, DART_FFI, FFI_GEN_BIND, RID_FFI, STRING_REF_ACCESS,
 };
@@ -14,9 +14,8 @@ use crate::{
 
 use super::RenderDartTypeOpts;
 
-const TEMPLATE_FIELD_ACCESS: &str =
-    std::include_str!("./vec_field_access.dart");
-const TEMPLATE: &str = std::include_str!("./rid_vec.dart");
+const TEMPLATE_FIELD_ACCESS: &str = include_str!("./vec_field_access.dart");
+const TEMPLATE: &str = include_str!("./rid_vec.dart");
 
 impl VecAccess {
     pub fn render_dart_for_field_reference(
@@ -25,7 +24,7 @@ impl VecAccess {
         comment: &str,
     ) -> String {
         let pointer_vec_type = self.vec_type.render_dart_field_return_type();
-        let vec_type = self.key().to_camel_case();
+        let vec_type = self.key().to_upper_camel_case();
         let iterated_item_type = self.item_type.render_dart_field_return_type();
 
         let resolved_dart_item_type =

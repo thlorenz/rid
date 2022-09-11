@@ -1,4 +1,6 @@
-use heck::MixedCase;
+use heck::ToLowerCamelCase;
+use heck::ToSnakeCase;
+use heck::ToUpperCamelCase;
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote_spanned};
 use syn::Ident;
@@ -74,9 +76,9 @@ impl ParsedStructField {
     ) -> String {
         let rust_type_ident = self.rust_type.rust_ident();
         let field_ident =
-            format_ident!("{}", self.ident.to_string().to_mixed_case());
+            format_ident!("{}", self.ident.to_string().to_lower_camel_case());
         let raw_field_ident = &self.ident;
-        let store_instance = struct_ident.to_string().to_mixed_case();
+        let store_instance = struct_ident.to_string().to_lower_camel_case();
 
         let field_access = format!(
             "{ty}.{field}",

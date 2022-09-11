@@ -1,4 +1,4 @@
-use heck::MixedCase;
+use heck::ToLowerCamelCase;
 use rid_common::{DART_FFI, FFI_GEN_BIND, RID_CREATE_STORE};
 use syn::Ident;
 
@@ -44,7 +44,7 @@ impl ParsedMessageEnum {
     ) -> String {
         let fn_ident = &variant.method_ident;
         let method_name = self.dart_method_name(&fn_ident.to_string());
-        let api_method_name = method_name.to_mixed_case();
+        let api_method_name = method_name.to_lower_camel_case();
 
         struct DartArg {
             arg: String,

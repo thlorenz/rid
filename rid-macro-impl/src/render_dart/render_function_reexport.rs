@@ -1,4 +1,4 @@
-use heck::MixedCase;
+use heck::ToLowerCamelCase;
 use rid_common::STORE;
 use syn::Ident;
 
@@ -37,7 +37,7 @@ impl ParsedFunction {
             ..
         } = self;
 
-        let dart_fn_name = fn_ident.to_string().to_mixed_case();
+        let dart_fn_name = fn_ident.to_string().to_lower_camel_case();
 
         let raw_fn_ident = fn_ident_alias.as_ref().unwrap_or(fn_ident);
         let return_type = return_arg
